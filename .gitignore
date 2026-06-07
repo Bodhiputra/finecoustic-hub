@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env*.local
+brands/*/shopify-snapshot.json
+
+# Real brand data — never commit (B2B partners, stock, allocations)
+brands/*/ops-data.json
+!brands/_template/ops-data.json

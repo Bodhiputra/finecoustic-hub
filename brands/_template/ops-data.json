@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "brand": "Brand Name",
+    "brand_slug": "brand-slug",
+    "updated_at": "",
+    "customer_data_updated_at": "",
+    "inventory_data_updated_at": "",
+    "shopify_data_updated_at": "",
+    "shipment_data_updated_at": "",
+    "currency_default": "USD"
+  },
+  "products": [],
+  "warehouses": [
+    { "id": "source", "name": "Source Warehouse", "type": "source", "update_mode": "manual" }
+  ],
+  "initial_stock": [],
+  "b2b_partners": [],
+  "b2b_allocations": [],
+  "internal_use": [],
+  "inventory_manual": [],
+  "movements": []
+}

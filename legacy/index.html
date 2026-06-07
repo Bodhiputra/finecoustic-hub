@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finecoustic — Operations</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    (function () {
+      var t = localStorage.getItem('ops-hub-theme');
+      if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <img class="brand-logo" src="assets/FLogo.png" width="44" height="44" alt="Finecoustic">
+        <div>
+          <strong id="brand-name">Finecoustic</strong>
+          <small>Operations</small>
+        </div>
+      </div>
+      <nav aria-label="Sections">
+        <button class="nav active" data-view="dashboard" aria-current="page">
+          <span class="nav-text">Dashboard</span>
+        </button>
+        <button class="nav" data-view="customers">
+          <span class="nav-text">Customers</span>
+        </button>
+        <button class="nav" data-view="stock">
+          <span class="nav-text">Stock</span>
+        </button>
+      </nav>
+      <footer class="sidebar-foot">
+        <span id="updated-at">—</span>
+      </footer>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-text">
+          <h1 id="view-title">Dashboard</h1>
+          <p id="view-subtitle">Inventory and distributor orders at a glance</p>
+        </div>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme">
+          <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+          <span class="theme-toggle-label">Light</span>
+        </button>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <article class="panel panel-full">
+          <header class="panel-head">
+            <h2>Warehouse stock</h2>
+            <p class="panel-desc">Units available in China (Dongguan).</p>
+          </header>
+          <div id="stock-bars"></div>
+        </article>
+        <div id="dashboard-note"></div>
+      </section>
+
+      <section id="view-customers" class="view">
+        <div id="customers-summary" class="customers-summary"></div>
+        <article class="panel panel-full">
+          <div id="customers-table"></div>
+        </article>
+      </section>
+
+      <section id="view-stock" class="view">
+        <div class="stock-cards" id="stock-cards"></div>
+        <details class="panel panel-details" id="stock-update-panel">
+          <summary>Update counts</summary>
+          <div id="stock-editor"></div>
+        </details>
+      </section>
+    </main>
+  </div>
+  <script src="js/app.js" type="module"></script>
+</body>
+</html>
