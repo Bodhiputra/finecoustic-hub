@@ -8,7 +8,8 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  if (body.password !== password) {
+  const attempt = String(body.password ?? '').trim();
+  if (attempt !== password) {
     return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
   }
 

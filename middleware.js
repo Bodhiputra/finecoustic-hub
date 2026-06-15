@@ -11,8 +11,8 @@ export function middleware(request) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get(AUTH_COOKIE)?.value;
-  if (token === password) return NextResponse.next();
+  const token = request.cookies.get(AUTH_COOKIE)?.value?.trim();
+  if (token === password.trim()) return NextResponse.next();
 
   if (pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

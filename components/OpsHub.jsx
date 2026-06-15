@@ -6,6 +6,7 @@ import {
   ACTIVE_SKUS,
   SHIPMENT_LABELS,
   calcMetrics,
+  calcStockReconciliation,
   customerDataUpdatedAt,
   inventoryDataUpdatedAt,
   shopifyDataUpdatedAt,
@@ -29,8 +30,10 @@ export default function OpsHub({ initialData, authEnabled }) {
   const ops = initialData;
   const [view, setView] = useState('dashboard');
   const [theme, setTheme] = useState('dark');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const metrics = useMemo(() => calcMetrics(ops), [ops]);
+  const reconciliation = useMemo(() => calcStockReconciliation(ops), [ops]);
   const ship = useMemo(() => shipmentCounts(ops), [ops]);
   const awaiting = ship.not_shipped + ship.preparing + ship.po_listed;
 
@@ -40,6 +43,24 @@ export default function OpsHub({ initialData, authEnabled }) {
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
   }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 768) setMenuOpen(false);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const selectView = id => {
+    setView(id);
+    setMenuOpen(false);
+  };
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -70,7 +91,14 @@ export default function OpsHub({ initialData, authEnabled }) {
   const shopifyDataUpdated = formatDataDate(shopifyDataUpdatedAt(ops));
 
   return (
-    <div className="layout">
+    <div className={`layout${menuOpen ? ' menu-open' : ''}`}>
+      <button
+        type="button"
+        className="sidebar-overlay"
+        aria-label="Close menu"
+        onClick={() => setMenuOpen(false)}
+        tabIndex={menuOpen ? 0 : -1}
+      />
       <aside className="sidebar" aria-label="Main navigation">
         <div className="brand">
           <Image className="brand-logo" src="/FLogo.png" alt="Finecoustic" width={44} height={44} />
@@ -86,7 +114,7 @@ export default function OpsHub({ initialData, authEnabled }) {
               type="button"
               className={`nav${view === id ? ' active' : ''}`}
               aria-current={view === id ? 'page' : undefined}
-              onClick={() => setView(id)}
+              onClick={() => selectView(id)}
             >
               {id === 'dashboard' ? 'Dashboard' : id === 'customers' ? 'Customers' : 'Stock'}
             </button>
@@ -96,6 +124,17 @@ export default function OpsHub({ initialData, authEnabled }) {
 
       <main className="main">
         <header className="topbar">
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(open => !open)}
+          >
+            <span className="menu-toggle-bar" />
+            <span className="menu-toggle-bar" />
+            <span className="menu-toggle-bar" />
+          </button>
           <div className="topbar-text">
             <h1>{title}</h1>
             <p>{subtitle}</p>
@@ -195,6 +234,72 @@ export default function OpsHub({ initialData, authEnabled }) {
                   );
                 })}
               </div>
+
+              {reconciliation.hasAnyIssue && (
+                <div className="stock-reconcile" role="note">
+                  <header className="stock-reconcile-head">
+                    <strong>Stock count doesn&apos;t reconcile</strong>
+                    <p>
+                      Axia reports warehouse on-hand, available-after-orders, and our customer
+                      allocations separately — the numbers below don&apos;t add up yet.
+                    </p>
+                  </header>
+                  <div className="stock-reconcile-grid">
+                    {reconciliation.items.map(row => (
+                      <div key={row.sku} className="stock-reconcile-card">
+                        <h3>{productName(ops, row.sku)}</h3>
+                        <dl className="stock-reconcile-dl">
+                          {row.inWarehouseGap !== 0 && (
+                            <>
+                              <dt>In-warehouse bar gap</dt>
+                              <dd className="stock-reconcile-warn">
+                                {row.inWarehouseGap > 0 ? '+' : ''}
+                                {row.inWarehouseGap} units unaccounted
+                                <span>
+                                  {row.warehouseQty} in warehouse − {row.b2bReserved} customer
+                                  pending − {row.internal} personal − {row.axiaAfterOrders ?? '—'}{' '}
+                                  available ≠ 0
+                                </span>
+                              </dd>
+                            </>
+                          )}
+                          {row.axiaDelta != null && row.axiaDelta !== 0 && (
+                            <>
+                              <dt>Axia available vs calculated</dt>
+                              <dd className="stock-reconcile-warn">
+                                Axia {row.axiaAfterOrders}; expected {row.calcAvailable} (
+                                {row.axiaDelta > 0 ? '+' : ''}
+                                {row.axiaDelta})
+                                <span>
+                                  Warehouse {row.warehouseQty} minus unshipped customer orders and
+                                  samples
+                                </span>
+                              </dd>
+                            </>
+                          )}
+                          {row.ledgerRemaining < 0 && (
+                            <>
+                              <dt>Allocations vs warehouse book</dt>
+                              <dd className="stock-reconcile-warn">
+                                Over-allocated by {Math.abs(row.ledgerRemaining)} units
+                                <span>
+                                  All customer orders ({row.b2bAll}) plus samples ({row.internal})
+                                  exceed warehouse on-hand ({row.warehouseQty}) — shipped units (
+                                  {row.b2bShipped}) may be double-counted
+                                </span>
+                              </dd>
+                            </>
+                          )}
+                        </dl>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="stock-reconcile-foot">
+                    Ground truth for outbound: confirmed shipments only. Reconcile with Axia before
+                    the next transfer or allocation decision.
+                  </p>
+                </div>
+              )}
             </article>
 
             {ops.b2b_pending_review && (

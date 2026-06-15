@@ -1,17 +1,16 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const canSubmit = password.trim().length > 0 && !loading && !error;
+  const canSubmit = password.trim().length > 0 && !loading;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -24,20 +23,21 @@ function LoginForm() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        credentials: 'same-origin',
+        body: JSON.stringify({ password: password.trim() }),
       });
 
       if (!res.ok) {
         setError('Incorrect password. Please try again.');
+        setLoading(false);
         return;
       }
 
+      // Full navigation so the auth cookie is sent on the next request (client router.push can bounce back to /login)
       const from = searchParams.get('from') || '/';
-      router.push(from);
-      router.refresh();
+      window.location.assign(from);
     } catch {
       setError('Something went wrong. Please try again.');
-    } finally {
       setLoading(false);
     }
   }
