@@ -137,6 +137,7 @@ input:focus-visible {
 }
 
 .nav {
+  display: block;
   border: 0;
   background: transparent;
   text-align: left;
@@ -147,6 +148,7 @@ input:focus-visible {
   cursor: pointer;
   transition: background .15s, color .15s;
   border-left: 3px solid transparent;
+  text-decoration: none;
 }
 
 .nav:hover { background: var(--accent-soft); color: var(--text); }
@@ -170,46 +172,6 @@ input:focus-visible {
   min-width: 0;
   width: 100%;
   padding: var(--space-6) clamp(var(--space-4), 4vw, var(--space-7)) var(--space-7);
-}
-
-.menu-toggle {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 44px;
-  height: 44px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.menu-toggle-bar {
-  display: block;
-  height: 2px;
-  width: 100%;
-  background: var(--text);
-  border-radius: 1px;
-  transition: transform .2s, opacity .2s;
-}
-
-.layout.menu-open .menu-toggle-bar:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-
-.layout.menu-open .menu-toggle-bar:nth-child(2) {
-  opacity: 0;
-}
-
-.layout.menu-open .menu-toggle-bar:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
-
-.sidebar-overlay {
-  display: none;
 }
 
 .topbar {
@@ -383,6 +345,23 @@ input:focus-visible {
   margin-bottom: var(--space-1);
 }
 
+.stock-bar-over {
+  font-weight: 500;
+  color: var(--warn);
+}
+
+.stock-bar-track-warn {
+  outline: 2px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.stock-reconcile-note {
+  font-size: .82rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-bottom: var(--space-3);
+}
+
 .stock-bar-legend {
   display: flex;
   flex-wrap: wrap;
@@ -452,38 +431,98 @@ input:focus-visible {
 }
 
 .stock-reconcile-card h3 {
-  font-size: 1rem;
+  font-size: 1.05rem;
+  margin-bottom: var(--space-4);
+}
+
+.stock-reconcile-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.stock-reconcile-col {
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.stock-reconcile-col h4 {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
   margin-bottom: var(--space-3);
 }
 
-.stock-reconcile-dl {
+.stock-reconcile-col ul {
+  list-style: none;
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
-.stock-reconcile-dl dt {
-  font-size: .75rem;
+.stock-reconcile-col li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: .92rem;
+}
+
+.stock-reconcile-col li span { color: var(--muted); }
+
+.stock-reconcile-col li strong {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-reconcile-customers {
+  margin-top: var(--space-3);
+  font-size: .82rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.stock-reconcile-problem {
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--warn) 8%, var(--surface));
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.stock-reconcile-problem h4 {
+  font-size: .72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
+  color: var(--warn);
+  margin-bottom: var(--space-2);
+}
+
+.stock-reconcile-problem ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: var(--space-2);
+  font-size: .92rem;
+  line-height: 1.5;
+}
+
+.stock-reconcile-problem li strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-reconcile-cause {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid color-mix(in srgb, var(--warn) 25%, var(--line));
+  font-size: .88rem;
   color: var(--muted);
+  line-height: 1.5;
 }
-
-.stock-reconcile-dl dd {
-  font-size: .95rem;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.stock-reconcile-dl dd span {
-  display: block;
-  margin-top: var(--space-1);
-  font-size: .85rem;
-  font-weight: 400;
-  color: var(--muted);
-}
-
-.stock-reconcile-warn { color: var(--warn); }
 
 .stock-reconcile-foot {
   margin-top: var(--space-4);
@@ -853,60 +892,43 @@ input:focus-visible {
 @media (max-width: 700px) {
   .stock-bars { grid-template-columns: 1fr; }
   .stock-reconcile-grid { grid-template-columns: 1fr; }
+  .stock-reconcile-compare { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
   .layout { grid-template-columns: 1fr; }
 
-  .menu-toggle { display: flex; }
-
-  .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 150;
-    border: 0;
-    background: rgba(0, 0, 0, .55);
-    cursor: pointer;
-  }
-
-  .layout.menu-open .sidebar-overlay { display: block; }
-
   .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 200;
-    width: min(85vw, 280px);
-    min-height: 100vh;
-    height: 100vh;
-    transform: translateX(-100%);
-    transition: transform .25s ease;
+    position: relative;
+    top: auto;
+    z-index: auto;
+    width: auto;
+    min-height: 0;
+    height: auto;
+    transform: none;
     box-shadow: none;
-  }
-
-  .layout.menu-open .sidebar {
-    transform: translateX(0);
-    box-shadow: 8px 0 32px rgba(0, 0, 0, .35);
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: var(--space-3);
   }
 
   .sidebar-nav {
-    flex-direction: column;
-    gap: var(--space-1);
+    flex-direction: row;
+    gap: var(--space-2);
   }
 
   .nav {
-    flex: none;
-    text-align: left;
-    font-size: 1.05rem;
-    padding: .85rem var(--space-3);
-    border-left: 3px solid transparent;
-    border-bottom: 0;
+    flex: 1;
+    text-align: center;
+    font-size: .95rem;
+    padding: .7rem var(--space-2);
+    border-left: 0;
+    border-bottom: 3px solid transparent;
   }
 
   .nav.active {
-    border-left-color: var(--fc-yellow);
-    border-bottom-color: transparent;
+    border-left-color: transparent;
+    border-bottom-color: var(--fc-yellow);
   }
 
   .topbar {
