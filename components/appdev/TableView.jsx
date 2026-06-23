@@ -74,7 +74,7 @@ export default function TableView({
                         value={issue.type}
                         onChange={next => onPatch(issue.id, { type: next })}
                         disabled={saving}
-                        inputClassName="appdev-table-select"
+                        inputClassName="appdev-table-select appdev-type-input"
                       />
                     ) : (
                       <span className="appdev-table-text"><IssueTypeLabel type={issue.type} /></span>
