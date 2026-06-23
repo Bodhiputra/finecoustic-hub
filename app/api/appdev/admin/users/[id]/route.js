@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdminSession } from '@/lib/auth';
+import { refreshBoardPeopleRegistry } from '@/lib/appdev-data';
 import { setUserBlocked, deleteUser } from '@/lib/appdev-users';
 
 async function requireAdmin() {
@@ -21,6 +22,7 @@ export async function PATCH(request, { params }) {
   if (!user) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
+  await refreshBoardPeopleRegistry().catch(() => {});
   return NextResponse.json({ user });
 }
 
@@ -33,5 +35,6 @@ export async function DELETE(_request, { params }) {
   if (!ok) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
+  await refreshBoardPeopleRegistry().catch(() => {});
   return NextResponse.json({ ok: true });
 }

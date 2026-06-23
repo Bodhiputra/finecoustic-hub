@@ -257,7 +257,7 @@ export default function IssuePanel({
           <WorkersField
             workers={workers}
             onChange={setWorkers}
-            people={assignablePeople.length ? assignablePeople : people}
+            people={assignablePeople}
             currentUser={currentUser}
             mode={caps.canManageWorkers ? 'owner' : 'contributor'}
             label={t('appdev.board.assignee')}

@@ -250,6 +250,9 @@ export default function AppdevBoard({ initialData = null }) {
     [board]
   );
 
+  const people = board?.meta?.people || [];
+  const assignablePeople = board?.meta?.assignable_people ?? people;
+
   const filteredIssues = useMemo(() => {
     return filterIssues(savedIssues, {
       search,
@@ -260,8 +263,8 @@ export default function AppdevBoard({ initialData = null }) {
   }, [savedIssues, search, assigneeFilter, typeFilter, currentUser]);
 
   const assigneeOptions = useMemo(
-    () => assigneeFilterOptions(savedIssues),
-    [savedIssues]
+    () => assigneeFilterOptions(savedIssues, assignablePeople),
+    [savedIssues, assignablePeople]
   );
 
   const issuesByStatus = useMemo(() => {
@@ -495,8 +498,6 @@ export default function AppdevBoard({ initialData = null }) {
   const totalCount = savedIssues.length;
   const filteredCount = filteredIssues.length;
   const hasActiveFilters = Boolean(search.trim() || assigneeFilter || typeFilter);
-  const people = board?.meta?.people || [];
-  const assignablePeople = board?.meta?.assignable_people || people;
   const viewDesc = view === 'board' ? t('appdev.views.boardDesc') : t('appdev.views.tableDesc');
 
   return (
