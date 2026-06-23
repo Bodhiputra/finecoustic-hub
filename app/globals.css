@@ -1750,6 +1750,12 @@ input:focus-visible {
   max-width: 130px;
 }
 
+.appdev-type-input {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: text;
+}
+
 .appdev-table-edit {
   border: 1px solid var(--line);
   background: var(--surface);
@@ -2243,6 +2249,7 @@ input:focus-visible {
 .appdev-field input,
 .appdev-field textarea,
 .appdev-field select,
+.appdev-field .appdev-type-input,
 .appdev-date-picker-wrap {
   width: 100%;
   padding: .65rem .75rem;
