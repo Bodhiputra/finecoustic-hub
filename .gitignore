@@ -1,6 +1,7 @@
 node_modules/
 .next/
 out/
+.DS_Store
 .env
 .env.local
 .env*.local
@@ -9,4 +10,11 @@ brands/*/shopify-snapshot.json
 # Real brand data — never commit (B2B partners, stock, allocations)
 brands/*/ops-data.json
 !brands/_template/ops-data.json
+
+# App dev board data
+data/appdev-board.json
+!data/_template/appdev-board.json
+data/appdev-users.json
+data/appdev-presence.json
+data/appdev-uploads/
 .vercel

@@ -1,10 +1,16 @@
-import OpsHub from '@/components/OpsHub';
-import { isAuthEnabled } from '@/lib/auth';
-import { getOpsData } from '@/lib/data';
-
-export const dynamic = 'force-dynamic';
+import HubHome from '@/components/HubHome';
+import HubLogin from '@/components/HubLogin';
+import { isHubAuthEnabled, isHubAuthenticated } from '@/lib/auth';
 
 export default async function HomePage() {
-  const data = await getOpsData();
-  return <OpsHub initialData={data} authEnabled={isAuthEnabled()} />;
+  if (!isHubAuthEnabled()) {
+    return <HubHome authEnabled={false} />;
+  }
+
+  const authed = await isHubAuthenticated();
+  if (!authed) {
+    return <HubLogin />;
+  }
+
+  return <HubHome authEnabled />;
 }

@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:clean": "node scripts/dev.mjs --clean",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check": "npm run lint && npm run build",
+    "test:auth": "node scripts/test-auth.mjs",
     "db:seed": "node scripts/seed-db.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
+    "@vercel/blob": "^2.4.1",
+    "cloudinary": "^2.10.0",
     "next": "^15.3.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

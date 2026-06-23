@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "project": "Finecoustic App Development",
+    "updated_at": "2026-06-22T00:00:00.000Z"
+  },
+  "next_number": 4,
+  "issues": [
+    {
+      "id": "FCS-1",
+      "title": "Set up project repository",
+      "description": "Initialize repo, CI, and branch strategy.",
+      "type": "new_feature",
+      "status": "done",
+      "priority": "high",
+      "assignee": "Finecoustic",
+      "worker": "Dev",
+      "assigned_at": "2026-06-01T00:00:00.000Z",
+      "completed_at": "2026-06-10T00:00:00.000Z",
+      "created_at": "2026-06-01T00:00:00.000Z",
+      "updated_at": "2026-06-10T00:00:00.000Z"
+    },
+    {
+      "id": "FCS-2",
+      "title": "Define MVP scope",
+      "description": "Lock v0.1 feature list with stakeholders.",
+      "type": "task",
+      "status": "in_progress",
+      "priority": "urgent",
+      "assignee": "Finecoustic",
+      "worker": "YScoco",
+      "assigned_at": "2026-06-05T00:00:00.000Z",
+      "completed_at": null,
+      "created_at": "2026-06-05T00:00:00.000Z",
+      "updated_at": "2026-06-12T00:00:00.000Z"
+    },
+    {
+      "id": "FCS-3",
+      "title": "UI wireframes",
+      "description": "Core screens for onboarding and home.",
+      "type": "improvement",
+      "status": "todo",
+      "priority": "medium",
+      "assignee": "Finecoustic",
+      "worker": "",
+      "assigned_at": null,
+      "completed_at": null,
+      "created_at": "2026-06-08T00:00:00.000Z",
+      "updated_at": "2026-06-08T00:00:00.000Z"
+    }
+  ]
+}

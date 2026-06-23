@@ -2,7 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import Icon from '@/components/Icon';
+import ThemeToggle from '@/components/ThemeToggle';
 import {
   ACTIVE_SKUS,
   SHIPMENT_LABELS,
@@ -28,37 +30,22 @@ const VIEW_META = {
 };
 
 const NAV_ITEMS = [
-  { id: 'dashboard', href: '/', label: 'Dashboard' },
+  { id: 'dashboard', href: '/ops', label: 'Dashboard' },
   { id: 'customers', href: '/customers', label: 'Customers' },
   { id: 'stock', href: '/stock', label: 'Stock' },
 ];
 
 export default function OpsHub({ initialData, authEnabled, view = 'dashboard' }) {
   const ops = initialData;
-  const [theme, setTheme] = useState('dark');
 
   const metrics = useMemo(() => calcMetrics(ops), [ops]);
   const reconciliation = useMemo(() => calcStockReconciliation(ops), [ops]);
   const ship = useMemo(() => shipmentCounts(ops), [ops]);
   const awaiting = ship.not_shipped + ship.preparing + ship.po_listed;
 
-  useEffect(() => {
-    const stored = localStorage.getItem('ops-hub-theme');
-    const next = stored === 'light' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('ops-hub-theme', next);
-  };
-
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   const partners = ops.b2b_partners
@@ -81,7 +68,10 @@ export default function OpsHub({ initialData, authEnabled, view = 'dashboard' })
     <div className="layout">
       <aside className="sidebar" aria-label="Main navigation">
         <div className="brand">
-          <Image className="brand-logo" src="/FLogo.png" alt="Finecoustic" width={44} height={44} />
+          <Link href="/" className="brand-back" aria-label="Hub home">
+            <Icon name="arrowLeft" size={16} />
+          </Link>
+          <Image className="brand-logo" src="/FLogo.png" alt="Finecoustic" width={36} height={36} />
           <div>
             <strong>{ops.meta.brand}</strong>
             <small>Operations</small>
@@ -108,12 +98,10 @@ export default function OpsHub({ initialData, authEnabled, view = 'dashboard' })
             <p>{subtitle}</p>
           </div>
           <div className="topbar-actions">
-            <button type="button" className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-              <span aria-hidden="true">{theme === 'dark' ? '☾' : '☀'}</span>
-              <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
-            </button>
+            <ThemeToggle />
             {authEnabled && (
               <button type="button" className="btn-ghost" onClick={handleLogout}>
+                <Icon name="logOut" size={15} />
                 Sign out
               </button>
             )}
