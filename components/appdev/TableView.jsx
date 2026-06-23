@@ -1,6 +1,7 @@
 'use client';
 
-import { ISSUE_TYPES, PRIORITIES, formatIssueDate } from '@/lib/appdev';
+import { PRIORITIES, formatIssueDate } from '@/lib/appdev';
+import IssueTypeField, { IssueTypeLabel } from '@/components/appdev/IssueTypeField';
 import { formatWorkersDisplay } from '@/lib/appdev-workers';
 import { getIssueCapabilities, getStatusOptionsForIssue } from '@/lib/appdev-task-permissions';
 import { useLocale } from '@/components/LocaleProvider';
@@ -69,19 +70,14 @@ export default function TableView({
                   </td>
                   <td onClick={e => e.stopPropagation()}>
                     {caps.canEditMetadata ? (
-                      <select
-                        className="appdev-table-select"
-                        value={issue.type || 'task'}
+                      <IssueTypeField
+                        value={issue.type}
+                        onChange={next => onPatch(issue.id, { type: next })}
                         disabled={saving}
-                        onChange={e => onPatch(issue.id, { type: e.target.value })}
-                        aria-label={`${t('appdev.board.type')} — ${issue.title}`}
-                      >
-                        {ISSUE_TYPES.map(type => (
-                          <option key={type} value={type}>{t(`appdev.type.${type}`)}</option>
-                        ))}
-                      </select>
+                        inputClassName="appdev-table-select"
+                      />
                     ) : (
-                      <span className="appdev-table-text">{t(`appdev.type.${issue.type || 'task'}`)}</span>
+                      <span className="appdev-table-text"><IssueTypeLabel type={issue.type} /></span>
                     )}
                   </td>
                   <td onClick={e => e.stopPropagation()}>

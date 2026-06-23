@@ -6,7 +6,8 @@ import MediaUrlFields from '@/components/appdev/MediaUrlFields';
 import IssueChat from '@/components/appdev/IssueChat';
 import WorkersField from '@/components/appdev/WorkersField';
 import Icon from '@/components/Icon';
-import { ISSUE_TYPES, PRIORITIES, formatIssueDate, formatIssueId, personKey } from '@/lib/appdev';
+import IssueTypeField, { IssueTypeLabel } from '@/components/appdev/IssueTypeField';
+import { PRIORITIES, formatIssueDate, formatIssueId, personKey } from '@/lib/appdev';
 import { getIssueWorkers, hasWorkers } from '@/lib/appdev-workers';
 import { ASSIGNEE_ONLY_STATUSES, getIssueCapabilities, getStatusOptionsForIssue } from '@/lib/appdev-task-permissions';
 import { isDraftIssue } from '@/lib/appdev-draft';
@@ -198,17 +199,13 @@ export default function IssuePanel({
             <div className="appdev-field">
               <span>{t('appdev.board.type')}</span>
               {caps.canEditMetadata ? (
-                <select
-                  value={draft.type || 'task'}
-                  onChange={e => set('type', e.target.value)}
+                <IssueTypeField
+                  value={draft.type}
+                  onChange={next => set('type', next)}
                   disabled={saving}
-                >
-                  {ISSUE_TYPES.map(type => (
-                    <option key={type} value={type}>{t(`appdev.type.${type}`)}</option>
-                  ))}
-                </select>
+                />
               ) : (
-                <ReadonlyValue>{t(`appdev.type.${draft.type || 'task'}`)}</ReadonlyValue>
+                <ReadonlyValue><IssueTypeLabel type={draft.type} /></ReadonlyValue>
               )}
             </div>
 

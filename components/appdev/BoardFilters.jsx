@@ -1,6 +1,6 @@
 'use client';
 
-import { ISSUE_TYPES } from '@/lib/appdev';
+import { formatIssueTypeLabel } from '@/lib/appdev';
 
 export default function BoardFilters({
   assigneeFilter,
@@ -8,6 +8,7 @@ export default function BoardFilters({
   typeFilter,
   onTypeFilterChange,
   assigneeOptions = [],
+  typeOptions = [],
   t,
 }) {
   return (
@@ -37,9 +38,9 @@ export default function BoardFilters({
           aria-label={t('appdev.board.filterType')}
         >
           <option value="">{t('appdev.board.filterTypeAll')}</option>
-          {ISSUE_TYPES.map(type => (
+          {typeOptions.map(type => (
             <option key={type} value={type}>
-              {t(`appdev.type.${type}`)}
+              {formatIssueTypeLabel(type, t)}
             </option>
           ))}
         </select>

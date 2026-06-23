@@ -14,10 +14,9 @@ import Icon from '@/components/Icon';
 import LocaleSwitch from '@/components/LocaleSwitch';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useLocale } from '@/components/LocaleProvider';
-import { STATUSES } from '@/lib/appdev';
+import { STATUSES, peekNextIssueNumber, parseIssueIdNum, dedupeIssuesById, collectIssueTypeFilterOptions } from '@/lib/appdev';
 import { createDraftIssue, isDraftIssue } from '@/lib/appdev-draft';
 import { assigneeFilterOptions, filterIssues } from '@/lib/appdev-filters';
-import { peekNextIssueNumber, parseIssueIdNum, dedupeIssuesById } from '@/lib/appdev';
 
 const VIEW_KEY = 'appdev-view';
 const HELP_KEY = 'appdev-help-dismissed';
@@ -265,6 +264,11 @@ export default function AppdevBoard({ initialData = null }) {
   const assigneeOptions = useMemo(
     () => assigneeFilterOptions(savedIssues, assignablePeople),
     [savedIssues, assignablePeople]
+  );
+
+  const typeOptions = useMemo(
+    () => collectIssueTypeFilterOptions(savedIssues),
+    [savedIssues]
   );
 
   const issuesByStatus = useMemo(() => {
@@ -562,6 +566,7 @@ export default function AppdevBoard({ initialData = null }) {
             typeFilter={typeFilter}
             onTypeFilterChange={setTypeFilterMode}
             assigneeOptions={assigneeOptions}
+            typeOptions={typeOptions}
             t={t}
           />
 

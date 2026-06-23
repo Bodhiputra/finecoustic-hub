@@ -1,6 +1,7 @@
 'use client';
 
 import { STATUSES, formatIssueDate } from '@/lib/appdev';
+import { IssueTypeLabel } from '@/components/appdev/IssueTypeField';
 import { formatWorkersDisplay, getIssueWorkers } from '@/lib/appdev-workers';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
@@ -33,7 +34,7 @@ export default function BoardView({ issuesByStatus, openIssue, t }) {
                     onClick={() => openIssue(issue)}
                   >
                     <div className="appdev-issue-top">
-                      <span className="appdev-issue-type">{t(`appdev.type.${issue.type || 'task'}`)}</span>
+                      <span className="appdev-issue-type"><IssueTypeLabel type={issue.type} /></span>
                       {issue.priority !== 'none' && (
                         <span className={`appdev-priority-dot ${priorityClass(issue.priority)}`} />
                       )}
