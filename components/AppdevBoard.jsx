@@ -14,7 +14,7 @@ import Icon from '@/components/Icon';
 import LocaleSwitch from '@/components/LocaleSwitch';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useLocale } from '@/components/LocaleProvider';
-import { STATUSES, peekNextIssueNumber, parseIssueIdNum, dedupeIssuesById, collectIssueTypeFilterOptions } from '@/lib/appdev';
+import { STATUSES, peekNextIssueNumber, parseIssueIdNum, dedupeIssuesById, collectIssueTypeFilterOptions, mergeTaskTypes } from '@/lib/appdev';
 import { createDraftIssue, isDraftIssue } from '@/lib/appdev-draft';
 import { assigneeFilterOptions, filterIssues } from '@/lib/appdev-filters';
 
@@ -267,9 +267,25 @@ export default function AppdevBoard({ initialData = null }) {
   );
 
   const typeOptions = useMemo(
-    () => collectIssueTypeFilterOptions(savedIssues),
-    [savedIssues]
+    () => collectIssueTypeFilterOptions(savedIssues, board?.meta?.task_types),
+    [savedIssues, board?.meta?.task_types]
   );
+
+  const taskTypes = useMemo(
+    () => mergeTaskTypes(board?.meta?.task_types, savedIssues),
+    [board?.meta?.task_types, savedIssues]
+  );
+
+  const registerTaskType = useCallback(type => {
+    if (!type) return;
+    setBoard(prev => ({
+      ...prev,
+      meta: {
+        ...prev.meta,
+        task_types: mergeTaskTypes(prev.meta?.task_types, prev.issues, [type]),
+      },
+    }));
+  }, []);
 
   const issuesByStatus = useMemo(() => {
     const map = Object.fromEntries(STATUSES.map(s => [s, []]));
@@ -281,10 +297,14 @@ export default function AppdevBoard({ initialData = null }) {
 
   const openIssue = issue => setSelected(issue);
 
-  const applyIssueUpdate = (issue, people) => {
+  const applyIssueUpdate = (issue, people, task_types) => {
     setBoard(prev => ({
       ...prev,
-      meta: people ? { ...prev.meta, people } : prev.meta,
+      meta: {
+        ...prev.meta,
+        ...(people ? { people } : {}),
+        ...(task_types ? { task_types } : {}),
+      },
       issues: dedupeIssuesById(
         prev.issues.some(i => i.id === issue.id)
           ? prev.issues.map(i => (i.id === issue.id ? issue : i))
@@ -344,8 +364,8 @@ export default function AppdevBoard({ initialData = null }) {
         setError(appdevErrorMessage(data, t));
         return;
       }
-      const { issue, people } = data;
-      applyIssueUpdate(issue, people);
+      const { issue, people, task_types } = data;
+      applyIssueUpdate(issue, people, task_types);
     } catch {
       setError(t('appdev.board.saveError'));
     } finally {
@@ -397,11 +417,16 @@ export default function AppdevBoard({ initialData = null }) {
         }
         issue = patchData.issue;
         people = patchData.people || people;
+        const task_types = patchData.task_types || data.task_types;
 
         const createdNum = parseIssueIdNum(issue.id);
         setBoard(prev => ({
           ...prev,
-          meta: people ? { ...prev.meta, people } : prev.meta,
+          meta: {
+            ...prev.meta,
+            ...(people ? { people } : {}),
+            ...(task_types ? { task_types } : {}),
+          },
           issues: dedupeIssuesById([issue, ...(prev?.issues || [])]),
           next_number:
             serverNextNumber ??
@@ -422,8 +447,8 @@ export default function AppdevBoard({ initialData = null }) {
         setError(appdevErrorMessage(data, t));
         return;
       }
-      const { issue, people } = data;
-      applyIssueUpdate(issue, people);
+      const { issue, people, task_types } = data;
+      applyIssueUpdate(issue, people, task_types);
       setSelected(null);
     } catch {
       setError(t('appdev.board.saveError'));
@@ -636,6 +661,8 @@ export default function AppdevBoard({ initialData = null }) {
             saving={saving}
             currentUser={currentUser}
             isAdmin={isAdmin}
+            taskTypes={taskTypes}
+            registerTaskType={registerTaskType}
             t={t}
           />
         ) : (
@@ -652,6 +679,8 @@ export default function AppdevBoard({ initialData = null }) {
           issue={selected}
           people={people}
           assignablePeople={assignablePeople}
+          taskTypes={taskTypes}
+          registerTaskType={registerTaskType}
           currentUser={currentUser}
           isAdmin={isAdmin}
           onClose={closeIssue}

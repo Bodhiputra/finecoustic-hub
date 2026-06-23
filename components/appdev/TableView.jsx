@@ -18,6 +18,8 @@ export default function TableView({
   saving,
   currentUser = '',
   isAdmin = false,
+  taskTypes = [],
+  registerTaskType,
   t,
 }) {
   const { locale } = useLocale();
@@ -73,6 +75,8 @@ export default function TableView({
                       <IssueTypeField
                         value={issue.type}
                         onChange={next => onPatch(issue.id, { type: next })}
+                        taskTypes={taskTypes}
+                        onRegisterType={registerTaskType}
                         disabled={saving}
                         inputClassName="appdev-table-select appdev-type-input"
                       />

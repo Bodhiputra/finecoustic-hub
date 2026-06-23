@@ -22,5 +22,5 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Assigner required' }, { status: 400 });
   }
   const { issue, people } = result;
-  return NextResponse.json({ issue, people, next_number: result.next_number }, { status: 201 });
+  return NextResponse.json({ issue, people, next_number: result.next_number, task_types: result.task_types }, { status: 201 });
 }

@@ -21,6 +21,8 @@ export default function IssuePanel({
   issue,
   people = [],
   assignablePeople = [],
+  taskTypes = [],
+  registerTaskType,
   currentUser = '',
   isAdmin = false,
   onClose,
@@ -202,6 +204,8 @@ export default function IssuePanel({
                 <IssueTypeField
                   value={draft.type}
                   onChange={next => set('type', next)}
+                  taskTypes={taskTypes}
+                  onRegisterType={registerTaskType}
                   disabled={saving}
                 />
               ) : (

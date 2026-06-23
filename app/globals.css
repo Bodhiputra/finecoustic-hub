@@ -1756,6 +1756,11 @@ input:focus-visible {
   cursor: text;
 }
 
+.appdev-type-create {
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .appdev-table-edit {
   border: 1px solid var(--line);
   background: var(--surface);
