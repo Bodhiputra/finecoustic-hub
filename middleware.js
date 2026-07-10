@@ -54,7 +54,8 @@ export async function middleware(request) {
     pathname === '/api/auth/login' ||
     pathname === '/api/auth/logout' ||
     pathname === '/api/auth/me' ||
-    pathname === '/api/public/preorder-survey'
+    pathname === '/api/public/preorder-survey' ||
+    pathname === '/api/public/preorder-reserved'
   ) {
     return NextResponse.next();
   }
