@@ -50,7 +50,12 @@ export async function middleware(request) {
   }
 
   // —— Main hub realm ——
-  if (pathname === '/api/auth/login' || pathname === '/api/auth/logout' || pathname === '/api/auth/me') {
+  if (
+    pathname === '/api/auth/login' ||
+    pathname === '/api/auth/logout' ||
+    pathname === '/api/auth/me' ||
+    pathname === '/api/public/preorder-survey'
+  ) {
     return NextResponse.next();
   }
 

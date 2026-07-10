@@ -7,10 +7,11 @@ import LocaleSwitch from '@/components/LocaleSwitch';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useLocale } from '@/components/LocaleProvider';
 
-const MODULE_IDS = ['operations', 'design', 'knowledge', 'projects'];
+const MODULE_IDS = ['operations', 'marketing', 'design', 'knowledge', 'projects'];
 
 const MODULE_META = {
   operations: { href: '/ops', status: 'active', icon: 'box' },
+  marketing: { href: '/marketing', status: 'active', icon: 'megaphone' },
   design: { href: null, status: 'soon', icon: 'layout' },
   knowledge: { href: null, status: 'soon', icon: 'book' },
   projects: { href: null, status: 'soon', icon: 'kanban' },

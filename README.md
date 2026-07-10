@@ -10,6 +10,7 @@ Internal workspace with isolated access realms. Code is public; brand data is no
 |---|---|---|
 | `/` (hub home) | `OPS_HUB_PASSWORD` | Internal team |
 | `/ops`, `/customers`, `/stock` | same hub session | Internal — operations |
+| `/marketing`, `/preorder-survey` | same hub session | Internal — marketing |
 | `/appdev` | `APPDEV_PASSWORD` | External app dev partners (isolated) |
 
 ### Isolation
@@ -73,6 +74,7 @@ npm run test:auth
    - `HUB_MASTER_PASSWORD`
    - `SESSION_SECRET` (required in production)
    - `DATABASE_URL`
+   - `PREORDER_SURVEY_SECRET` — shared with Shopify theme (questionnaire webhook)
    - **Media uploads (pick one):**
      - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (preferred — files go to `finehub/appdev` in your Cloudinary account)
      - `BLOB_READ_WRITE_TOKEN` (fallback — public Vercel Blob URLs)
@@ -87,6 +89,18 @@ Persisted JSON uses legacy keys (see `lib/appdev.js` header):
 - `issue.worker` → legacy first assignee (kept in sync on save)
 
 **Permissions:** Only the logged-in assigner (or admin) can edit title, description, type, priority, attachments, dates, Done, and delete. Others can update Todo/In Progress/In Review, add themselves as assignee, and use Discussion.
+
+## Preorder survey (Shopify → Neon)
+
+Storefront questionnaire POSTs to a **public** hub endpoint (no hub login required):
+
+- `POST /api/public/preorder-survey` — validate `PREORDER_SURVEY_SECRET` in JSON body (`secret` field)
+- `GET /api/preorder-survey` — hub-authenticated list (for analysis / export)
+- Hub UI: **Marketing** → `/marketing` overview, **Preorder survey** → `/preorder-survey` (table, filters, answer breakdown, CSV export)
+
+Table `preorder_survey_responses` is created automatically on first insert. Local dev without `DATABASE_URL` writes to `data/preorder-survey-responses.json`.
+
+Shopify theme: **Preorder Questionnaire** section → webhook URL + same secret.
 
 ## Stack
 

@@ -16,5 +16,6 @@ data/appdev-board.json
 !data/_template/appdev-board.json
 data/appdev-users.json
 data/appdev-presence.json
+data/preorder-survey-responses.json
 data/appdev-uploads/
 .vercel

@@ -89,6 +89,18 @@ const ICONS = {
       <circle cx="12" cy="17" r=".5" fill="currentColor" stroke="none" />
     </>
   ),
+  megaphone: (
+    <>
+      <path d="m3 11 18-5v12L3 13v-2Z" />
+      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M7 10l5 5 5-5M12 15V3" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 18, className = '', label, ...props }) {
