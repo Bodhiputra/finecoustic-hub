@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { insertPreorderSurveyResponse } from '@/lib/preorder-survey';
+import {
+  DuplicatePreorderSurveyError,
+  insertPreorderSurveyResponse,
+} from '@/lib/preorder-survey';
 
 function corsHeaders() {
   return {
@@ -52,6 +55,19 @@ export async function POST(request) {
       headers: corsHeaders(),
     });
   } catch (err) {
+    if (err instanceof DuplicatePreorderSurveyError) {
+      return NextResponse.json({
+        ok: false,
+        error: 'duplicate',
+        intent: err.intent,
+        message: `This email has already submitted the ${err.intent} questionnaire.`,
+        existing_id: err.existingId ?? null,
+      }, {
+        status: 409,
+        headers: corsHeaders(),
+      });
+    }
+
     console.error('[preorder-survey] insert failed', err);
     return NextResponse.json({ ok: false, error: 'Server error' }, {
       status: 500,

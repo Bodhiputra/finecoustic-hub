@@ -1,63 +1,36 @@
 import { NextResponse } from 'next/server';
-import { customerHasTag } from '@/lib/shopify-customer';
-
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
-}
-
-function unauthorized() {
-  return NextResponse.json({ ok: false, error: 'Unauthorized' }, {
-    status: 401,
-    headers: corsHeaders(),
-  });
-}
-
-function badRequest(message) {
-  return NextResponse.json({ ok: false, error: message }, {
-    status: 400,
-    headers: corsHeaders(),
-  });
-}
+import { lookupPreorderReserved, readReservedParams } from '@/lib/preorder-reserved';
+import { corsHeaders, jsonWithCors } from '@/lib/public-api-cors';
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders() });
 }
 
-export async function POST(request) {
+async function handleRequest(request) {
   const expectedSecret = (process.env.PREORDER_SURVEY_SECRET || '').trim();
+  let body = null;
 
-  let payload;
-  try {
-    payload = await request.json();
-  } catch {
-    return badRequest('Invalid JSON body');
+  if (request.method === 'POST') {
+    try {
+      body = await request.json();
+    } catch {
+      return jsonWithCors({ ok: false, error: 'Invalid JSON body' }, { status: 400 });
+    }
   }
 
-  if (expectedSecret && payload.secret !== expectedSecret) {
-    return unauthorized();
-  }
+  const params = readReservedParams(request.nextUrl.searchParams, body);
+  const result = await lookupPreorderReserved({
+    ...params,
+    expectedSecret,
+  });
 
-  const email = String(payload.email || '').trim();
-  if (!email) {
-    return badRequest('email is required');
-  }
+  return jsonWithCors(result.body, { status: result.status });
+}
 
-  const tag = String(payload.tag || 'nomadpreorder').trim();
+export async function GET(request) {
+  return handleRequest(request);
+}
 
-  try {
-    const reserved = await customerHasTag(email, tag);
-    return NextResponse.json({ ok: true, reserved }, {
-      headers: corsHeaders(),
-    });
-  } catch (err) {
-    console.error('[preorder-reserved] lookup failed', err);
-    return NextResponse.json({ ok: false, error: 'Server error' }, {
-      status: 500,
-      headers: corsHeaders(),
-    });
-  }
+export async function POST(request) {
+  return handleRequest(request);
 }

@@ -10,7 +10,8 @@
     "lint": "next lint",
     "check": "npm run lint && npm run build",
     "test:auth": "node scripts/test-auth.mjs",
-    "db:seed": "node scripts/seed-db.mjs"
+    "db:seed": "node scripts/seed-db.mjs",
+    "db:flush-preorder-survey": "node scripts/flush-preorder-survey.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",

@@ -55,7 +55,8 @@ export async function middleware(request) {
     pathname === '/api/auth/logout' ||
     pathname === '/api/auth/me' ||
     pathname === '/api/public/preorder-survey' ||
-    pathname === '/api/public/preorder-reserved'
+    pathname === '/api/public/preorder-reserved' ||
+    pathname.startsWith('/api/shopify-proxy/')
   ) {
     return NextResponse.next();
   }

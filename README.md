@@ -75,6 +75,8 @@ npm run test:auth
    - `SESSION_SECRET` (required in production)
    - `DATABASE_URL`
    - `PREORDER_SURVEY_SECRET` — shared with Shopify theme (questionnaire webhook)
+   - `SHOPIFY_STORE` — e.g. `j5gawi-vu.myshopify.com`
+   - `SHOPIFY_ADMIN_TOKEN` — Admin API token with `read_customers`
    - **Media uploads (pick one):**
      - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (preferred — files go to `finehub/appdev` in your Cloudinary account)
      - `BLOB_READ_WRITE_TOKEN` (fallback — public Vercel Blob URLs)
@@ -94,13 +96,53 @@ Persisted JSON uses legacy keys (see `lib/appdev.js` header):
 
 Storefront questionnaire POSTs to a **public** hub endpoint (no hub login required):
 
-- `POST /api/public/preorder-survey` — validate `PREORDER_SURVEY_SECRET` in JSON body (`secret` field)
+- `POST /api/public/preorder-survey` — validate `PREORDER_SURVEY_SECRET` in JSON body (`secret` field). **One response per email per intent** (`reserve` and `decline` tracked separately); duplicates return `409` with `{ error: "duplicate" }`.
 - `GET /api/preorder-survey` — hub-authenticated list (for analysis / export)
 - Hub UI: **Marketing** → `/marketing` overview, **Preorder survey** → `/preorder-survey` (table, filters, answer breakdown, CSV export)
 
 Table `preorder_survey_responses` is created automatically on first insert. Local dev without `DATABASE_URL` writes to `data/preorder-survey-responses.json`.
 
 Shopify theme: **Preorder Questionnaire** section → webhook URL + same secret.
+
+## Preorder reserved lookup (guest tag check)
+
+When a guest enters their email on the homepage hero, the offers page checks whether that email already has the `nomadpreorder` tag (paid $2 reservation).
+
+**Do not call `finehub.vercel.app` directly from the browser** — Vercel’s Security Checkpoint blocks cross-origin fetch with 403. Use a **Shopify App Proxy** so the storefront calls your shop domain (same-origin), and Shopify forwards server-side to finehub.
+
+### 1. Vercel env (finehub project)
+
+- `PREORDER_SURVEY_SECRET` — same value as theme `reserved_check_secret`
+- `SHOPIFY_STORE` — e.g. `j5gawi-vu.myshopify.com`
+- `SHOPIFY_ADMIN_TOKEN` — Admin API token with `read_customers`
+
+If finehub still returns 403 to Shopify’s proxy servers, disable **Attack Challenge Mode** under Vercel → Project → Firewall, or append your [Protection Bypass for Automation](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation) secret to the proxy URL in Shopify (admin-only, not in theme code):
+
+`https://finehub.vercel.app/api/shopify-proxy?x-vercel-protection-bypass=YOUR_SECRET`
+
+### 2. Shopify App Proxy (required once)
+
+Shopify Admin → **Settings → Apps and sales channels → Develop apps** → your custom app → **Configuration → App proxy**:
+
+| Field | Value |
+|---|---|
+| Subpath prefix | `apps` |
+| Subpath | `fc-preorder` |
+| Proxy URL | `https://finehub.vercel.app/api/shopify-proxy` |
+
+Save. The theme default check URL is `/apps/fc-preorder/reserved` (GET with `email`, `tag`, `secret` query params).
+
+### 3. Verify
+
+```bash
+# Direct hub API (may 403 from datacenter IPs — that is expected)
+curl "https://finehub.vercel.app/api/shopify-proxy/reserved?email=test@example.com&tag=nomadpreorder&secret=YOUR_SECRET"
+
+# After app proxy is configured, from the storefront (replace with your shop domain):
+curl "https://YOUR-SHOP-DOMAIN/apps/fc-preorder/reserved?email=test@example.com&tag=nomadpreorder&secret=YOUR_SECRET"
+```
+
+Expected: `{"ok":true,"reserved":true}` or `{"ok":true,"reserved":false}`.
 
 ## Stack
 
