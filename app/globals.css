@@ -3533,7 +3533,23 @@ textarea.appdev-input-readonly:disabled {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
-.survey-toolbar {
+.survey-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.survey-flush-btn {
+  color: var(--warn);
+}
+
+.survey-flush-error {
+  color: var(--warn);
+  font-size: .9rem;
+  margin: 0 0 var(--space-4);
+}
+
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;

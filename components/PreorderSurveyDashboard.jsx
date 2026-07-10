@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import ConfirmModal from '@/components/ConfirmModal';
 import Icon from '@/components/Icon';
 import {
   SURVEY_QUESTIONS,
@@ -58,13 +60,18 @@ function AnswerBars({ rows, questions }) {
 }
 
 export default function PreorderSurveyDashboard({ initialRows = [] }) {
+  const router = useRouter();
+  const [rows, setRows] = useState(initialRows);
   const [intent, setIntent] = useState('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [flushOpen, setFlushOpen] = useState(false);
+  const [flushing, setFlushing] = useState(false);
+  const [flushError, setFlushError] = useState('');
 
   const filtered = useMemo(
-    () => filterSurveyRows(initialRows, { intent, from, to }),
-    [initialRows, intent, from, to]
+    () => filterSurveyRows(rows, { intent, from, to }),
+    [rows, intent, from, to]
   );
 
   const stats = useMemo(() => calcSurveyStats(filtered), [filtered]);
@@ -81,6 +88,25 @@ export default function PreorderSurveyDashboard({ initialRows = [] }) {
   const handleExport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
     downloadCsv(`preorder-survey-${stamp}.csv`, rowsToCsv(filtered));
+  };
+
+  const handleFlush = async () => {
+    setFlushing(true);
+    setFlushError('');
+    try {
+      const res = await fetch('/api/preorder-survey/flush', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Could not clear responses');
+      }
+      setRows([]);
+      setFlushOpen(false);
+      router.refresh();
+    } catch (err) {
+      setFlushError(err.message || 'Could not clear responses');
+    } finally {
+      setFlushing(false);
+    }
   };
 
   return (
@@ -117,11 +143,36 @@ export default function PreorderSurveyDashboard({ initialRows = [] }) {
             </button>
           )}
         </div>
-        <button type="button" className="btn-ghost" onClick={handleExport} disabled={!filtered.length}>
-          <Icon name="download" size={15} />
-          Export CSV
-        </button>
+        <div className="survey-toolbar-actions">
+          <button type="button" className="btn-ghost" onClick={handleExport} disabled={!filtered.length}>
+            <Icon name="download" size={15} />
+            Export CSV
+          </button>
+          <button
+            type="button"
+            className="btn-ghost survey-flush-btn"
+            onClick={() => setFlushOpen(true)}
+            disabled={!rows.length || flushing}
+          >
+            Clear all
+          </button>
+        </div>
       </div>
+
+      {flushError && <p className="survey-flush-error" role="alert">{flushError}</p>}
+
+      <ConfirmModal
+        open={flushOpen}
+        title="Clear all questionnaire responses?"
+        message={`This permanently deletes all ${rows.length} saved response(s) from Neon. This cannot be undone.`}
+        confirmLabel={flushing ? 'Clearing…' : 'Clear all'}
+        cancelLabel="Cancel"
+        busy={flushing}
+        onConfirm={handleFlush}
+        onCancel={() => {
+          if (!flushing) setFlushOpen(false);
+        }}
+      />
 
       <div className="kpi-grid survey-kpi-grid">
         <div className="kpi kpi-primary">
@@ -174,7 +225,7 @@ export default function PreorderSurveyDashboard({ initialRows = [] }) {
         <header className="panel-head">
           <h2>Responses</h2>
           <p className="panel-desc">
-            Showing {filtered.length} of {initialRows.length} loaded responses.
+            Showing {filtered.length} of {rows.length} loaded responses.
           </p>
         </header>
         <div className="table-scroll">
