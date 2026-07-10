@@ -3528,7 +3528,7 @@ textarea.appdev-input-readonly:disabled {
   font-size: .9rem;
 }
 
-/* —— Marketing / preorder survey —— */
+/* —— Marketing / pre-order survey —— */
 .marketing-section-grid {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
@@ -3550,6 +3550,7 @@ textarea.appdev-input-readonly:disabled {
   margin: 0 0 var(--space-4);
 }
 
+.survey-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
