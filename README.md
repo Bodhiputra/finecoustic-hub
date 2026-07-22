@@ -39,6 +39,14 @@ cp .env.example .env.local
 npm run dev
 ```
 
+If the dev site shows **Internal Server Error** or unstyled pages after edits, the `.next` cache is usually stale. Run:
+
+```bash
+npm run dev:clean
+```
+
+The dev script auto-clears `.next` when the previous server exited uncleanly (e.g. killed mid-compile). It uses Turbopack by default; pass `--no-turbo` to `scripts/dev.mjs` if needed.
+
 Set in `.env.local`:
 
 - `OPS_HUB_PASSWORD` — hub login
@@ -92,19 +100,19 @@ Persisted JSON uses legacy keys (see `lib/appdev.js` header):
 
 **Permissions:** Only the logged-in assigner (or admin) can edit title, description, type, priority, attachments, dates, Done, and delete. Others can update Todo/In Progress/In Review, add themselves as assignee, and use Discussion.
 
-## Preorder survey (Shopify → Neon)
+## Pre-order survey (Shopify → Neon)
 
 Storefront questionnaire POSTs to a **public** hub endpoint (no hub login required):
 
 - `POST /api/public/preorder-survey` — validate `PREORDER_SURVEY_SECRET` in JSON body (`secret` field). **One response per email per intent** (`reserve` and `decline` tracked separately); duplicates return `409` with `{ error: "duplicate" }`.
 - `GET /api/preorder-survey` — hub-authenticated list (for analysis / export)
-- Hub UI: **Marketing** → `/marketing` overview, **Preorder survey** → `/preorder-survey` (table, filters, answer breakdown, CSV export)
+- Hub UI: **Marketing** → `/marketing` overview, **Pre-order survey** → `/preorder-survey` (table, filters, answer breakdown, CSV export)
 
 Table `preorder_survey_responses` is created automatically on first insert. Local dev without `DATABASE_URL` writes to `data/preorder-survey-responses.json`.
 
-Shopify theme: **Preorder Questionnaire** section → webhook URL + same secret.
+Shopify theme: **Pre-order Questionnaire** section → webhook URL + same secret.
 
-## Preorder reserved lookup (guest tag check)
+## Pre-order reserved lookup (guest tag check)
 
 When a guest enters their email on the homepage hero, the offers page checks whether that email already has the `nomadpreorder` tag (paid $2 reservation).
 

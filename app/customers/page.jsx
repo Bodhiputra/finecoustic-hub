@@ -1,10 +1,5 @@
-import OpsHub from '@/components/OpsHub';
-import { isHubAuthEnabled } from '@/lib/auth';
-import { getOpsData } from '@/lib/data';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-
-export default async function CustomersPage() {
-  const data = await getOpsData();
-  return <OpsHub initialData={data} authEnabled={isHubAuthEnabled()} view="customers" />;
+export default function CustomersRedirect() {
+  redirect('/ops?tool=customers');
 }

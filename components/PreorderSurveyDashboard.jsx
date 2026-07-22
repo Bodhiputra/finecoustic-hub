@@ -11,8 +11,8 @@ import {
   downloadCsv,
   filterSurveyRows,
   formatSurveyTime,
+  rowQuestionnaire,
   rowsToCsv,
-  truncate,
 } from '@/lib/preorder-survey-ui';
 
 function IntentBadge({ intent }) {
@@ -24,7 +24,7 @@ function AnswerBars({ rows, questions }) {
   return (
     <div className="survey-breakdown-grid">
       {questions.map(q => {
-        const { answered, entries, max } = answerBreakdown(rows, q.id);
+        const { answered, entries, max } = answerBreakdown(rows, q);
         return (
           <article key={q.id} className="survey-breakdown-card">
             <header>
@@ -32,22 +32,27 @@ function AnswerBars({ rows, questions }) {
                 <span className="survey-q-id">{q.short}</span>
                 {q.title}
               </h3>
-              <p>{answered} answered</p>
+              <p>
+                {answered} answered
+                {q.hint ? ` · ${q.hint}` : ''}
+              </p>
             </header>
             {entries.length === 0 ? (
               <p className="survey-empty-inline">No answers yet</p>
             ) : (
               <ul className="survey-bars">
-                {entries.map(({ letter, count }) => (
-                  <li key={letter}>
-                    <span className="survey-bar-label">{letter}</span>
+                {entries.map(({ label, count }) => (
+                  <li key={label}>
+                    <div className="survey-bar-head">
+                      <span className="survey-bar-label">{label}</span>
+                      <span className="survey-bar-count">{count}</span>
+                    </div>
                     <div className="survey-bar-track" aria-hidden="true">
                       <div
                         className="survey-bar-fill"
                         style={{ width: `${max ? (count / max) * 100 : 0}%` }}
                       />
                     </div>
-                    <span className="survey-bar-count">{count}</span>
                   </li>
                 ))}
               </ul>
@@ -56,6 +61,34 @@ function AnswerBars({ rows, questions }) {
         );
       })}
     </div>
+  );
+}
+
+function ResponseAnswers({ row }) {
+  const items = rowQuestionnaire(row);
+
+  return (
+    <dl className="survey-response-answers">
+      {items.map(item => (
+        <div key={item.id} className="survey-response-answer">
+          <dt>
+            <span className="survey-q-id">{item.short}</span>
+            {item.title}
+          </dt>
+          <dd>
+            {item.answers.length > 1 ? (
+              <ul>
+                {item.answers.map(answer => (
+                  <li key={answer}>{answer}</li>
+                ))}
+              </ul>
+            ) : (
+              item.answer
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -208,7 +241,7 @@ export default function PreorderSurveyDashboard({ initialRows = [] }) {
       <article className="panel panel-full">
         <header className="panel-head">
           <h2>Reserve answers</h2>
-          <p className="panel-desc">Top letter codes from reserve-path questions (R1–R3).</p>
+          <p className="panel-desc">Answer distribution for reserve-path questions (R1–R3).</p>
         </header>
         <AnswerBars rows={reserveRows} questions={SURVEY_QUESTIONS.reserve} />
       </article>
@@ -216,7 +249,7 @@ export default function PreorderSurveyDashboard({ initialRows = [] }) {
       <article className="panel panel-full">
         <header className="panel-head">
           <h2>Decline answers</h2>
-          <p className="panel-desc">Top letter codes from decline-path questions (D1–D5).</p>
+          <p className="panel-desc">Answer distribution for decline-path questions (D1–D5).</p>
         </header>
         <AnswerBars rows={declineRows} questions={SURVEY_QUESTIONS.decline} />
       </article>
@@ -228,75 +261,31 @@ export default function PreorderSurveyDashboard({ initialRows = [] }) {
             Showing {filtered.length} of {rows.length} loaded responses.
           </p>
         </header>
-        <div className="table-scroll">
-          <table className="data-table survey-table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Intent</th>
-                <th>Email</th>
-                <th>Mkt</th>
-                <th>R1</th>
-                <th>R2</th>
-                <th>R3</th>
-                <th>D1</th>
-                <th>D2</th>
-                <th>D3</th>
-                <th>D4</th>
-                <th>D5</th>
-                <th>Summary</th>
-                <th>Checkout</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={14} className="survey-empty-cell">
-                    No responses match these filters.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map(row => (
-                  <tr key={row.id}>
-                    <td className="num">{formatSurveyTime(row.created_at)}</td>
-                    <td>
-                      <IntentBadge intent={row.intent} />
-                    </td>
-                    <td>{row.email || '—'}</td>
-                    <td>{row.accepts_marketing ? 'Yes' : 'No'}</td>
-                    <td className="notes-cell" title={row.r1 || ''}>
-                      {truncate(row.r1, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.r2 || ''}>
-                      {truncate(row.r2, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.r3 || ''}>
-                      {truncate(row.r3, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.d1 || ''}>
-                      {truncate(row.d1, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.d2 || ''}>
-                      {truncate(row.d2, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.d3 || ''}>
-                      {truncate(row.d3, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.d4 || ''}>
-                      {truncate(row.d4, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.d5 || ''}>
-                      {truncate(row.d5, 40)}
-                    </td>
-                    <td className="notes-cell" title={row.summary || ''}>
-                      {truncate(row.summary, 60)}
-                    </td>
-                    <td>{row.checkout_started ? 'Yes' : 'No'}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="survey-response-list">
+          {filtered.length === 0 ? (
+            <p className="survey-empty-cell">No responses match these filters.</p>
+          ) : (
+            filtered.map(row => (
+              <article key={row.id} className="survey-response-card">
+                <header className="survey-response-card__head">
+                  <div>
+                    <strong className="survey-response-card__when">
+                      {formatSurveyTime(row.created_at)}
+                    </strong>
+                    <span className="survey-response-card__email">{row.email || '—'}</span>
+                  </div>
+                  <div className="survey-response-card__meta">
+                    <IntentBadge intent={row.intent} />
+                    <span>Mkt: {row.accepts_marketing ? 'Yes' : 'No'}</span>
+                    {row.intent === 'reserve' && (
+                      <span>Checkout: {row.checkout_started ? 'Yes' : 'No'}</span>
+                    )}
+                  </div>
+                </header>
+                <ResponseAnswers row={row} />
+              </article>
+            ))
+          )}
         </div>
       </article>
     </section>

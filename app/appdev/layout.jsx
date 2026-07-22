@@ -1,3 +1,5 @@
+import '../styles/appdev.css';
+
 export const metadata = {
   title: 'Finecoustic App Development',
   description: 'Project tasks and release tracking',

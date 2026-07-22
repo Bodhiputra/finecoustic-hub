@@ -4,7 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import Icon from '@/components/Icon';
-import ThemeToggle from '@/components/ThemeToggle';
+import { HubLayout } from '@/components/HubSidebarContext';
+import { useLocale } from '@/components/LocaleProvider';
 import {
   ACTIVE_SKUS,
   SHIPMENT_LABELS,
@@ -29,24 +30,21 @@ const VIEW_META = {
   stock: ['Stock', 'China warehouse and online store'],
 };
 
+export const OPS_VIEW_META = VIEW_META;
+
 const NAV_ITEMS = [
-  { id: 'dashboard', href: '/ops', label: 'Dashboard' },
-  { id: 'customers', href: '/customers', label: 'Customers' },
-  { id: 'stock', href: '/stock', label: 'Stock' },
+  { id: 'dashboard', href: '/ops?tool=dashboard', label: 'Dashboard' },
+  { id: 'customers', href: '/ops?tool=customers', label: 'Customers' },
+  { id: 'stock', href: '/ops?tool=stock', label: 'Stock' },
 ];
 
-export default function OpsHub({ initialData, authEnabled, view = 'dashboard' }) {
+export function OpsHubContent({ initialData, view = 'dashboard' }) {
   const ops = initialData;
 
   const metrics = useMemo(() => calcMetrics(ops), [ops]);
   const reconciliation = useMemo(() => calcStockReconciliation(ops), [ops]);
   const ship = useMemo(() => shipmentCounts(ops), [ops]);
   const awaiting = ship.not_shipped + ship.preparing + ship.po_listed;
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/';
-  };
 
   const partners = ops.b2b_partners
     .map(p => {
@@ -59,55 +57,12 @@ export default function OpsHub({ initialData, authEnabled, view = 'dashboard' })
     })
     .sort((a, b) => b.total - a.total);
 
-  const [title, subtitle] = VIEW_META[view];
   const customerDataUpdated = formatDataDate(customerDataUpdatedAt(ops));
   const inventoryDataUpdated = formatDataDate(inventoryDataUpdatedAt(ops));
   const shopifyDataUpdated = formatDataDate(shopifyDataUpdatedAt(ops));
 
   return (
-    <div className="layout">
-      <aside className="sidebar" aria-label="Main navigation">
-        <div className="brand">
-          <Link href="/" className="brand-back" aria-label="Hub home">
-            <Icon name="arrowLeft" size={16} />
-          </Link>
-          <Image className="brand-logo" src="/FLogo.png" alt="Finecoustic" width={36} height={36} />
-          <div>
-            <strong>{ops.meta.brand}</strong>
-            <small>Operations</small>
-          </div>
-        </div>
-        <nav className="sidebar-nav" aria-label="Sections">
-          {NAV_ITEMS.map(({ id, href, label }) => (
-            <Link
-              key={id}
-              href={href}
-              className={`nav${view === id ? ' active' : ''}`}
-              aria-current={view === id ? 'page' : undefined}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-
-      <main className="main">
-        <header className="topbar">
-          <div className="topbar-text">
-            <h1>{title}</h1>
-            <p>{subtitle}</p>
-          </div>
-          <div className="topbar-actions">
-            <ThemeToggle />
-            {authEnabled && (
-              <button type="button" className="btn-ghost" onClick={handleLogout}>
-                <Icon name="logOut" size={15} />
-                Sign out
-              </button>
-            )}
-          </div>
-        </header>
-
+    <>
         {view === 'dashboard' && (
           <section className="view active">
             <div className="kpi-grid">
@@ -389,7 +344,60 @@ export default function OpsHub({ initialData, authEnabled, view = 'dashboard' })
             </div>
           </section>
         )}
+    </>
+  );
+}
+
+export default function OpsHub({ initialData, authEnabled, view = 'dashboard', embedded = false }) {
+  const ops = initialData;
+  const { t } = useLocale();
+  const [title, subtitle] = VIEW_META[view] || VIEW_META.dashboard;
+  const content = <OpsHubContent initialData={initialData} view={view} />;
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/';
+  };
+
+  if (embedded) return content;
+
+  return (
+    <HubLayout
+      sidebarLabel="Operations"
+      topNavTitle={title}
+      topNavSubtitle={subtitle}
+      authEnabled={authEnabled}
+      onLogout={handleLogout}
+      sidebar={
+        <>
+          <div className="brand">
+            <Link href="/" className="brand-back" aria-label="Hub home">
+              <Icon name="arrowLeft" size={16} />
+            </Link>
+            <Image className="brand-logo" src="/FLogo.png" alt="Finecoustic" width={36} height={36} />
+            <div>
+              <strong>{ops.meta.brand}</strong>
+              <small>Operations</small>
+            </div>
+          </div>
+          <nav className="sidebar-nav" aria-label="Sections">
+            {NAV_ITEMS.map(({ id, href, label }) => (
+              <Link
+                key={id}
+                href={href}
+                className={`nav${view === id ? ' active' : ''}`}
+                aria-current={view === id ? 'page' : undefined}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </>
+      }
+    >
+      <main className="main">
+        {content}
       </main>
-    </div>
+    </HubLayout>
   );
 }

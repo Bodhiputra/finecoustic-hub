@@ -1,0 +1,1694 @@
+/* —— Warzone —— */
+.warzone-home .warzone-main,
+.warzone-dept-main,
+.hub-main.warzone-main {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: var(--space-7) clamp(var(--space-5), 4vw, var(--space-8));
+}
+.warzone-dept-layout .main {
+  padding: var(--space-6) clamp(var(--space-5), 4vw, var(--space-8)) var(--space-7);
+}
+.warzone-dept-sidebar {
+  gap: var(--space-3);
+}
+.warzone-sidebar-schedule {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.warzone-team-schedule {
+  margin-bottom: var(--space-7);
+}
+
+/* —— Team schedule: type filter chips —— */
+.warzone-schedule-filters {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.warzone-schedule-filter-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.warzone-team-schedule-actions .warzone-schedule-filters {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .warzone-team-schedule-actions .warzone-schedule-filters,
+  .warzone-schedule-filter-group {
+    align-items: flex-start;
+    width: 100%;
+  }
+}
+
+.warzone-holiday-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.warzone-cal-workspace.is-compact .warzone-holiday-controls {
+  margin-bottom: var(--space-3);
+  padding: 0;
+  background: transparent;
+  border: none;
+  gap: var(--space-2);
+}
+.warzone-holiday-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.warzone-holiday-toggle input {
+  accent-color: var(--fc-yellow);
+}
+.warzone-holiday-countries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.warzone-holiday-country {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.warzone-holiday-country.is-active {
+  border-color: color-mix(in srgb, var(--fc-yellow) 55%, var(--line));
+  background: color-mix(in srgb, var(--fc-yellow-soft) 60%, var(--surface));
+  color: var(--text);
+}
+.warzone-cal-holiday {
+  display: block;
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.3;
+  padding: 3px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: color-mix(in srgb, #e85d5d 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, #e85d5d 28%, transparent);
+  color: color-mix(in srgb, #ffb4b4 75%, var(--text));
+}
+.warzone-cal-holiday.is-cn {
+  background: color-mix(in srgb, #e85d5d 18%, var(--surface));
+  border-color: color-mix(in srgb, #e85d5d 28%, transparent);
+}
+.warzone-cal-holiday.is-us {
+  background: color-mix(in srgb, #5b8def 16%, var(--surface));
+  border-color: color-mix(in srgb, #5b8def 28%, transparent);
+  color: color-mix(in srgb, #a8c4ff 80%, var(--text));
+}
+.warzone-cal-holiday-list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.warzone-cal-holiday-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.warzone-cal-holiday-row .warzone-cal-holiday {
+  width: auto;
+  flex: 1;
+  font-size: 12px;
+}
+.warzone-cal-holiday-meta {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.warzone-task-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+.warzone-task-filters-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.warzone-task-filters-clear {
+  display: flex;
+}
+.warzone-task-filter-person {
+  gap: 6px;
+  padding-left: 4px;
+  padding-right: 10px;
+}
+.warzone-task-filter-person span {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.warzone-task-filters-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.warzone-task-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.warzone-task-filter {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.warzone-task-filter:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+.warzone-task-filter.is-active {
+  border-color: color-mix(in srgb, var(--fc-yellow) 55%, var(--line));
+  background: color-mix(in srgb, var(--fc-yellow-soft) 55%, var(--surface));
+  color: var(--text);
+}
+.warzone-task-filter.is-clear {
+  border-style: dashed;
+  color: var(--muted);
+}
+.warzone-war-room,
+.warzone-cooking-room { margin-bottom: var(--space-7); }
+
+.warzone-home-overview {
+  margin-bottom: var(--space-7);
+}
+
+.warzone-home-overview-head,
+.warzone-team-schedule-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.warzone-home-overview-head h2,
+.warzone-team-schedule-head h2 {
+  margin: 0 0 var(--space-1);
+}
+
+.warzone-home-overview-desc,
+.warzone-team-schedule-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 42ch;
+}
+
+.warzone-all-tasks-link {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.warzone-team-schedule-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .warzone-home-overview-head,
+  .warzone-team-schedule-head {
+    flex-direction: column;
+  }
+
+  .warzone-team-schedule-actions {
+    align-items: flex-start;
+    width: 100%;
+  }
+}
+
+.warzone-cooking-room-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+.warzone-cooking-room-head h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+.warzone-war-room h1,
+.warzone-cooking-room h1 { font-size: 1.5rem; margin-bottom: var(--space-4); }
+.warzone-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.warzone-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s var(--ease-out);
+}
+.warzone-kpi:hover { border-color: var(--line-strong); }
+.warzone-kpi.is-warn .warzone-kpi-val { color: var(--warn); }
+.warzone-kpi-val { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.warzone-quick-add {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.warzone-quick-add input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.warzone-quick-add select {
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+.warzone-dept-section h2 { font-size: 1.1rem; margin-bottom: var(--space-4); color: var(--muted); }
+.warzone-legacy-links { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.warzone-legacy-chip {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  cursor: pointer;
+}
+.warzone-me-link { display: flex; align-items: center; }
+.warzone-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.warzone-view-tabs { display: flex; gap: 2px; background: var(--surface-raised); border-radius: var(--radius-sm); padding: 2px; }
+.warzone-tab {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+.warzone-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.warzone-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: 0;
+}
+/* Full-size department calendar — scales with viewport height + width */
+.warzone-calendar:not(.is-compact) {
+  gap: var(--space-6);
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-header {
+  padding: var(--space-2) var(--space-1) var(--space-3);
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-title {
+  font-size: clamp(1.25rem, 2vw, 1.625rem);
+  min-width: 12rem;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-nav-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  border-radius: var(--radius);
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-today-btn {
+  padding: 10px 18px;
+  font-size: 14px;
+  border-radius: var(--radius);
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-month {
+  gap: 3px;
+  border-radius: var(--radius-lg, var(--radius));
+  min-height: min(74vh, 920px);
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-dow {
+  padding: 14px var(--space-3);
+  font-size: 12px;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-cell {
+  min-height: clamp(160px, 13.5vh, 228px);
+  padding: 12px 14px 14px;
+  gap: 6px;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-day-num {
+  font-size: 15px;
+  min-width: 32px;
+  padding: 6px;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-event {
+  font-size: 13px;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  gap: 7px;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-event-dot {
+  width: 7px;
+  height: 7px;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-more {
+  font-size: 12px;
+  padding: 4px 6px;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-day-panel {
+  padding: var(--space-5);
+  margin-top: var(--space-2);
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-day-panel-head h3 {
+  font-size: 1.125rem;
+}
+.warzone-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-1);
+}
+.warzone-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.warzone-cal-nav-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.warzone-cal-nav-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--line-strong);
+}
+.warzone-cal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  min-width: 10rem;
+  text-align: center;
+  margin: 0;
+}
+.warzone-cal-today-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 140ms ease;
+}
+.warzone-cal-today-btn:hover {
+  background: var(--accent-soft);
+}
+.warzone-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.warzone-cal-month {
+  --cal-span-h: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--line);
+}
+.warzone-cal-dow-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+.warzone-cal-week {
+  position: relative;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+}
+.warzone-cal-week-spans {
+  position: absolute;
+  z-index: 2;
+  top: var(--cal-span-top, 38px);
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  padding: 0 4px;
+  pointer-events: none;
+  background: transparent;
+}
+.warzone-cal-week-spans .warzone-cal-span {
+  pointer-events: auto;
+}
+.warzone-cal-week.has-spans .warzone-cal-events {
+  margin-top: calc(var(--cal-span-h, 24px) * var(--cal-week-span-rows, 1) + 6px);
+}
+.warzone-cal-week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+.warzone-cal-span {
+  display: flex;
+  align-items: center;
+  min-height: var(--cal-span-h);
+  margin: 0 2px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, #3d9a6a 38%, transparent);
+  border-top: 2px solid #3d9a6a;
+  border-radius: 6px;
+  cursor: pointer;
+  background: color-mix(in srgb, #3d9a6a 20%, var(--surface));
+  color: var(--text);
+  text-align: left;
+  overflow: hidden;
+}
+.warzone-cal-span.is-range-start {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  margin-left: 4px;
+}
+.warzone-cal-span.is-range-end {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  margin-right: 4px;
+}
+.warzone-cal-span.is-continued {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: 0;
+  padding-left: 4px;
+}
+.warzone-cal-span.is-continuing {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-right: 0;
+}
+.warzone-cal-span:hover {
+  background: color-mix(in srgb, #3d9a6a 34%, var(--surface));
+}
+.warzone-cal-span-title {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.warzone-calendar:not(.is-compact) .warzone-cal-span-title {
+  font-size: 12px;
+}
+.warzone-calendar:not(.is-compact) {
+  --cal-span-h: 26px;
+  --cal-span-top: 42px;
+}
+.warzone-calendar.is-compact {
+  --cal-span-h: 22px;
+  --cal-span-top: 32px;
+}
+.warzone-calendar.is-compact .warzone-cal-week.has-spans .warzone-cal-events {
+  margin-top: calc(var(--cal-span-h, 22px) * var(--cal-week-span-rows, 1) + 4px);
+}
+.warzone-cal-dow {
+  background: var(--surface-raised);
+  padding: 10px var(--space-2);
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.warzone-cal-cell {
+  background: var(--surface);
+  min-height: clamp(148px, 12vh, 200px);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  transition: background 120ms ease;
+  outline: none;
+}
+.warzone-cal-cell:hover {
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+}
+.warzone-cal-cell:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--fc-yellow);
+}
+.warzone-cal-cell.is-outside {
+  background: var(--bg);
+}
+.warzone-cal-cell.is-outside .warzone-cal-day-num {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.warzone-cal-cell.is-weekend:not(.is-outside) {
+  background: color-mix(in srgb, var(--surface-raised) 35%, var(--surface));
+}
+.warzone-cal-cell.is-today {
+  background: color-mix(in srgb, var(--fc-yellow-soft) 45%, var(--surface));
+}
+.warzone-cal-cell.is-focused {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--fc-yellow) 70%, var(--line));
+}
+.warzone-cal-cell.is-drop-target {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, #3d9a6a 65%, var(--line));
+  background: color-mix(in srgb, #3d9a6a 12%, var(--surface));
+}
+.warzone-cal-workspace.is-dragging .warzone-cal-cell.is-drop-target:hover {
+  background: color-mix(in srgb, #3d9a6a 22%, var(--surface));
+}
+.warzone-cal-cell.has-overdue:not(.is-outside) {
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+.warzone-cal-day-num {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+  padding: 4px;
+  min-width: 26px;
+  text-align: center;
+  border-radius: 999px;
+}
+.warzone-cal-day-num.is-today {
+  background: var(--fc-yellow);
+  color: #0a0a0a;
+  font-weight: 700;
+}
+.warzone-calendar.is-compact .warzone-cal-cell {
+  min-height: clamp(120px, 11vh, 160px);
+  padding: 10px 12px;
+}
+.warzone-calendar.is-compact .warzone-cal-title {
+  font-size: 1.125rem;
+}
+.warzone-calendar.is-compact .warzone-cal-event {
+  font-size: 12px;
+  min-height: 26px;
+  padding: 5px 8px;
+}
+.warzone-calendar.is-compact .warzone-cal-day-num {
+  font-size: 14px;
+}
+.warzone-cal-events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.warzone-cal-event {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  background: color-mix(in srgb, #8b6fd4 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, #8b6fd4 28%, transparent);
+  color: var(--text);
+  line-height: 1.35;
+  min-height: 26px;
+}
+.warzone-cal-event:hover {
+  background: color-mix(in srgb, #8b6fd4 28%, var(--surface));
+}
+.warzone-cal-kind-glyph {
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0.9;
+}
+.warzone-cal-kind-glyph.is-task::before { content: '○'; color: #8b6fd4; }
+.warzone-cal-kind-glyph.is-event::before { content: '▬'; color: #3d9a6a; }
+.warzone-cal-kind-glyph.is-milestone::before { content: '◆'; color: #d4a017; }
+.warzone-cal-event-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--muted);
+}
+.warzone-cal-event.is-in_progress {
+  background: color-mix(in srgb, #8b6fd4 12%, var(--fc-yellow-soft));
+  border-color: color-mix(in srgb, var(--fc-yellow) 40%, transparent);
+}
+.warzone-cal-event.is-in_progress .warzone-cal-kind-glyph.is-task::before {
+  color: var(--fc-yellow);
+}
+.warzone-cal-event.is-done {
+  opacity: 0.55;
+}
+.warzone-cal-event.is-done .warzone-cal-event-title {
+  text-decoration: line-through;
+}
+.warzone-cal-event.is-milestone {
+  background: color-mix(in srgb, #d4a017 16%, var(--surface));
+  border-color: color-mix(in srgb, #d4a017 35%, transparent);
+}
+.warzone-cal-event.is-event {
+  background: color-mix(in srgb, #3d9a6a 20%, var(--surface));
+  border: 1px solid color-mix(in srgb, #3d9a6a 38%, transparent);
+}
+.warzone-status-pill.is-event {
+  background: color-mix(in srgb, #3d9a6a 18%, var(--surface));
+  color: #3d9a6a;
+}
+.warzone-status-pill.is-milestone {
+  background: color-mix(in srgb, #d4a017 16%, var(--surface));
+  color: #b8860b;
+}
+.warzone-cal-event-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.warzone-cal-more {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 2px 4px;
+  text-align: left;
+  cursor: pointer;
+}
+.warzone-cal-more:hover {
+  color: var(--text);
+}
+
+/* Calendar workspace: toolbar + unscheduled rail */
+.warzone-cal-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+.warzone-cal-workspace:not(.is-compact) {
+  gap: var(--space-5);
+}
+@media (min-width: 960px) {
+  .warzone-cal-workspace.has-rail {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
+  }
+}
+.warzone-cal-workspace-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.warzone-cal-workspace.is-compact .warzone-cal-workspace-main {
+  gap: var(--space-3);
+}
+.warzone-cal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.warzone-cal-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 200px;
+  max-width: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 8px 12px;
+  color: var(--muted);
+}
+.warzone-cal-search input {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+}
+.warzone-cal-search input::placeholder {
+  color: var(--muted);
+}
+.warzone-cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.warzone-cal-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.warzone-cal-legend-item::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.warzone-cal-legend-item.is-task::before { background: #8b6fd4; }
+.warzone-cal-legend-item.is-event::before { background: #3d9a6a; border-radius: 1px; width: 8px; height: 5px; }
+.warzone-cal-legend-item.is-milestone::before { background: #d4a017; transform: rotate(45deg); width: 6px; height: 6px; border-radius: 1px; }
+.warzone-cal-rail {
+  border: none;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 0 var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: min(74vh, 920px);
+  min-height: 0;
+}
+.warzone-cal-rail-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-2);
+}
+.warzone-cal-rail-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.warzone-cal-rail-tab.is-active {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+.warzone-cal-rail-count {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 1.25rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--muted);
+}
+.warzone-cal-rail-tab.is-active .warzone-cal-rail-count {
+  background: color-mix(in srgb, var(--fc-yellow) 35%, var(--surface));
+  color: var(--text);
+}
+.warzone-cal-rail-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+  display: none;
+}
+.warzone-cal-workspace.is-dragging .warzone-cal-rail-hint {
+  display: block;
+}
+.warzone-cal-rail-empty {
+  margin: var(--space-4) 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.warzone-cal-rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+.warzone-rail-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  padding: 8px 10px;
+  cursor: grab;
+  text-align: left;
+  color: var(--text);
+}
+.warzone-rail-item:active {
+  cursor: grabbing;
+}
+.warzone-rail-item:hover {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+.warzone-rail-item-glyph {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-size: 10px;
+}
+.warzone-rail-item-glyph.is-task::before { content: '○'; color: #8b6fd4; }
+.warzone-rail-item-glyph.is-event::before { content: '▬'; color: #3d9a6a; }
+.warzone-rail-item-glyph.is-milestone::before { content: '◆'; color: #d4a017; }
+.warzone-rail-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.warzone-rail-item-title {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.warzone-rail-item-meta {
+  display: flex;
+  gap: 4px;
+}
+.warzone-rail-kind {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.warzone-rail-kind.is-event { color: #3d9a6a; }
+.warzone-rail-kind.is-milestone { color: #b8860b; }
+.warzone-rail-kind.is-task { color: #8b6fd4; }
+
+.warzone-cal-day-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: var(--space-4);
+}
+.warzone-cal-day-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.warzone-cal-day-panel-head h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.warzone-cal-day-panel-head p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.warzone-cal-day-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+.warzone-cal-day-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+.warzone-cal-day-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+.warzone-cal-day-row:hover {
+  border-color: var(--line-strong);
+}
+.warzone-cal-day-row-title {
+  flex: 1;
+  font-weight: 500;
+}
+.warzone-cal-day-row .warzone-cal-event-dot.is-in_progress {
+  background: var(--fc-yellow);
+}
+.warzone-cal-day-row .warzone-cal-event-dot.is-done {
+  background: var(--ok);
+}
+.warzone-task-chip {
+  border: none;
+  text-align: left;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--fc-yellow-soft);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.warzone-task-chip.is-done { opacity: 0.55; text-decoration: line-through; }
+.warzone-list-ul { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+.warzone-list-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+.warzone-list-row:hover { border-color: var(--line-strong); }
+.warzone-list-title { flex: 1; font-weight: 500; }
+.warzone-list-meta { font-size: 13px; color: var(--muted); }
+.warzone-status-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  text-transform: capitalize;
+}
+.warzone-flow-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.warzone-flow-col {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.warzone-flow-col h3 { font-size: 13px; text-transform: capitalize; color: var(--muted); margin-bottom: var(--space-2); }
+.warzone-flow-toggle { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.warzone-flow-toggle button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--muted);
+}
+.warzone-flow-toggle button.active { border-color: var(--accent); color: var(--text); }
+
+/* Drag-drop status board — Linear-style segmented columns */
+.warzone-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+.warzone-board-cols {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  min-height: min(72vh, 760px);
+}
+.warzone-board-col {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+  border-top: 3px solid var(--line);
+}
+.warzone-board-col.is-todo { border-top-color: var(--muted); }
+.warzone-board-col.is-in_progress { border-top-color: var(--fc-yellow); }
+.warzone-board-col.is-in_review { border-top-color: #5b8def; }
+.warzone-board-col.is-done { border-top-color: var(--ok); }
+.warzone-board-col.is-cancelled { border-top-color: color-mix(in srgb, var(--muted) 70%, var(--warn)); }
+.warzone-board-col.is-drop-target {
+  border-color: var(--fc-yellow);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--fc-yellow) 35%, transparent);
+}
+.warzone-board-col-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+.warzone-board-col-bar {
+  display: none;
+}
+.warzone-board-col-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.warzone-board-col-count {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-variant-numeric: tabular-nums;
+}
+.warzone-board-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.warzone-board-col-empty {
+  margin: var(--space-4) var(--space-2);
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Task cards — board + list */
+.warzone-task-card {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 10px 11px;
+  text-align: left;
+  cursor: grab;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+.warzone-task-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-sm);
+}
+.warzone-task-card.is-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+.warzone-task-card.is-overdue:not(.is-dragging) {
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--line));
+}
+.warzone-task-card-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.warzone-task-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.warzone-hint-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.warzone-hint-chip-label {
+  max-width: 5.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.warzone-hint-chip.is-priority.is-urgent {
+  border-color: color-mix(in srgb, var(--warn) 40%, var(--line));
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  color: var(--warn);
+}
+.warzone-hint-chip.is-priority.is-high {
+  border-color: color-mix(in srgb, #e8a030 40%, var(--line));
+  background: color-mix(in srgb, #e8a030 12%, var(--surface));
+  color: #c87810;
+}
+.warzone-hint-chip.is-priority.is-medium {
+  border-color: color-mix(in srgb, #5b8def 40%, var(--line));
+  background: color-mix(in srgb, #5b8def 12%, var(--surface));
+  color: #4a7ad4;
+}
+.warzone-hint-chip.is-priority.is-low {
+  border-color: var(--line);
+  background: var(--surface-raised);
+  color: var(--muted);
+}
+.warzone-hint-chip.is-subtype {
+  border-color: color-mix(in srgb, #8b6fd4 35%, var(--line));
+  background: color-mix(in srgb, #8b6fd4 10%, var(--surface));
+  color: color-mix(in srgb, #8b6fd4 85%, var(--text));
+}
+.warzone-hint-chip.is-date.is-overdue {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line));
+  background: color-mix(in srgb, var(--warn) 14%, var(--surface));
+  color: var(--warn);
+  font-weight: 600;
+}
+.warzone-hint-chip.is-assignee {
+  padding-left: 3px;
+  gap: 5px;
+  margin-left: auto;
+}
+.warzone-task-card--list {
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+.warzone-task-card--list .warzone-hint-chip.is-assignee {
+  margin-left: 0;
+}
+
+/* List view */
+.warzone-list-view-ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.warzone-list-view-row {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: stretch;
+}
+.warzone-list-view-status {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  padding-top: 12px;
+}
+.warzone-list-view-status.is-in_progress { color: var(--fc-yellow); }
+.warzone-list-view-status.is-in_review { color: #5b8def; }
+.warzone-list-view-status.is-done { color: var(--ok); }
+.warzone-list-view-status.is-cancelled { color: var(--muted); }
+
+.warzone-dept-view-tabs {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  margin-bottom: var(--space-5);
+}
+.warzone-dept-view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+.warzone-dept-view-tab:hover {
+  color: var(--text);
+}
+.warzone-dept-view-tab.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.warzone-cal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.warzone-cal-filters-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.warzone-cal-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.warzone-cal-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease, opacity 120ms ease;
+}
+.warzone-cal-filter::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.warzone-cal-filter.is-task::before { background: #8b6fd4; }
+.warzone-cal-filter.is-event::before { background: #3d9a6a; border-radius: 1px; width: 8px; height: 5px; }
+.warzone-cal-filter.is-milestone::before { background: #d4a017; transform: rotate(45deg); width: 6px; height: 6px; border-radius: 1px; }
+.warzone-cal-filter.is-active {
+  border-color: color-mix(in srgb, var(--fc-yellow) 55%, var(--line));
+  background: color-mix(in srgb, var(--fc-yellow-soft) 55%, var(--surface));
+  color: var(--text);
+}
+.warzone-cal-filter.is-active.is-task {
+  border-color: color-mix(in srgb, #8b6fd4 45%, var(--line));
+  background: color-mix(in srgb, #8b6fd4 14%, var(--surface));
+}
+
+.warzone-cal-filter.is-active.is-event {
+  border-color: color-mix(in srgb, #3d9a6a 45%, var(--line));
+  background: color-mix(in srgb, #3d9a6a 14%, var(--surface));
+}
+
+.warzone-cal-filter.is-active.is-milestone {
+  border-color: color-mix(in srgb, #d4a017 45%, var(--line));
+  background: color-mix(in srgb, #d4a017 16%, var(--surface));
+}
+
+.warzone-cal-filter.is-dept::before {
+  display: none;
+}
+
+.warzone-cal-filter:not(.is-active) {
+  opacity: 0.55;
+}
+.warzone-sidebar-tasks {
+  margin-top: 0;
+}
+
+/* Flowchart schedule view */
+.warzone-flowchart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.warzone-flowchart-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.warzone-flowchart-track {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 0;
+  align-items: stretch;
+  min-height: 360px;
+}
+.warzone-flowchart-stage-wrap {
+  display: contents;
+}
+.warzone-flowchart-connector {
+  width: 48px;
+  align-self: center;
+  height: 2px;
+  background: linear-gradient(90deg, var(--line), var(--fc-yellow), var(--line));
+  position: relative;
+}
+.warzone-flowchart-connector::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: var(--fc-yellow);
+}
+.warzone-flowchart-stage {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.warzone-flowchart-stage.is-todo { border-top: 3px solid var(--muted); }
+.warzone-flowchart-stage.is-in_progress { border-top: 3px solid var(--fc-yellow); }
+.warzone-flowchart-stage.is-done { border-top: 3px solid var(--ok); }
+.warzone-flowchart-stage-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+.warzone-flowchart-node-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--fc-yellow);
+  flex-shrink: 0;
+}
+.warzone-flowchart-stage-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.warzone-flowchart-nodes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+}
+.warzone-flowchart-node-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.warzone-flowchart-node-line {
+  width: 2px;
+  height: 12px;
+  background: var(--line);
+  margin: 0 auto;
+}
+.warzone-flowchart-node {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  padding: var(--space-3);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.warzone-flowchart-node:hover {
+  border-color: var(--line-strong);
+}
+.warzone-flowchart-node-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+.warzone-flowchart-node-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+.warzone-flowchart-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: var(--space-4) 0;
+  text-align: center;
+}
+
+.warzone-empty { color: var(--muted); padding: var(--space-6); text-align: center; }
+.warzone-sidebar-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.warzone-sidebar-section small {
+  display: block;
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 var(--space-2);
+}
+.sidebar-nav-sub {
+  gap: 2px;
+}
+.sidebar-nav .nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sidebar-nav .nav-sub.active {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+.nav-sub { font-size: 13px; padding-left: var(--space-3); }
+.personal-hub-main { max-width: 640px; margin: 0 auto; width: 100%; }
+.personal-hub-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+.personal-hub-card h2 { font-size: 1rem; margin-bottom: var(--space-4); }
+.personal-hub-form { display: flex; flex-direction: column; gap: var(--space-3); }
+.personal-hub-form label { display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; color: var(--muted); }
+.personal-hub-form input {
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+.personal-hub-alert {
+  background: var(--warn-soft);
+  color: var(--warn);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-4);
+}
+.personal-hub-hint { font-size: 14px; color: var(--muted); margin-bottom: var(--space-3); }
+.personal-kpis { margin-bottom: var(--space-6); }
+
+.warzone-war-room-actions,
+.warzone-cooking-room-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-3);
+}
+.warzone-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.warzone-quick-submit {
+  flex-shrink: 0;
+}
+.warzone-subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.warzone-subtasks-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.warzone-subtasks-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.warzone-subtask-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+.warzone-subtask-check {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+  cursor: pointer;
+}
+.warzone-subtask-check span.is-done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.warzone-subtask-remove {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+.warzone-subtask-remove:hover { color: var(--text); background: var(--accent-soft); }
+.warzone-subtask-add {
+  display: flex;
+  gap: var(--space-2);
+}
+.warzone-subtask-add input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .warzone-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: relative; min-height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+  .warzone-flow-cols { grid-template-columns: 1fr; }
+  .warzone-board-cols {
+    grid-template-columns: repeat(5, minmax(240px, 1fr));
+    min-height: min(60vh, 640px);
+  }
+  .warzone-list-view-row { grid-template-columns: 1fr; }
+  .warzone-list-view-status { padding-top: 0; padding-bottom: 4px; }
+  .warzone-flowchart-track {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .warzone-flowchart-connector { display: none; }
+  .warzone-calendar:not(.is-compact) .warzone-cal-cell {
+    min-height: clamp(120px, 14vh, 168px);
+  }
+  .warzone-calendar:not(.is-compact) .warzone-cal-month {
+    min-height: auto;
+  }
+  .warzone-cal-cell { min-height: 100px; }
+  .warzone-cal-event { font-size: 11px; min-height: 24px; }
+  .warzone-cal-day-panel-head { flex-direction: column; }
+}
+

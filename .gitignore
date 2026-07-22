@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-dev-marker.json
 out/
 .DS_Store
 .env
@@ -17,5 +18,7 @@ data/appdev-board.json
 data/appdev-users.json
 data/appdev-presence.json
 data/preorder-survey-responses.json
+data/warzone-tasks.json
+data/hub-users.json
 data/appdev-uploads/
 .vercel

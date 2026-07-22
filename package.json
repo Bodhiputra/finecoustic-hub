@@ -5,14 +5,15 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:clean": "node scripts/dev.mjs --clean",
-    "build": "next build",
+    "build": "node scripts/ensure-no-dev.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "check": "npm run lint && npm run build",
     "test:auth": "node scripts/test-auth.mjs",
     "db:seed": "node scripts/seed-db.mjs",
     "db:flush-preorder-survey": "node scripts/flush-preorder-survey.mjs",
-    "remote:flush-preorder-survey": "node scripts/remote-flush-preorder-survey.mjs"
+    "remote:flush-preorder-survey": "node scripts/remote-flush-preorder-survey.mjs",
+    "import:rmp": "node scripts/import-rmp-tasks.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",

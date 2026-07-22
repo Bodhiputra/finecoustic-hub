@@ -1,0 +1,264 @@
+/* Shared slide-over panel + form fields (Warzone TaskPanel, appdev issue panel). */
+
+.appdev-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  border: 0;
+  cursor: pointer;
+  z-index: 65;
+}
+
+.appdev-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(520px, 100vw);
+  height: 100vh;
+  height: 100dvh;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-md);
+}
+
+.appdev-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.appdev-panel-head--draft {
+  justify-content: space-between;
+}
+
+.appdev-issue-id {
+  font-size: .68rem;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.appdev-panel-head .appdev-issue-id {
+  font-size: .72rem;
+}
+
+.appdev-panel-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.appdev-panel-close:hover { color: var(--text); background: var(--accent-soft); }
+.appdev-panel-close:active { transform: scale(0.95); }
+
+.appdev-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.appdev-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.appdev-field span {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.appdev-field input,
+.appdev-field textarea,
+.appdev-field select,
+.appdev-field .appdev-type-input,
+.appdev-date-picker-wrap {
+  width: 100%;
+  padding: .65rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: .95rem;
+  font-family: inherit;
+}
+
+.appdev-field input:focus,
+.appdev-field textarea:focus,
+.appdev-field select:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.appdev-field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.appdev-field-hint {
+  font-size: .75rem;
+  color: var(--muted);
+  line-height: 1.35;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.appdev-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.appdev-panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.appdev-panel-foot-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.appdev-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: .45rem .85rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.appdev-btn-primary:hover:not(:disabled) { opacity: .88; }
+.appdev-btn-primary:active:not(:disabled) { transform: scale(0.97); }
+.appdev-btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+.appdev-btn-danger {
+  padding: .45rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--err);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.appdev-btn-danger:hover:not(:disabled) {
+  background: var(--warn-soft);
+}
+
+.appdev-date-picker-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding-right: .65rem;
+  cursor: pointer;
+}
+
+.appdev-date-picker-wrap.is-disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.appdev-date-picker-display {
+  flex: 1;
+  min-width: 0;
+  font-size: .95rem;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.appdev-date-picker-display.is-placeholder {
+  color: var(--muted);
+}
+
+.appdev-date-picker-icon {
+  flex-shrink: 0;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.appdev-date-picker-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.appdev-date-picker-hit {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: inherit;
+}
+
+.appdev-date-picker-hit:disabled {
+  cursor: not-allowed;
+}
+
+.appdev-date-picker-wrap:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+@media (max-width: 768px) {
+  .appdev-panel {
+    width: 100vw;
+  }
+
+  .appdev-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .appdev-panel-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .appdev-panel-foot-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
