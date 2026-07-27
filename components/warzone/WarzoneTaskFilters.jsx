@@ -5,7 +5,7 @@ import UserAvatar from '@/components/warzone/UserAvatar';
 import { useLocale } from '@/components/LocaleProvider';
 import { togglePeopleKey, warzoneTasksUrl } from '@/lib/warzone';
 
-const FILTER_IDS = ['bank', 'in_progress', 'today', 'overdue'];
+const FILTER_IDS = ['in_progress', 'today', 'overdue'];
 
 export default function WarzoneTaskFilters({
   deptBase,
@@ -17,7 +17,6 @@ export default function WarzoneTaskFilters({
   const { t } = useLocale();
 
   const filters = [
-    { id: 'bank', label: t('hub.warzone.todoBank') },
     { id: 'in_progress', label: t('hub.warzone.inProgress') },
     { id: 'today', label: t('hub.warzone.today') },
     { id: 'overdue', label: t('hub.warzone.overdue') },
@@ -39,7 +38,7 @@ export default function WarzoneTaskFilters({
     <div className="warzone-task-filters">
       <div className="warzone-task-filters-group">
         <span className="warzone-task-filters-label">{t('hub.warzone.filters')}</span>
-        <div className="warzone-task-filters-row" role="toolbar" aria-label={t('hub.warzone.filters')}>
+        <div className="warzone-task-filters-row h-scroll h-scroll--bleed" role="toolbar" aria-label={t('hub.warzone.filters')}>
           {filters.map(({ id, label }) => (
             <Link
               key={id}
@@ -56,7 +55,7 @@ export default function WarzoneTaskFilters({
       {people.length > 0 && (
         <div className="warzone-task-filters-group">
           <span className="warzone-task-filters-label">{t('hub.warzone.filterPeople')}</span>
-          <div className="warzone-task-filters-row" role="toolbar" aria-label={t('hub.warzone.filterPeople')}>
+          <div className="warzone-task-filters-row h-scroll h-scroll--bleed" role="toolbar" aria-label={t('hub.warzone.filterPeople')}>
             {people.map(({ key, name }) => (
               <Link
                 key={key}

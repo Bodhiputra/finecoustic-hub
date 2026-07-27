@@ -275,7 +275,7 @@ export function OpsHubContent({ initialData, view = 'dashboard' }) {
               <strong>{awaiting}</strong> in progress
             </p>
             <article className="panel panel-full">
-              <div className="table-scroll">
+              <div className="table-scroll h-scroll">
                 <table className="data-table exec-table">
                   <thead>
                     <tr>

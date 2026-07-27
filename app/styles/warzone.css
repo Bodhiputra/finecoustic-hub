@@ -4,11 +4,21 @@
 .hub-main.warzone-main {
   max-width: none;
   width: 100%;
+  min-width: 0;
   margin: 0;
-  padding: var(--space-7) clamp(var(--space-5), 4vw, var(--space-8));
+  padding: var(--content-pad-y) var(--content-pad-x);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .warzone-dept-layout .main {
-  padding: var(--space-6) clamp(var(--space-5), 4vw, var(--space-8)) var(--space-7);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--content-pad-y) var(--content-pad-x) var(--space-7);
+}
+.warzone-dept-layout .warzone-dept-toolbar {
+  min-width: 0;
 }
 .warzone-dept-sidebar {
   gap: var(--space-3);
@@ -158,12 +168,16 @@
   margin-bottom: var(--space-5);
   padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--line);
+  min-width: 0;
+  max-width: 100%;
 }
 .warzone-task-filters-group {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
 }
 .warzone-task-filters-clear {
   display: flex;
@@ -189,12 +203,13 @@
 }
 .warzone-task-filters-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-2);
 }
 .warzone-task-filter {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -287,7 +302,7 @@
 .warzone-cooking-room h1 { font-size: 1.5rem; margin-bottom: var(--space-4); }
 .warzone-kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
   gap: var(--space-3);
   margin-bottom: var(--space-5);
 }
@@ -362,6 +377,25 @@
   flex-direction: column;
   gap: var(--space-5);
   padding: 0;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+.warzone-cal-month {
+  --cal-span-h: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.warzone-cal-dow-row,
+.warzone-cal-week {
+  min-width: 560px;
 }
 /* Full-size department calendar — scales with viewport height + width */
 .warzone-calendar:not(.is-compact) {
@@ -489,13 +523,6 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-}
-.warzone-cal-month {
-  --cal-span-h: 24px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--line);
 }
 .warzone-cal-dow-row {
   display: grid;
@@ -776,11 +803,13 @@
   grid-template-columns: 1fr;
   gap: var(--space-4);
   align-items: start;
+  container-type: inline-size;
+  container-name: cal-workspace;
 }
 .warzone-cal-workspace:not(.is-compact) {
   gap: var(--space-5);
 }
-@media (min-width: 960px) {
+@container cal-workspace (min-width: 900px) {
   .warzone-cal-workspace.has-rail {
     grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
   }
@@ -1083,7 +1112,11 @@
   background: var(--accent-soft);
   text-transform: capitalize;
 }
-.warzone-flow-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.warzone-flow-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-3);
+}
 .warzone-flow-col {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1106,27 +1139,43 @@
 }
 .warzone-flow-toggle button.active { border-color: var(--accent); color: var(--text); }
 
-/* Drag-drop status board — Linear-style segmented columns */
+/* Drag-drop status board — fluid columns on wide screens, scroll when narrow */
 .warzone-board {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: var(--space-3);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.warzone-board-scroll {
+  flex: 1;
   min-height: 0;
 }
+.warzone-board-scroll:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--fc-yellow) 55%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
 .warzone-board-cols {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
   gap: var(--space-3);
-  align-items: start;
-  overflow-x: auto;
-  padding-bottom: var(--space-2);
-  min-height: min(72vh, 760px);
+  width: 100%;
+  min-width: max(100%, var(--board-cols-min));
+  min-height: min(56vh, 560px);
 }
 .warzone-board-col {
+  flex: 1 1 0;
+  min-width: var(--board-col-w);
   background: var(--surface-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  min-height: 280px;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   transition: border-color 140ms ease, box-shadow 140ms ease;
@@ -1159,6 +1208,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+  white-space: nowrap;
 }
 .warzone-board-col-count {
   font-size: 11px;
@@ -1176,6 +1226,7 @@
   padding: var(--space-2);
   flex: 1;
   min-height: 0;
+  max-height: none;
   overflow-y: auto;
 }
 .warzone-board-col-empty {
@@ -1325,7 +1376,11 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 2px;
-  margin-bottom: var(--space-5);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 .warzone-dept-view-tab {
   display: inline-flex;
@@ -1670,12 +1725,6 @@
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: relative; min-height: auto; border-right: none; border-bottom: 1px solid var(--line); }
   .warzone-flow-cols { grid-template-columns: 1fr; }
-  .warzone-board-cols {
-    grid-template-columns: repeat(5, minmax(240px, 1fr));
-    min-height: min(60vh, 640px);
-  }
-  .warzone-list-view-row { grid-template-columns: 1fr; }
-  .warzone-list-view-status { padding-top: 0; padding-bottom: 4px; }
   .warzone-flowchart-track {
     grid-template-columns: 1fr;
     gap: var(--space-3);

@@ -58,9 +58,15 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
+html {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -103,15 +109,8 @@ input:focus-visible {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 100vh;
-}
-
-.hub-layout .hub-main-shell {
-  margin-left: var(--sidebar-w);
-  transition: margin-left 220ms var(--ease-out);
-}
-
-.hub-layout:not(.is-sidebar-open) .hub-main-shell {
-  margin-left: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .sidebar {
@@ -230,17 +229,25 @@ input:focus-visible {
 .main {
   min-width: 0;
   width: 100%;
-  padding: var(--space-6) clamp(var(--space-5), 4vw, var(--space-7)) var(--space-7);
+  max-width: 100%;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--content-pad-y) var(--content-pad-x) var(--space-7);
+  box-sizing: border-box;
 }
 
 .topbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
-  gap: var(--space-5);
+  gap: var(--space-4);
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-5);
   border-bottom: 1px solid var(--line);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar-actions {
@@ -303,7 +310,7 @@ input:focus-visible {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-5);
 }
@@ -374,7 +381,7 @@ input:focus-visible {
 
 .stock-bars {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: var(--space-5);
 }
 
@@ -679,7 +686,24 @@ input:focus-visible {
 
 .summary-line strong { color: var(--text); font-weight: 600; }
 
-.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1280px) {
+  .table-scroll {
+    margin-left: calc(-1 * var(--content-pad-x));
+    margin-right: calc(-1 * var(--content-pad-x));
+    padding-left: var(--content-pad-x);
+    padding-right: var(--content-pad-x);
+  }
+}
 
 .data-table {
   width: 100%;
@@ -843,10 +867,14 @@ input:focus-visible {
 
 .login-page {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
   display: grid;
   place-items: center;
   padding: var(--space-5);
   position: relative;
+  box-sizing: border-box;
 }
 
 .login-page-toolbar {

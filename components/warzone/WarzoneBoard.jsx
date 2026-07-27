@@ -42,7 +42,8 @@ export default function WarzoneBoard({ tasks, onTaskClick, onStatusChange }) {
 
   return (
     <section className="warzone-board" aria-label={t('hub.warzone.viewBoard')}>
-      <div className="warzone-board-cols">
+      <div className="warzone-board-scroll h-scroll h-scroll--hint h-scroll--bleed" tabIndex={0}>
+        <div className="warzone-board-cols">
         {BOARD_STATUSES.map(colId => {
           const colTasks = tasks.filter(task => task.status === colId);
           return (
@@ -80,6 +81,7 @@ export default function WarzoneBoard({ tasks, onTaskClick, onStatusChange }) {
             </div>
           );
         })}
+        </div>
       </div>
     </section>
   );

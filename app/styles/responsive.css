@@ -1,0 +1,242 @@
+/* Fine Hub — shared responsive layout (mobile + tablet) */
+
+@media (max-width: 1024px) {
+  .warzone-cal-workspace.has-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .warzone-list-view-row {
+    grid-template-columns: 1fr;
+  }
+
+  .warzone-list-view-status {
+    padding-top: 0;
+    padding-bottom: 4px;
+  }
+
+  .warzone-team-schedule-head {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .main,
+  .hub-main,
+  .hub-main.warzone-main,
+  .warzone-home .warzone-main,
+  .warzone-dept-layout .main {
+    padding: var(--content-pad-y) var(--content-pad-x) var(--space-6);
+  }
+
+  .warzone-home-layout .hub-main.warzone-main {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+  }
+
+  .hub-topnav {
+    padding: var(--space-2) var(--space-3);
+    min-height: 52px;
+    gap: var(--space-2);
+  }
+
+  .hub-topnav-start {
+    gap: var(--space-2);
+  }
+
+  .hub-topnav-actions {
+    gap: var(--space-1);
+    flex-shrink: 0;
+  }
+
+  .hub-topnav-subtitle {
+    display: none;
+  }
+
+  .hub-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-header {
+    padding: var(--space-3) var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .hub-main {
+    padding: var(--content-pad-y) var(--content-pad-x);
+  }
+
+  .login-page {
+    padding: var(--space-4);
+    padding-top: calc(var(--space-7) + 2.5rem);
+    align-items: flex-start;
+  }
+
+  .login-page-toolbar {
+    top: var(--space-3);
+    right: var(--space-3);
+    left: auto;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 100%;
+    padding: var(--space-5);
+  }
+
+  .topbar h1 {
+    font-size: 1.25rem;
+  }
+
+  .warzone-dept-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .warzone-cal-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .warzone-cal-search {
+    max-width: none;
+    width: 100%;
+  }
+
+  .warzone-cal-legend {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .warzone-cal-rail {
+    border-left: none;
+    border-top: 1px solid var(--line);
+    padding: var(--space-4) 0 0;
+    max-height: min(42vh, 360px);
+  }
+
+  .warzone-calendar .warzone-cal-month {
+    min-height: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .warzone-calendar .warzone-cal-dow-row,
+  .warzone-calendar .warzone-cal-week-days,
+  .warzone-calendar .warzone-cal-week-spans {
+    min-width: 280px;
+  }
+
+  .warzone-calendar.is-compact .warzone-cal-cell {
+    min-height: 4.25rem;
+    padding: 4px 3px;
+  }
+
+  .warzone-calendar:not(.is-compact) .warzone-cal-cell {
+    min-height: 5.5rem;
+    padding: 6px 4px;
+  }
+
+  .warzone-cal-dow {
+    padding: 6px 2px;
+    font-size: 9px;
+    letter-spacing: 0.02em;
+  }
+
+  .warzone-cal-day-num {
+    font-size: 11px;
+    min-width: 1.35rem;
+    padding: 2px;
+  }
+
+  .warzone-cal-event {
+    padding: 2px 4px;
+    font-size: 10px;
+    min-height: 18px;
+    gap: 3px;
+    border-radius: 4px;
+  }
+
+  .warzone-cal-kind-glyph {
+    display: none;
+  }
+
+  .warzone-cal-span {
+    min-height: 18px;
+    padding: 0 4px;
+  }
+
+  .warzone-cal-span-title {
+    font-size: 9px;
+  }
+
+  .warzone-cal-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .warzone-cal-title {
+    font-size: 1rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .warzone-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .warzone-holiday-controls {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .appdev-panel-body {
+    padding: var(--space-4);
+  }
+
+  .appdev-panel-head {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .personal-hub-main {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .warzone-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .warzone-kpi {
+    padding: var(--space-3);
+  }
+
+  .warzone-kpi-val {
+    font-size: 1.35rem;
+  }
+
+  .hub-topnav-title {
+    font-size: 0.9rem;
+    max-width: 11rem;
+  }
+
+  .hub-topnav-user-name {
+    display: none;
+  }
+
+  .locale-switch-btn {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .hub-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

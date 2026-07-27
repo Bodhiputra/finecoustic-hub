@@ -10,6 +10,12 @@ const alteHaas = localFont({
   display: 'swap',
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export const metadata = {
   title: 'Fine Hub',
   description: 'Internal workspace — operations, knowledge, and project tools',

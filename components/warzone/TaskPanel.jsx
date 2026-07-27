@@ -15,7 +15,14 @@ import { useLocale } from '@/components/LocaleProvider';
 
 function normalizeDraftForPanel(task) {
   if (!task) return task;
-  if (task.kind === 'event') return task;
+  if (task.kind === 'event') {
+    return {
+      ...task,
+      kind: 'milestone',
+      deadline: task.planned_for || task.deadline || null,
+      planned_for: null,
+    };
+  }
   return {
     ...task,
     deadline: task.deadline || task.planned_for || null,
@@ -24,22 +31,11 @@ function normalizeDraftForPanel(task) {
 }
 
 function prepareSave(draft) {
-  if (draft.kind === 'event') {
-    const start = draft.planned_for || draft.deadline;
-    const end = draft.deadline || draft.planned_for;
-    return {
-      ...draft,
-      visibility: 'team',
-      planned_for: start,
-      deadline: end,
-      subtasks: [],
-      status: 'todo',
-    };
+  const kind = draft.kind === 'event' ? 'milestone' : (draft.kind || 'task');
+  if (kind === 'milestone') {
+    return { ...draft, kind: 'milestone', planned_for: null };
   }
-  if (draft.kind === 'milestone') {
-    return { ...draft, planned_for: null };
-  }
-  return { ...draft, planned_for: null };
+  return { ...draft, kind: 'task', planned_for: null };
 }
 
 const PRIORITY_KEYS = {
@@ -138,9 +134,8 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
   const { locale, t } = useLocale();
   const [draft, setDraft] = useState(task);
   const isNew = Boolean(task?._draft || !task?.id);
-  const isEvent = draft.kind === 'event';
   const isMilestone = draft.kind === 'milestone';
-  const isTask = !isEvent && !isMilestone;
+  const isTask = !isMilestone;
 
   useEffect(() => {
     setDraft(normalizeDraftForPanel(task));
@@ -156,20 +151,14 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
   const set = (key, value) => setDraft(prev => ({ ...prev, [key]: value }));
 
   const panelTitle = isNew
-    ? isEvent
-      ? t('hub.warzone.taskPanel.newEvent')
-      : isMilestone
-        ? t('hub.warzone.taskPanel.newMilestone')
-        : t('hub.warzone.taskPanel.newTask')
-    : isEvent
-      ? t('hub.warzone.kindEvent')
-      : isMilestone
-        ? t('hub.warzone.taskPanel.milestone')
-        : t('hub.warzone.taskPanel.task');
+    ? isMilestone
+      ? t('hub.warzone.taskPanel.newMilestone')
+      : t('hub.warzone.taskPanel.newTask')
+    : isMilestone
+      ? t('hub.warzone.taskPanel.milestone')
+      : t('hub.warzone.taskPanel.task');
 
-  const canSave = draft.title?.trim() && (
-    isEvent ? Boolean(draft.planned_for || draft.deadline) : true
-  );
+  const canSave = Boolean(draft.title?.trim());
 
   return (
     <>
@@ -189,7 +178,7 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
               value={draft.title || ''}
               onChange={e => set('title', e.target.value)}
               disabled={saving}
-              placeholder={isEvent ? 'e.g. FBS preorder open' : t('hub.warzone.taskPanel.titlePlaceholder')}
+              placeholder={t('hub.warzone.taskPanel.titlePlaceholder')}
               autoFocus
             />
           </div>
@@ -197,7 +186,7 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
           <div className="appdev-field">
             <span>{t('hub.warzone.taskPanel.description')}</span>
             <textarea
-              rows={isEvent ? 3 : 5}
+              rows={5}
               value={draft.notes || ''}
               onChange={e => set('notes', e.target.value)}
               disabled={saving}
@@ -218,16 +207,11 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
             <label className="appdev-field">
               <span>{t('hub.warzone.taskPanel.type')}</span>
               <select
-                value={draft.kind || 'task'}
-                onChange={e => {
-                  const kind = e.target.value;
-                  set('kind', kind);
-                  if (kind === 'event') set('visibility', 'team');
-                }}
+                value={isMilestone ? 'milestone' : 'task'}
+                onChange={e => set('kind', e.target.value)}
                 disabled={saving}
               >
                 <option value="task">{t('hub.warzone.kindTask')}</option>
-                <option value="event">{t('hub.warzone.kindEvent')}</option>
                 <option value="milestone">{t('hub.warzone.kindMilestone')}</option>
               </select>
             </label>
@@ -306,34 +290,6 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
             </>
           )}
 
-          {isEvent && (
-            <div className="appdev-field-row">
-              <div className="appdev-field">
-                <span>{t('hub.warzone.taskPanel.eventStart')}</span>
-                <DatePicker
-                  value={draft.planned_for}
-                  onChange={v => set('planned_for', v)}
-                  disabled={saving}
-                  locale={locale}
-                  placeholder={t('hub.warzone.taskPanel.pickDate')}
-                />
-              </div>
-              <div className="appdev-field">
-                <span>{t('hub.warzone.taskPanel.eventEnd')}</span>
-                <DatePicker
-                  value={draft.deadline}
-                  onChange={v => set('deadline', v)}
-                  disabled={saving}
-                  locale={locale}
-                  placeholder={t('hub.warzone.taskPanel.pickDate')}
-                />
-              </div>
-            </div>
-          )}
-          {isEvent && (
-            <span className="appdev-field-hint">{t('hub.warzone.taskPanel.eventHint')}</span>
-          )}
-
           {isMilestone && (
             <div className="appdev-field">
               <span>{t('hub.warzone.taskPanel.date')}</span>
@@ -373,17 +329,15 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
             </label>
           )}
 
-          {!isEvent && (
-            <div className="appdev-field">
-              <span>{t('hub.warzone.taskPanel.link')}</span>
-              <input
-                value={draft.link_url || ''}
-                onChange={e => set('link_url', e.target.value)}
-                disabled={saving}
-                placeholder={t('hub.warzone.taskPanel.linkPlaceholder')}
-              />
-            </div>
-          )}
+          <div className="appdev-field">
+            <span>{t('hub.warzone.taskPanel.link')}</span>
+            <input
+              value={draft.link_url || ''}
+              onChange={e => set('link_url', e.target.value)}
+              disabled={saving}
+              placeholder={t('hub.warzone.taskPanel.linkPlaceholder')}
+            />
+          </div>
         </div>
 
         <footer className="appdev-panel-foot">

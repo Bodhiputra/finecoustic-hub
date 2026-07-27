@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Icon from '@/components/Icon';
 import TaskPanel from '@/components/warzone/TaskPanel';
 import WarzoneBoard from '@/components/warzone/WarzoneBoard';
@@ -16,6 +16,7 @@ import { API_V1 } from '@/lib/api/routes';
 import {
   collectPeopleFromTasks,
   dataLinkLabel,
+  departmentTasksEnabled,
   deptText,
   getDepartment,
   getDepartmentPath,
@@ -26,6 +27,11 @@ import {
 } from '@/lib/warzone';
 import { MarketingHubContent } from '@/components/MarketingHub';
 import { OpsHubContent } from '@/components/OpsHub';
+import KnowledgeBank from '@/components/knowledge/KnowledgeBank';
+import {
+  isKnowledgeBankTool,
+  knowledgeBankUrl,
+} from '@/lib/knowledge';
 
 const BUCKET_VIEWS = ['today', 'overdue', 'in_progress', 'bank', 'milestones'];
 const TASK_VIEWS = ['list', 'board'];
@@ -41,9 +47,12 @@ export default function WarzoneDepartment({
 }) {
   const dept = getDepartment(departmentId);
   const { t } = useLocale();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view') || initialBucket || '';
   const toolParam = searchParams.get('tool') || initialTool || '';
+  const pageParam = searchParams.get('page') || '';
+  const tasksEnabled = departmentId === 'all' || departmentTasksEnabled(dept);
 
   const bucket = BUCKET_VIEWS.includes(viewParam) ? viewParam : (searchParams.get('bucket') || '');
   const view = BUCKET_VIEWS.includes(viewParam)
@@ -72,6 +81,15 @@ export default function WarzoneDepartment({
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (tasksEnabled || toolParam) return;
+    if (dept?.dataLinks?.length) {
+      router.replace(dept.dataLinks[0].href);
+      return;
+    }
+    router.replace(knowledgeBankUrl(getDepartmentPath(departmentId)));
+  }, [tasksEnabled, toolParam, dept, router, departmentId]);
 
   const filtered = useMemo(() => {
     if (departmentId === 'all') return tasks;
@@ -168,13 +186,15 @@ export default function WarzoneDepartment({
     { id: 'list', label: t('hub.warzone.viewList'), icon: 'layout' },
   ];
 
-  const taskSection = !toolParam;
+  const taskSection = tasksEnabled && !toolParam;
 
   const topNavTitle = departmentId === 'all'
     ? t('hub.warzone.allTasks')
     : (dept ? deptText(dept, t, 'label') : '');
   const activeToolLink = toolParam && dept?.dataLinks?.find(link => link.id === toolParam);
-  const topNavSubtitle = activeToolLink ? dataLinkLabel(activeToolLink, t) : '';
+  const topNavSubtitle = isKnowledgeBankTool(toolParam)
+    ? t('hub.knowledge.title')
+    : (activeToolLink ? dataLinkLabel(activeToolLink, t) : '');
 
   return (
     <HubLayout
@@ -192,6 +212,7 @@ export default function WarzoneDepartment({
           departmentId={departmentId}
           isToolActive={isToolActive}
           toolParam={toolParam}
+          pageParam={pageParam}
         />
       }
     >
@@ -239,8 +260,20 @@ export default function WarzoneDepartment({
           <MarketingHubContent view={toolParam} initialRows={marketingRows} />
         )}
 
-        {toolParam && departmentId === 'operations' && opsData && (
+        {toolParam && departmentId === 'operations' && opsData && !isKnowledgeBankTool(toolParam) && (
           <OpsHubContent initialData={opsData} view={toolParam} />
+        )}
+
+        {isKnowledgeBankTool(toolParam) && departmentId !== 'all' && (
+          <KnowledgeBank
+            departmentId={departmentId}
+            deptBase={deptBase}
+            pageId={pageParam}
+          />
+        )}
+
+        {!taskSection && !toolParam && dept && (
+          <p className="warzone-empty personal-hub-hint">{deptText(dept, t, 'description')}</p>
         )}
 
         {taskSection && view === 'list' && (

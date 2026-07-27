@@ -35,7 +35,7 @@ export default function TableView({
 
   return (
     <div className="appdev-table-wrap">
-      <div className="appdev-table-scroll">
+      <div className="appdev-table-scroll h-scroll h-scroll--bleed">
         <table className="data-table appdev-table">
           <thead>
             <tr>

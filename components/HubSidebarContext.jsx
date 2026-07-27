@@ -26,15 +26,22 @@ export function HubLayout({
   onLogout,
   children,
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const sidebarId = useId();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mobile = window.matchMedia('(max-width: 768px)').matches; /* --bp-md */
+    if (mobile) {
+      setOpen(false);
+      return;
+    }
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored !== null) setOpen(stored === '1');
+      else setOpen(true);
     } catch {
       setOpen(true);
     }

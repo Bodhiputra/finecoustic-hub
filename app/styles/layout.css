@@ -1,0 +1,148 @@
+/* Fine Hub — layout tokens + shared responsive utilities
+ * Breakpoints: sm 480 | md 768 | lg 1024 | xl 1280
+ */
+
+:root {
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+
+  --content-pad-x: clamp(var(--space-4), 4vw, var(--space-8));
+  --content-pad-y: clamp(var(--space-5), 2.5vh, var(--space-7));
+  --board-col-w: 240px;
+  --board-cols-min: calc(5 * var(--board-col-w) + 4 * var(--space-3));
+}
+
+/* —— App shell: sidebar + main share the viewport without horizontal overflow —— */
+.hub-layout {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+.hub-layout .hub-main-shell {
+  min-width: 0;
+  box-sizing: border-box;
+  transition: margin-left 220ms var(--ease-out), width 220ms var(--ease-out), max-width 220ms var(--ease-out);
+}
+
+.hub-layout.is-sidebar-open .hub-main-shell {
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
+  max-width: calc(100% - var(--sidebar-w));
+}
+
+.hub-layout:not(.is-sidebar-open) .hub-main-shell {
+  margin-left: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Every page main inside the shell fills the remaining column */
+.hub-layout .hub-main-shell > main,
+.hub-layout .hub-main-shell > .main,
+.hub-layout .hub-main-shell > .hub-main,
+.hub-layout .hub-main-shell > .warzone-dept-main,
+.hub-layout .hub-main-shell > .warzone-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.hub-layout .hub-topnav {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* —— Horizontal scroll: wide content scrolls inside this box —— */
+.h-scroll {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  padding-bottom: 4px;
+}
+
+.h-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.h-scroll::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+}
+
+.h-scroll-inner {
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Subtle edge hint when content overflows (desktop) */
+.h-scroll--hint {
+  background:
+    linear-gradient(to right, var(--bg) 0%, transparent 12px) left center / 16px 100% no-repeat,
+    linear-gradient(to left, var(--bg) 0%, transparent 12px) right center / 16px 100% no-repeat;
+  background-attachment: local, local;
+}
+
+[data-theme="dark"] .h-scroll--hint {
+  background:
+    linear-gradient(to right, var(--bg) 0%, transparent 12px) left center / 16px 100% no-repeat,
+    linear-gradient(to left, var(--bg) 0%, transparent 12px) right center / 16px 100% no-repeat;
+  background-attachment: local, local;
+}
+
+/* —— Toolbars / filter rows: wrap on narrow widths —— */
+.wrap-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.wrap-row > * {
+  flex-shrink: 0;
+}
+
+.layout-main {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  flex: 1 1 auto;
+}
+
+/* Fluid grids — cards/KPIs shrink and wrap instead of overflowing */
+.grid-fluid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-3);
+}
+
+.grid-fluid-sm {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: var(--space-3);
+}
+
+@media (max-width: 1280px) {
+  .h-scroll--bleed {
+    margin-left: calc(-1 * var(--content-pad-x));
+    margin-right: calc(-1 * var(--content-pad-x));
+    padding-left: var(--content-pad-x);
+    padding-right: var(--content-pad-x);
+  }
+}

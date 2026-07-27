@@ -19,6 +19,7 @@ data/appdev-users.json
 data/appdev-presence.json
 data/preorder-survey-responses.json
 data/warzone-tasks.json
+data/knowledge-pages.json
 data/hub-users.json
 data/appdev-uploads/
 .vercel

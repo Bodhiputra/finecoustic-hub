@@ -1,9 +1,13 @@
 /* —— App development —— */
 .appdev-shell {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  overflow-x: clip;
+  box-sizing: border-box;
 }
 
 .appdev-header {
@@ -522,6 +526,9 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .appdev-table { min-width: 920px; }
