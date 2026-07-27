@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DatePicker from '@/components/appdev/DatePicker';
 import Icon from '@/components/Icon';
 import {
+  ALL_DEPARTMENTS_ID,
   DEFAULT_SUBTYPES,
   DEPARTMENTS,
   TASK_PRIORITIES,
@@ -16,12 +17,19 @@ import { useLocale } from '@/components/LocaleProvider';
 function normalizeDraftForPanel(task) {
   if (!task) return task;
   if (task.kind === 'event') {
+    const start = task.planned_for || task.deadline || null;
+    const end = task.deadline || task.planned_for || null;
     return {
       ...task,
       kind: 'milestone',
-      deadline: task.planned_for || task.deadline || null,
-      planned_for: null,
+      planned_for: start,
+      deadline: end,
     };
+  }
+  if (task.kind === 'milestone') {
+    const start = task.planned_for || task.deadline || null;
+    const end = task.deadline || task.planned_for || null;
+    return { ...task, planned_for: start, deadline: end };
   }
   return {
     ...task,
@@ -33,7 +41,16 @@ function normalizeDraftForPanel(task) {
 function prepareSave(draft) {
   const kind = draft.kind === 'event' ? 'milestone' : (draft.kind || 'task');
   if (kind === 'milestone') {
-    return { ...draft, kind: 'milestone', planned_for: null };
+    let start = draft.planned_for || draft.deadline || null;
+    let end = draft.deadline || draft.planned_for || null;
+    if (start && end && start > end) {
+      const swap = start;
+      start = end;
+      end = swap;
+    }
+    if (start && !end) end = start;
+    if (end && !start) start = end;
+    return { ...draft, kind: 'milestone', planned_for: start, deadline: end };
   }
   return { ...draft, kind: 'task', planned_for: null };
 }
@@ -222,6 +239,7 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
                 onChange={e => set('department', e.target.value)}
                 disabled={saving}
               >
+                <option value={ALL_DEPARTMENTS_ID}>{t('hub.warzone.allDepartments')}</option>
                 {DEPARTMENTS.map(d => (
                   <option key={d.id} value={d.id}>{deptText(d, t, 'label')}</option>
                 ))}
@@ -291,16 +309,32 @@ export default function TaskPanel({ task, onClose, onSave, onDelete, saving = fa
           )}
 
           {isMilestone && (
-            <div className="appdev-field">
-              <span>{t('hub.warzone.taskPanel.date')}</span>
-              <DatePicker
-                value={draft.deadline}
-                onChange={v => set('deadline', v)}
-                disabled={saving}
-                locale={locale}
-                placeholder={t('hub.warzone.taskPanel.pickDate')}
-              />
+            <div className="appdev-field-row">
+              <label className="appdev-field">
+                <span>{t('hub.warzone.taskPanel.eventStart')}</span>
+                <DatePicker
+                  value={draft.planned_for}
+                  onChange={v => set('planned_for', v)}
+                  disabled={saving}
+                  locale={locale}
+                  placeholder={t('hub.warzone.taskPanel.pickDate')}
+                />
+              </label>
+              <label className="appdev-field">
+                <span>{t('hub.warzone.taskPanel.eventEnd')}</span>
+                <DatePicker
+                  value={draft.deadline}
+                  onChange={v => set('deadline', v)}
+                  disabled={saving}
+                  locale={locale}
+                  placeholder={t('hub.warzone.taskPanel.pickDate')}
+                />
+              </label>
             </div>
+          )}
+
+          {isMilestone && (
+            <p className="appdev-field-hint">{t('hub.warzone.taskPanel.eventHint')}</p>
           )}
 
           {isTask && (

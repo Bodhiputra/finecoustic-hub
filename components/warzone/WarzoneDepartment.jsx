@@ -11,6 +11,7 @@ import WarzoneTaskFilters from '@/components/warzone/WarzoneTaskFilters';
 import WarzoneSidebar from '@/components/warzone/WarzoneSidebar';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useWarzoneTasks } from '@/hooks/useWarzoneTasks';
 import { API_V1 } from '@/lib/api/routes';
 import {
@@ -23,6 +24,7 @@ import {
   newTaskDraft,
   parsePeopleParam,
   taskMatchesPeopleFilter,
+  taskBelongsToDepartment,
   warzoneTasksUrl,
 } from '@/lib/warzone';
 import { MarketingHubContent } from '@/components/MarketingHub';
@@ -47,6 +49,7 @@ export default function WarzoneDepartment({
 }) {
   const dept = getDepartment(departmentId);
   const { t } = useLocale();
+  const { requestConfirm, confirmDialog } = useConfirm();
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view') || initialBucket || '';
@@ -93,7 +96,7 @@ export default function WarzoneDepartment({
 
   const filtered = useMemo(() => {
     if (departmentId === 'all') return tasks;
-    return tasks.filter(task => task.department === departmentId);
+    return tasks.filter(task => taskBelongsToDepartment(task, departmentId));
   }, [tasks, departmentId]);
 
   const baseTaskItems = useMemo(
@@ -141,7 +144,13 @@ export default function WarzoneDepartment({
   }
 
   async function handleDelete(id) {
-    if (!confirm(t('hub.warzone.deleteConfirm'))) return;
+    const ok = await requestConfirm({
+      title: t('hub.warzone.taskPanel.delete'),
+      message: t('hub.warzone.deleteConfirm'),
+      confirmLabel: t('hub.warzone.taskPanel.delete'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
     await fetch(API_V1.warzoneTask(id), { method: 'DELETE', credentials: 'same-origin' });
     setPanelTask(null);
     await refresh();
@@ -298,6 +307,8 @@ export default function WarzoneDepartment({
           saving={saving}
         />
       )}
+
+      {confirmDialog}
     </HubLayout>
   );
 }

@@ -41,10 +41,10 @@ function monthMatrix(year, month) {
 }
 
 function eventRange(task) {
-  if (task?.kind !== 'event') return null;
+  if (task?.kind !== 'event' && task?.kind !== 'milestone') return null;
   const a = task.planned_for || task.deadline;
   const b = task.deadline || task.planned_for;
-  if (!a || !b) return null;
+  if (!a && !b) return null;
   const start = a <= b ? a : b;
   const end = b >= a ? b : a;
   return { start, end, isSpan: start !== end };
@@ -146,12 +146,13 @@ function CalendarEvent({ task, onSelect }) {
 
 function SpanEventBar({ segment, weekKey, onSelect }) {
   const { event, startCol, endCol, isStart, isEnd, lane } = segment;
+  const isMilestone = event.kind === 'milestone';
   return (
     <button
       type="button"
       className={[
         'warzone-cal-span',
-        'is-event',
+        isMilestone ? 'is-milestone' : 'is-event',
         isStart && 'is-range-start',
         isEnd && 'is-range-end',
         !isStart && 'is-continued',

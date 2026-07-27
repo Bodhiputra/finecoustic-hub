@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export default function HubAdminUsers() {
+  const { requestConfirm, confirmDialog } = useConfirm();
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState('');
@@ -41,10 +43,14 @@ export default function HubAdminUsers() {
     }
   }
 
-  function removeUser(user) {
-    if (!confirm(`Remove ${user.display_name} from Fine Hub? They will need to sign up again.`)) {
-      return;
-    }
+  async function removeUser(user) {
+    const ok = await requestConfirm({
+      title: 'Remove user',
+      message: `Remove ${user.display_name} from Fine Hub? They will need to sign up again.`,
+      confirmLabel: 'Remove',
+      cancelLabel: 'Cancel',
+    });
+    if (!ok) return;
     patchUser(user.id, 'delete');
   }
 
@@ -107,6 +113,8 @@ export default function HubAdminUsers() {
           ))}
         </ul>
       </main>
+
+      {confirmDialog}
     </div>
   );
 }

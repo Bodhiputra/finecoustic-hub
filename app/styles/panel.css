@@ -262,3 +262,57 @@
     justify-content: flex-end;
   }
 }
+
+/* Shared confirm modal (hub + panels) */
+.appdev-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.appdev-modal {
+  width: min(480px, 100%);
+  max-height: min(80vh, 560px);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-5);
+}
+
+.appdev-confirm-backdrop {
+  z-index: 70;
+}
+
+.appdev-confirm-modal {
+  width: min(400px, 100%);
+  max-height: none;
+  padding: var(--space-5);
+}
+
+.appdev-confirm-title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.appdev-confirm-message {
+  margin: 0;
+  font-size: .9rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.appdev-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}

@@ -599,6 +599,14 @@
 .warzone-cal-span:hover {
   background: color-mix(in srgb, #3d9a6a 34%, var(--surface));
 }
+.warzone-cal-span.is-milestone {
+  border-color: color-mix(in srgb, #d4a017 42%, transparent);
+  border-top-color: #d4a017;
+  background: color-mix(in srgb, #d4a017 18%, var(--surface));
+}
+.warzone-cal-span.is-milestone:hover {
+  background: color-mix(in srgb, #d4a017 28%, var(--surface));
+}
 .warzone-cal-span-title {
   font-size: 11px;
   font-weight: 600;

@@ -7,14 +7,16 @@ import WarzoneCalendarWorkspace from '@/components/warzone/WarzoneCalendarWorksp
 import WarzoneSidebar from '@/components/warzone/WarzoneSidebar';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useWarzoneTasks } from '@/hooks/useWarzoneTasks';
 import { API_V1 } from '@/lib/api/routes';
-import { MASTER_CALENDAR_KIND_FILTERS, newTaskDraft } from '@/lib/warzone';
+import { MASTER_CALENDAR_KIND_FILTERS, ALL_DEPARTMENTS_ID, newTaskDraft } from '@/lib/warzone';
 
 const MASTER_KINDS = MASTER_CALENDAR_KIND_FILTERS;
 
 export default function WarzoneHome({ authEnabled, initialTasks = [], displayName = '' }) {
   const { t } = useLocale();
+  const { requestConfirm, confirmDialog } = useConfirm();
   const { tasks, refresh } = useWarzoneTasks({ initialTasks });
   const [panelTask, setPanelTask] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -52,9 +54,10 @@ export default function WarzoneHome({ authEnabled, initialTasks = [], displayNam
   function openNewMilestone(startDate = null) {
     setPanelTask(newTaskDraft({
       kind: 'milestone',
-      department: 'operations',
+      department: ALL_DEPARTMENTS_ID,
       visibility: 'team',
       status: 'todo',
+      planned_for: startDate,
       deadline: startDate,
     }));
   }
@@ -76,6 +79,26 @@ export default function WarzoneHome({ authEnabled, initialTasks = [], displayNam
         credentials: 'same-origin',
         body: JSON.stringify(body),
       });
+      if (res.ok) {
+        setPanelTask(null);
+        await refresh();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id) {
+    const ok = await requestConfirm({
+      title: t('hub.warzone.taskPanel.delete'),
+      message: t('hub.warzone.deleteConfirm'),
+      confirmLabel: t('hub.warzone.taskPanel.delete'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API_V1.warzoneTask(id), { method: 'DELETE', credentials: 'same-origin' });
       if (res.ok) {
         setPanelTask(null);
         await refresh();
@@ -141,9 +164,12 @@ export default function WarzoneHome({ authEnabled, initialTasks = [], displayNam
           task={panelTask}
           onClose={() => setPanelTask(null)}
           onSave={handleSaveItem}
+          onDelete={handleDelete}
           saving={saving}
         />
       )}
+
+      {confirmDialog}
     </HubLayout>
   );
 }

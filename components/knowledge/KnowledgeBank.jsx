@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
 import KnowledgeEditor from '@/components/knowledge/KnowledgeEditor';
 import { useLocale } from '@/components/LocaleProvider';
+import { useConfirm } from '@/hooks/useConfirm';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { knowledgeContentToHtml, normalizeKnowledgeHtml } from '@/lib/knowledge-content';
 import { knowledgeBankUrl, KNOWLEDGE_PAGES_CHANGED } from '@/lib/knowledge';
 
 export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
   const { t } = useLocale();
+  const { requestConfirm, confirmDialog } = useConfirm();
   const router = useRouter();
   const [activePage, setActivePage] = useState(null);
   const [loading, setLoading] = useState(Boolean(pageId));
@@ -106,7 +108,13 @@ export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
 
   async function deleteActivePage() {
     if (!activePage) return;
-    if (!confirm(t('hub.knowledge.deleteConfirm'))) return;
+    const ok = await requestConfirm({
+      title: t('hub.knowledge.delete'),
+      message: t('hub.knowledge.deleteConfirm'),
+      confirmLabel: t('hub.knowledge.delete'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
     const res = await fetch(API_V1.knowledgePage(activePage.id), {
       method: 'DELETE',
       credentials: 'same-origin',
@@ -180,6 +188,8 @@ export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
         placeholder={t('hub.knowledge.contentPlaceholder')}
         onChange={handleContentChange}
       />
+
+      {confirmDialog}
     </article>
   );
 }
