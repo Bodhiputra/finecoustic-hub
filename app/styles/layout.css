@@ -43,8 +43,8 @@
 .hub-layout .hub-main-shell > main,
 .hub-layout .hub-main-shell > .main,
 .hub-layout .hub-main-shell > .hub-main,
-.hub-layout .hub-main-shell > .warzone-dept-main,
-.hub-layout .hub-main-shell > .warzone-main {
+.hub-layout .hub-main-shell > .internal-dept-main,
+.hub-layout .hub-main-shell > .internal-main {
   flex: 1;
   display: flex;
   flex-direction: column;

@@ -67,13 +67,13 @@ export default function HubAdminUsers() {
           Everyone signs in with the shared team password. Block or remove accounts here.
         </p>
         {error && <p className="login-error">{error}</p>}
-        <ul className="warzone-list-ul">
+        <ul className="internal-list-ul">
           {users.map(u => (
             <li key={u.id} className="personal-hub-card">
               <div className="hub-admin-user-head">
                 <div>
                   <strong>{u.display_name}</strong>
-                  <span className="warzone-list-meta">
+                  <span className="internal-list-meta">
                     {' '}
                     · {u.role}
                     {u.blocked ? ' · blocked' : ''}

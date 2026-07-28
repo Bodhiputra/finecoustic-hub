@@ -1,6 +1,7 @@
 import '../styles/hub.css';
 import '../styles/panel.css';
-import '../styles/warzone.css';
+import '../styles/hub-task-panel.css';
+import '../styles/internal.css';
 import '../styles/marketing.css';
 import '../styles/knowledge.css';
 

@@ -1,4 +1,4 @@
-/* Shared slide-over panel + form fields (Warzone TaskPanel, appdev issue panel). */
+/* Shared slide-over panel + form fields (Internal TaskPanel, appdev issue panel). */
 
 .appdev-overlay {
   position: fixed;
@@ -315,4 +315,14 @@
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-5);
+}
+
+.appdev-panel-notice {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.45;
 }

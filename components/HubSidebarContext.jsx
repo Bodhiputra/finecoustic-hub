@@ -150,7 +150,7 @@ export function HubMenuButton({ label }) {
   if (!ctx) return null;
 
   const { open, toggle, sidebarId } = ctx;
-  const buttonLabel = label || (open ? t('hub.warzone.closeSidebar') : t('hub.warzone.openSidebar'));
+  const buttonLabel = label || (open ? t('hub.internal.closeSidebar') : t('hub.internal.openSidebar'));
 
   return (
     <button

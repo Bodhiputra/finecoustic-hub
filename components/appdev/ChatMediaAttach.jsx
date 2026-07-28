@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '@/components/Icon';
-import { uploadAppdevMediaFile } from '@/lib/appdev-upload-client';
+import { uploadAppdevMediaFile } from '@/lib/hub-upload-client';
 import {
   IMAGE_ACCEPT,
   isImageFile,
@@ -20,6 +20,7 @@ export default function ChatMediaAttach({
   disabled = false,
   onError,
   onUploadingChange,
+  uploadMediaFile = uploadAppdevMediaFile,
 }) {
   const imageRef = useRef(null);
   const videoRef = useRef(null);
@@ -54,7 +55,7 @@ export default function ChatMediaAttach({
 
       setUploading('image');
       try {
-        const url = await uploadAppdevMediaFile(file, 'image');
+        const url = await uploadMediaFile(file, 'image');
         onImage(url);
       } catch (err) {
         reportError(err.message || t('appdev.media.uploadFailed'));
@@ -62,7 +63,7 @@ export default function ChatMediaAttach({
         setUploading(null);
       }
     },
-    [disabled, uploading, onImage, reportError, t]
+    [disabled, uploading, onImage, reportError, t, uploadMediaFile]
   );
 
   const processVideo = useCallback(
@@ -83,7 +84,7 @@ export default function ChatMediaAttach({
 
       setUploading('video');
       try {
-        const url = await uploadAppdevMediaFile(file, 'video');
+        const url = await uploadMediaFile(file, 'video');
         onVideo(url);
       } catch (err) {
         reportError(err.message || t('appdev.media.uploadFailed'));
@@ -91,7 +92,7 @@ export default function ChatMediaAttach({
         setUploading(null);
       }
     },
-    [disabled, uploading, onVideo, reportError, t]
+    [disabled, uploading, onVideo, reportError, t, uploadMediaFile]
   );
 
   const busy = disabled || Boolean(uploading);

@@ -16,7 +16,7 @@ export async function middleware(request) {
 
   // Large multipart uploads — auth is enforced in the route handler; skip middleware
   // so Next.js does not buffer/truncate the body (10MB default).
-  if (pathname === '/api/appdev/upload') {
+  if (pathname === '/api/appdev/upload' || pathname === '/api/v1/internal/upload') {
     return NextResponse.next();
   }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * One-time import of RemindMePlease tasks into data/warzone-tasks.json (local dev).
+ * One-time import of RemindMePlease tasks into data/internal-tasks.json (local dev).
  * Usage: npm run import:rmp -- [path-to-tasks.json] [displayName]
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 
 const rmpPath = process.argv[2] || join(process.env.HOME || '', '.remindmeplease/tasks.json');
 const displayName = process.argv[3] || 'FCS-建宏';
-const outFile = join(process.cwd(), 'data/warzone-tasks.json');
+const outFile = join(process.cwd(), 'data/internal-tasks.json');
 
 const deptMap = {
   Marketing: 'marketing',

@@ -28,6 +28,7 @@ export default function IssueChat({
   canPost = true,
   t,
   locale,
+  uploadMediaFile,
 }) {
   const [body, setBody] = useState('');
   const [imageUrls, setImageUrls] = useState([]);
@@ -168,6 +169,7 @@ export default function IssueChat({
               t={t}
               disabled={posting || mediaBusy}
               onUploadingChange={setUploadingMedia}
+              uploadMediaFile={uploadMediaFile}
               onImage={url => {
                 setError('');
                 setImageUrls(prev => [...prev, url]);

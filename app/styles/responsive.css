@@ -1,20 +1,20 @@
 /* Fine Hub — shared responsive layout (mobile + tablet) */
 
 @media (max-width: 1024px) {
-  .warzone-cal-workspace.has-rail {
+  .internal-cal-workspace.has-rail {
     grid-template-columns: 1fr;
   }
 
-  .warzone-list-view-row {
+  .internal-list-view-row {
     grid-template-columns: 1fr;
   }
 
-  .warzone-list-view-status {
+  .internal-list-view-status {
     padding-top: 0;
     padding-bottom: 4px;
   }
 
-  .warzone-team-schedule-head {
+  .internal-team-schedule-head {
     flex-wrap: wrap;
   }
 }
@@ -22,13 +22,13 @@
 @media (max-width: 768px) {
   .main,
   .hub-main,
-  .hub-main.warzone-main,
-  .warzone-home .warzone-main,
-  .warzone-dept-layout .main {
+  .hub-main.internal-main,
+  .internal-home .internal-main,
+  .internal-dept-layout .main {
     padding: var(--content-pad-y) var(--content-pad-x) var(--space-6);
   }
 
-  .warzone-home-layout .hub-main.warzone-main {
+  .internal-home-layout .hub-main.internal-main {
     max-width: none;
     width: 100%;
     margin: 0;
@@ -88,68 +88,68 @@
     font-size: 1.25rem;
   }
 
-  .warzone-dept-toolbar {
+  .internal-dept-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .warzone-cal-toolbar {
+  .internal-cal-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .warzone-cal-search {
+  .internal-cal-search {
     max-width: none;
     width: 100%;
   }
 
-  .warzone-cal-legend {
+  .internal-cal-legend {
     width: 100%;
     justify-content: flex-start;
   }
 
-  .warzone-cal-rail {
+  .internal-cal-rail {
     border-left: none;
     border-top: 1px solid var(--line);
     padding: var(--space-4) 0 0;
     max-height: min(42vh, 360px);
   }
 
-  .warzone-calendar .warzone-cal-month {
+  .internal-calendar .internal-cal-month {
     min-height: auto;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  .warzone-calendar .warzone-cal-dow-row,
-  .warzone-calendar .warzone-cal-week-days,
-  .warzone-calendar .warzone-cal-week-spans {
+  .internal-calendar .internal-cal-dow-row,
+  .internal-calendar .internal-cal-week-days,
+  .internal-calendar .internal-cal-week-spans {
     min-width: 280px;
   }
 
-  .warzone-calendar.is-compact .warzone-cal-cell {
+  .internal-calendar.is-compact .internal-cal-cell {
     min-height: 4.25rem;
     padding: 4px 3px;
   }
 
-  .warzone-calendar:not(.is-compact) .warzone-cal-cell {
+  .internal-calendar:not(.is-compact) .internal-cal-cell {
     min-height: 5.5rem;
     padding: 6px 4px;
   }
 
-  .warzone-cal-dow {
+  .internal-cal-dow {
     padding: 6px 2px;
     font-size: 9px;
     letter-spacing: 0.02em;
   }
 
-  .warzone-cal-day-num {
+  .internal-cal-day-num {
     font-size: 11px;
     min-width: 1.35rem;
     padding: 2px;
   }
 
-  .warzone-cal-event {
+  .internal-cal-event {
     padding: 2px 4px;
     font-size: 10px;
     min-height: 18px;
@@ -157,37 +157,37 @@
     border-radius: 4px;
   }
 
-  .warzone-cal-kind-glyph {
+  .internal-cal-kind-glyph {
     display: none;
   }
 
-  .warzone-cal-span {
+  .internal-cal-span {
     min-height: 18px;
     padding: 0 4px;
   }
 
-  .warzone-cal-span-title {
+  .internal-cal-span-title {
     font-size: 9px;
   }
 
-  .warzone-cal-nav-btn {
+  .internal-cal-nav-btn {
     width: 36px;
     height: 36px;
     font-size: 18px;
   }
 
-  .warzone-cal-title {
+  .internal-cal-title {
     font-size: 1rem;
     min-width: 0;
     flex: 1;
   }
 
-  .warzone-add-btn {
+  .internal-add-btn {
     width: 100%;
     justify-content: center;
   }
 
-  .warzone-holiday-controls {
+  .internal-holiday-controls {
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2);
   }
@@ -207,16 +207,16 @@
 }
 
 @media (max-width: 480px) {
-  .warzone-kpi-row {
+  .internal-kpi-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
   }
 
-  .warzone-kpi {
+  .internal-kpi {
     padding: var(--space-3);
   }
 
-  .warzone-kpi-val {
+  .internal-kpi-val {
     font-size: 1.35rem;
   }
 

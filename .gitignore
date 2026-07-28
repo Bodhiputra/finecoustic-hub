@@ -18,7 +18,9 @@ data/appdev-board.json
 data/appdev-users.json
 data/appdev-presence.json
 data/preorder-survey-responses.json
+data/internal-tasks.json
 data/warzone-tasks.json
+data/internal-campaigns.json
 data/knowledge-pages.json
 data/hub-users.json
 data/appdev-uploads/

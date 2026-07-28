@@ -6,7 +6,7 @@ import Icon from '@/components/Icon';
 import { HubMenuButton } from '@/components/HubSidebarContext';
 import LocaleSwitch from '@/components/LocaleSwitch';
 import ThemeToggle from '@/components/ThemeToggle';
-import UserAvatar from '@/components/warzone/UserAvatar';
+import UserAvatar from '@/components/internal/UserAvatar';
 import { useLocale } from '@/components/LocaleProvider';
 
 export default function HubTopNav({
@@ -55,9 +55,9 @@ export default function HubTopNav({
       <div className="hub-topnav-actions">
         <LocaleSwitch />
         <ThemeToggle />
-        <Link href="/me" className="hub-topnav-user" aria-label={t('hub.warzone.personalHub')}>
+        <Link href="/me" className="hub-topnav-user" aria-label={t('hub.internal.personalHub')}>
           <UserAvatar name={displayName} size={30} />
-          <span className="hub-topnav-user-name">{displayName || t('hub.warzone.personalHub')}</span>
+          <span className="hub-topnav-user-name">{displayName || t('hub.internal.personalHub')}</span>
         </Link>
         {authEnabled && (
           <button type="button" className="btn-ghost hub-topnav-signout" onClick={handleLogout}>

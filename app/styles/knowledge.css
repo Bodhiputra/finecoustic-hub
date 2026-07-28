@@ -420,14 +420,14 @@
 }
 
 /* Collapsible sidebar sections */
-.warzone-sidebar-section-head {
+.internal-sidebar-section-head {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   margin-bottom: var(--space-2);
 }
 
-.warzone-sidebar-section-toggle {
+.internal-sidebar-section-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -446,7 +446,7 @@
   text-align: left;
 }
 
-.warzone-sidebar-section-action {
+.internal-sidebar-section-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -461,35 +461,35 @@
   transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
 }
 
-.warzone-sidebar-section-action:hover {
+.internal-sidebar-section-action:hover {
   border-color: var(--line-strong);
   color: var(--text);
   background: var(--accent-soft);
 }
 
-.warzone-sidebar-section-toggle:hover {
+.internal-sidebar-section-toggle:hover {
   color: var(--text);
 }
 
-.warzone-sidebar-section-label {
+.internal-sidebar-section-label {
   flex: 1;
   min-width: 0;
 }
 
-.warzone-sidebar-chevron {
+.internal-sidebar-chevron {
   flex-shrink: 0;
   transition: transform 160ms var(--ease-out);
 }
 
-.warzone-sidebar-section:not(.is-open) .warzone-sidebar-chevron {
+.internal-sidebar-section:not(.is-open) .internal-sidebar-chevron {
   transform: rotate(-90deg);
 }
 
-.warzone-sidebar-section-body {
-  animation: warzone-sidebar-reveal 160ms var(--ease-out);
+.internal-sidebar-section-body {
+  animation: internal-sidebar-reveal 160ms var(--ease-out);
 }
 
-@keyframes warzone-sidebar-reveal {
+@keyframes internal-sidebar-reveal {
   from {
     opacity: 0;
     transform: translateY(-4px);

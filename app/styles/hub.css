@@ -209,7 +209,7 @@
   box-shadow: none;
 }
 
-.warzone-sidebar-departments .sidebar-nav {
+.internal-sidebar-departments .sidebar-nav {
   gap: var(--space-1);
 }
 
@@ -394,7 +394,7 @@
   display: none;
 }
 
-.warzone-dept-toolbar {
+.internal-dept-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -405,11 +405,11 @@
   max-width: 100%;
 }
 
-.warzone-dept-layout .warzone-dept-toolbar {
+.internal-dept-layout .internal-dept-toolbar {
   margin-top: 0;
 }
 
-.warzone-home-layout .hub-main.warzone-main {
+.internal-home-layout .hub-main.internal-main {
   flex: 1;
   max-width: none;
   width: 100%;
@@ -492,17 +492,17 @@
     display: inline;
   }
 
-  .warzone-add-btn {
+  .internal-add-btn {
     flex: 1 1 auto;
     justify-content: center;
   }
 
-  .warzone-dept-view-tabs {
+  .internal-dept-view-tabs {
     display: flex;
     width: 100%;
   }
 
-  .warzone-dept-view-tab {
+  .internal-dept-view-tab {
     flex: 1;
     justify-content: center;
   }

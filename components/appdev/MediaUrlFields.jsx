@@ -15,9 +15,9 @@ import {
   formatMaxLabel,
   tMedia,
 } from '@/lib/appdev-media';
-import { uploadAppdevMediaFile } from '@/lib/appdev-upload-client';
+import { uploadAppdevMediaFile } from '@/lib/hub-upload-client';
 
-async function uploadFile(file, kind) {
+async function defaultUploadFile(file, kind) {
   return uploadAppdevMediaFile(file, kind);
 }
 
@@ -181,6 +181,7 @@ export default function MediaUrlFields({
   t,
   disabled = false,
   canManageMedia = true,
+  uploadMediaFile = defaultUploadFile,
 }) {
   const [uploadingKind, setUploadingKind] = useState(null);
   const [imageErrors, setImageErrors] = useState([]);
@@ -217,7 +218,7 @@ export default function MediaUrlFields({
       const uploaded = [];
       try {
         for (const file of validFiles) {
-          const url = await uploadFile(file, 'image');
+          const url = await uploadMediaFile(file, 'image');
           uploaded.push(url);
         }
         onChangeImages([...imageUrls, ...uploaded]);
@@ -228,7 +229,7 @@ export default function MediaUrlFields({
         setUploadingKind(null);
       }
     },
-    [disabled, canManageMedia, onChangeImages, imageUrls, t]
+    [disabled, canManageMedia, onChangeImages, imageUrls, t, uploadMediaFile]
   );
 
   const processVideoFiles = useCallback(
@@ -262,7 +263,7 @@ export default function MediaUrlFields({
       const uploaded = [];
       try {
         for (const file of validFiles) {
-          const url = await uploadFile(file, 'video');
+          const url = await uploadMediaFile(file, 'video');
           uploaded.push(url);
         }
         onChangeVideos([...videoUrls, ...uploaded]);
@@ -273,7 +274,7 @@ export default function MediaUrlFields({
         setUploadingKind(null);
       }
     },
-    [disabled, canManageMedia, onChangeVideos, videoUrls, t]
+    [disabled, canManageMedia, onChangeVideos, videoUrls, t, uploadMediaFile]
   );
 
   const onPaste = e => {

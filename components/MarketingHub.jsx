@@ -9,8 +9,8 @@ import { useLocale } from '@/components/LocaleProvider';
 
 export const MARKETING_VIEW_META = {
   'preorder-survey': {
-    titleKey: 'hub.warzone.fbsPreorderSurvey',
-    descKey: 'hub.warzone.fbsPreorderSurveyDesc',
+    titleKey: 'hub.internal.fbsPreorderSurvey',
+    descKey: 'hub.internal.fbsPreorderSurveyDesc',
   },
 };
 
@@ -19,7 +19,7 @@ export function getMarketingViewMeta(view) {
 }
 
 const NAV_ITEMS = [
-  { id: 'preorder-survey', href: '/marketing?tool=preorder-survey', labelKey: 'hub.warzone.fbsPreorderSurvey' },
+  { id: 'preorder-survey', href: '/marketing?tool=preorder-survey', labelKey: 'hub.internal.fbsPreorderSurvey' },
 ];
 
 export function MarketingHubContent({ view = 'preorder-survey', initialRows = [] }) {

@@ -1,9 +1,9 @@
-import WarzoneDepartmentLoader from '@/components/warzone/WarzoneDepartmentLoader';
+import InternalDepartmentLoader from '@/components/internal/InternalDepartmentLoader';
 
 export const dynamic = 'force-dynamic';
 
 export default function MarketingPage({ searchParams }) {
   return (
-    <WarzoneDepartmentLoader departmentId="marketing" searchParams={searchParams} />
+    <InternalDepartmentLoader departmentId="marketing" searchParams={searchParams} />
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ThemeToggle from '@/components/ThemeToggle';
-import UserAvatar from '@/components/warzone/UserAvatar';
+import UserAvatar from '@/components/internal/UserAvatar';
 
 export default function PersonalHub({ authEnabled }) {
   const [profile, setProfile] = useState({ displayName: '', hubUser: null });
@@ -17,10 +17,10 @@ export default function PersonalHub({ authEnabled }) {
       .catch(() => {});
 
     Promise.all([
-      fetch('/api/warzone/tasks?bucket=today', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/warzone/tasks?bucket=overdue', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/warzone/tasks?bucket=in_progress', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/warzone/tasks?bucket=bank', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/internal/tasks?bucket=today', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/internal/tasks?bucket=overdue', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/internal/tasks?bucket=in_progress', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/internal/tasks?bucket=bank', { credentials: 'same-origin' }).then(r => r.json()),
     ]).then(([today, overdue, prog, bank]) => {
       setStats({
         today: today.tasks?.length || 0,
@@ -50,11 +50,11 @@ export default function PersonalHub({ authEnabled }) {
       </header>
 
       <main className="hub-main personal-hub-main">
-        <section className="warzone-kpi-row personal-kpis">
-          <Link href="/tasks?view=today" className="warzone-kpi"><span className="warzone-kpi-val">{stats.today}</span><span>Today</span></Link>
-          <Link href="/tasks?view=overdue" className="warzone-kpi is-warn"><span className="warzone-kpi-val">{stats.overdue}</span><span>Overdue</span></Link>
-          <Link href="/tasks?view=in_progress" className="warzone-kpi"><span className="warzone-kpi-val">{stats.inProgress}</span><span>In progress</span></Link>
-          <Link href="/tasks?view=bank" className="warzone-kpi"><span className="warzone-kpi-val">{stats.bank}</span><span>Todo bank</span></Link>
+        <section className="internal-kpi-row personal-kpis">
+          <Link href="/tasks?view=today" className="internal-kpi"><span className="internal-kpi-val">{stats.today}</span><span>Today</span></Link>
+          <Link href="/tasks?view=overdue" className="internal-kpi is-warn"><span className="internal-kpi-val">{stats.overdue}</span><span>Overdue</span></Link>
+          <Link href="/tasks?view=in_progress" className="internal-kpi"><span className="internal-kpi-val">{stats.inProgress}</span><span>In progress</span></Link>
+          <Link href="/tasks?view=bank" className="internal-kpi"><span className="internal-kpi-val">{stats.bank}</span><span>Todo bank</span></Link>
         </section>
 
         <section className="personal-hub-card">
