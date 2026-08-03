@@ -15,10 +15,12 @@ import {
 } from '@/lib/knowledge';
 import {
   dataLinkLabel,
+  departmentTaskNavEnabled,
   departmentTasksEnabled,
   deptText,
   getDepartment,
   getDepartmentPath,
+  getDepartmentTaskNav,
 } from '@/lib/internal';
 import InternalDepartmentNav from '@/components/internal/InternalDepartmentNav';
 
@@ -38,7 +40,10 @@ export default function InternalSidebar({
   const deptBase = departmentId ? getDepartmentPath(departmentId) : '';
   const knowledgeActive = isKnowledgeBankTool(toolParam);
   const dataActive = Boolean(toolParam && dept?.dataLinks?.some(link => link.id === toolParam));
-  const tasksActive = !toolParam && departmentTasksEnabled(dept);
+  const taskNav = getDepartmentTaskNav(dept);
+  const tasksActive = taskNav
+    ? isToolActive(taskNav.toolId)
+    : (!toolParam && departmentTasksEnabled(dept));
 
   const loadKbPages = useCallback(() => {
     if (!departmentId || departmentId === 'all') return Promise.resolve();
@@ -54,7 +59,7 @@ export default function InternalSidebar({
 
   useEffect(() => {
     loadKbPages();
-  }, [loadKbPages, toolParam]);
+  }, [loadKbPages]);
 
   useEffect(() => {
     const onChanged = () => loadKbPages();
@@ -102,7 +107,43 @@ export default function InternalSidebar({
           backLabel={t('hub.internal.home')}
         />
 
-        {departmentTasksEnabled(dept) && (
+        {taskNav?.type === 'campaigns' ? (
+          <nav className="sidebar-nav internal-sidebar-primary" aria-label={t('hub.internal.campaignList')}>
+            <Link
+              href={taskNav.href}
+              className={`nav${tasksActive ? ' active' : ''}`}
+              aria-current={tasksActive ? 'page' : undefined}
+              title={t(taskNav.labelKey)}
+            >
+              <Icon name="megaphone" size={15} />
+              <span className="nav-label">{t(taskNav.labelKey)}</span>
+            </Link>
+          </nav>
+        ) : null}
+
+        {departmentTaskNavEnabled(dept) && taskNav?.type !== 'campaigns' && (
+          <SidebarSection
+            title={t(taskNav?.sectionLabelKey || 'hub.internal.sectionTasks')}
+            defaultOpen={tasksActive}
+          >
+            <nav
+              className="sidebar-nav sidebar-nav-sub"
+              aria-label={t(taskNav?.sectionLabelKey || 'hub.internal.sectionTasks')}
+            >
+              <Link
+                href={taskNav?.href || getDepartmentPath(departmentId)}
+                className={`nav nav-sub${tasksActive ? ' active' : ''}`}
+                aria-current={tasksActive ? 'page' : undefined}
+                title={t(taskNav?.labelKey || 'hub.internal.deptTasks')}
+              >
+                <Icon name="kanban" size={15} />
+                <span className="nav-label">{t(taskNav?.labelKey || 'hub.internal.deptTasks')}</span>
+              </Link>
+            </nav>
+          </SidebarSection>
+        )}
+
+        {departmentTasksEnabled(dept) && !taskNav && (
           <SidebarSection title={t('hub.internal.sectionTasks')} defaultOpen={tasksActive}>
             <nav className="sidebar-nav sidebar-nav-sub" aria-label={t('hub.internal.sectionTasks')}>
               <Link

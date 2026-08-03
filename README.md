@@ -6,17 +6,18 @@ Internal workspace with isolated access realms. Code is public; brand data is no
 
 ## Access model
 
-| URL | Password env | Who |
+| URL | Auth | Who |
 |---|---|---|
-| `/` (hub home) | `OPS_HUB_PASSWORD` | Internal team |
+| `/` (hub home) | Admin-assigned name + password | Internal team |
 | `/ops`, `/customers`, `/stock` | same hub session | Internal — operations |
 | `/marketing`, `/preorder-survey` | same hub session | Internal — marketing |
-| `/appdev` | `APPDEV_PASSWORD` | External app dev partners (isolated) |
+| `/appdev` | `APPDEV_PASSWORD` (team password) | External app dev partners (isolated) |
 
-### Isolation
+### Main hub accounts
 
-- **Hub password alone does not grant `/appdev`.** Devs must sign up / sign in on the appdev login screen (name + shared team password).
-- **Admin (you):** master password `HUB_MASTER_PASSWORD` on the appdev login — full board + user admin.
+- **No public sign-up.** Managers create accounts at `/hub/admin` (name + individual password).
+- **Admin (you):** sign in as `FCS-建宏` with `HUB_MASTER_PASSWORD` — full hub + appdev access.
+- **`/appdev` is unchanged** — partners still sign up / sign in with the shared `APPDEV_PASSWORD`.
 - Realms share the site origin but use **separate signed cookies** (see below).
 
 ### Session cookies
@@ -77,9 +78,8 @@ npm run test:auth
    ```
 
 3. **Vercel** — connect repo, set env vars:
-   - `OPS_HUB_PASSWORD`
-   - `APPDEV_PASSWORD`
    - `HUB_MASTER_PASSWORD`
+   - `APPDEV_PASSWORD`
    - `SESSION_SECRET` (required in production)
    - `DATABASE_URL`
    - `PREORDER_SURVEY_SECRET` — shared with Shopify theme (questionnaire webhook)

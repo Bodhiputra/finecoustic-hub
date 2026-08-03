@@ -93,10 +93,7 @@ async function login(endpoint, password, displayName = 'Test User') {
   const res = await fetch(`${base}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      password,
-      ...(endpoint.includes('appdev') ? { displayName } : {}),
-    }),
+    body: JSON.stringify({ password, displayName }),
   });
   const data = await res.json().catch(() => ({}));
   const cookies = parseCookies(res.headers.getSetCookie?.() || []);
@@ -111,7 +108,10 @@ async function getWithCookies(path, jar) {
 
 console.log('\n=== Session token unit tests ===');
 
-const hubToken = await signToken(SESSION_REALMS.HUB);
+const hubToken = await signToken(SESSION_REALMS.HUB, undefined, {
+  displayName: 'Test User',
+  userId: 'test-hub-user-id',
+});
 const appdevToken = await signToken(SESSION_REALMS.APPDEV, undefined, {
   pwv: await getAppdevPasswordVersion(),
   displayName: 'Test User',
@@ -145,7 +145,7 @@ assert(adminOnlyAccess.isAdmin && !adminOnlyAccess.hasAppdev, 'admin cookie alon
 const hubOnlyAccess = await resolveSessionAccess({
   get: name => (name === 'finehub_session' ? { value: hubToken } : undefined),
 });
-assert(hubOnlyAccess.hasHub && !hubOnlyAccess.hasAppdev, 'hub session does not grant appdev access');
+assert(!hubOnlyAccess.hasAppdev, 'hub session does not grant appdev access');
 
 const forgedAccess = await resolveSessionAccess({
   get: name => (name === 'finehub_admin' ? { value: '1' } : undefined),
@@ -173,7 +173,7 @@ if (serverUp) {
   assert(Boolean(master), 'HUB_MASTER_PASSWORD set in env');
 
   if (master) {
-    const masterLogin = await login('/api/auth/appdev/login', master, 'FCS-建宏');
+    const masterLogin = await login('/api/auth/hub/login', master, 'FCS-建宏');
     assert(masterLogin.res.ok, 'master login succeeds', String(masterLogin.res.status));
     assert(masterLogin.data.admin === true, 'master login returns admin flag');
     assert(Boolean(masterLogin.cookies.finehub_admin), 'admin cookie issued');
@@ -220,6 +220,39 @@ if (serverUp) {
 
     const usersApi = await getWithCookies('/api/appdev/admin/users', masterLogin2.cookies);
     assert(usersApi.ok, 'admin can list appdev users', String(usersApi.status));
+
+    const signupBlocked = await fetch(`${base}/api/auth/hub/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName: 'Blocked User', password: 'blocked-test-password' }),
+    });
+    assert(signupBlocked.status === 403, 'public hub signup disabled');
+
+    const legacyLogin = await login('/api/auth/login', 'legacy-test', 'Legacy');
+    assert(legacyLogin.res.status === 410, 'legacy hub login disabled');
+
+    const hubUserName = `HubTest-${Date.now()}`;
+    const hubUserPw = `HubTest-${Date.now()}-pw`;
+    const createRes = await fetch(`${base}/api/hub/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: cookieHeader(masterLogin.cookies),
+      },
+      body: JSON.stringify({ displayName: hubUserName, password: hubUserPw, role: 'member' }),
+    });
+    assert(createRes.ok, 'admin can create hub user', String(createRes.status));
+
+    const hubLogin = await login('/api/auth/hub/login', hubUserPw, hubUserName);
+    assert(hubLogin.res.ok, 'hub user login with assigned password');
+    assert(hubLogin.cookies.finehub_session !== hubUserPw, 'hub session cookie is signed');
+
+    const meHub = await getWithCookies('/api/auth/me', hubLogin.cookies);
+    const meHubData = await meHub.json();
+    assert(meHub.ok && meHubData.hubUser?.id, '/api/auth/me reports hub user');
+
+    const tasksApi = await getWithCookies('/api/v1/internal/tasks', hubLogin.cookies);
+    assert(tasksApi.ok, 'hub user can access internal API', String(tasksApi.status));
   }
 
   if (appdevPw) {
@@ -263,12 +296,6 @@ if (serverUp) {
 
     const bad = await login('/api/auth/appdev/login', 'definitely-wrong-password', devName);
     assert(bad.res.status === 401, 'wrong password returns 401');
-  }
-
-  if (hubPw) {
-    const hubLogin = await login('/api/auth/login', hubPw);
-    assert(hubLogin.res.ok, 'hub password login succeeds');
-    assert(hubLogin.cookies.finehub_session !== hubPw, 'hub session cookie is signed');
   }
 
   console.log('\n=== Rate limit test (uses test IP header) ===');

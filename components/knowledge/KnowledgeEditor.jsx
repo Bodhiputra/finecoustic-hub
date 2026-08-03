@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useLocale } from '@/components/LocaleProvider';
+import { usePrompt } from '@/hooks/usePrompt';
 import { normalizeKnowledgeHtml } from '@/lib/knowledge-content';
 
 function ToolBtn({ active, disabled, onClick, title, children }) {
@@ -26,6 +27,7 @@ function ToolBtn({ active, disabled, onClick, title, children }) {
 
 export default function KnowledgeEditor({ pageKey, content, placeholder, onChange }) {
   const { t } = useLocale();
+  const { requestPrompt, promptDialog } = usePrompt();
   const skipUpdate = useRef(true);
   const [, setRevision] = useState(0);
 
@@ -78,12 +80,23 @@ export default function KnowledgeEditor({ pageKey, content, placeholder, onChang
   }, [editor]);
 
   if (!editor) {
-    return <div className="knowledge-editor knowledge-editor-loading">{placeholder}</div>;
+    return (
+      <>
+        <div className="knowledge-editor knowledge-editor-loading">{placeholder}</div>
+        {promptDialog}
+      </>
+    );
   }
 
-  function setLink() {
+  async function setLink() {
     const prev = editor.getAttributes('link').href || '';
-    const url = window.prompt(t('hub.knowledge.linkPrompt'), prev || 'https://');
+    const url = await requestPrompt({
+      title: t('hub.knowledge.toolLink'),
+      label: t('hub.knowledge.linkPrompt'),
+      defaultValue: prev || 'https://',
+      confirmLabel: t('common.confirm'),
+      cancelLabel: t('common.cancel'),
+    });
     if (url === null) return;
     if (!url.trim()) {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
@@ -200,6 +213,7 @@ export default function KnowledgeEditor({ pageKey, content, placeholder, onChang
       </div>
 
       <EditorContent editor={editor} className="knowledge-editor-content" />
+      {promptDialog}
     </div>
   );
 }

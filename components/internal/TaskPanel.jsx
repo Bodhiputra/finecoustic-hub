@@ -14,6 +14,7 @@ import {
   VISIBILITY,
   deptText,
 } from '@/lib/internal';
+import { statusColumnLabel } from '@/lib/internal-campaigns';
 import { useLocale } from '@/components/LocaleProvider';
 import { uploadInternalMediaFile } from '@/lib/hub-upload-client';
 
@@ -70,15 +71,6 @@ const PRIORITY_KEYS = {
   high: 'hub.internal.priorityHigh',
   medium: 'hub.internal.priorityMedium',
   low: 'hub.internal.priorityLow',
-};
-
-const STATUS_KEYS = {
-  todo: 'hub.internal.statusTodo',
-  in_progress: 'hub.internal.statusInProgress',
-  in_review: 'hub.internal.statusInReview',
-  done: 'hub.internal.statusDone',
-  cancelled: 'hub.internal.statusCancelled',
-  archived: 'hub.internal.statusArchived',
 };
 
 const VISIBILITY_KEYS = {
@@ -167,6 +159,7 @@ export default function TaskPanel({
   displayName = '',
   lockDepartmentId = null,
   lockBoard = null,
+  statusColumns = null,
 }) {
   const { locale, t } = useLocale();
   const [draft, setDraft] = useState(task);
@@ -184,6 +177,11 @@ export default function TaskPanel({
     () => DEFAULT_SUBTYPES[draft?.department] || [],
     [draft?.department]
   );
+
+  const statusOptions = useMemo(() => {
+    if (statusColumns?.length) return statusColumns;
+    return TASK_STATUSES.filter(s => s !== 'archived').map(id => ({ id, label: id }));
+  }, [statusColumns]);
 
   if (!task) return null;
 
@@ -324,9 +322,14 @@ export default function TaskPanel({
                     onChange={e => set('status', e.target.value)}
                     disabled={saving}
                   >
-                    {TASK_STATUSES.filter(s => s !== 'archived').map(s => (
-                      <option key={s} value={s}>{t(STATUS_KEYS[s] || s)}</option>
-                    ))}
+                    {statusOptions.map(col => {
+                      const id = typeof col === 'string' ? col : col.id;
+                      return (
+                        <option key={id} value={id}>
+                          {statusColumnLabel(col, t)}
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
                 <label className="appdev-field">

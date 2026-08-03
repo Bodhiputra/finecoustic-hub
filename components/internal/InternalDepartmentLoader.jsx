@@ -11,16 +11,18 @@ export default async function InternalDepartmentLoader({
   departmentId,
   searchParams,
 }) {
-  const { sp, tasks, opsData, marketingRows, campaigns, board } = await loadDepartmentPage({
-    departmentId,
-    searchParams,
-  });
+  const { sp, tasks, opsData, marketingRows, campaigns, board, campaign, products, productDetail, hubMe } =
+    await loadDepartmentPage({
+      departmentId,
+      searchParams,
+    });
 
   return (
     <Suspense fallback={<DepartmentRouteLoading departmentId={departmentId} />}>
       <InternalDepartment
         departmentId={departmentId}
         authEnabled={isHubAuthEnabled()}
+        initialMe={hubMe}
         initialBucket={sp?.view || ''}
         initialTool={sp?.tool || ''}
         initialTasks={tasks}
@@ -28,6 +30,9 @@ export default async function InternalDepartmentLoader({
         marketingRows={marketingRows}
         initialCampaigns={campaigns}
         initialBoard={board}
+        initialCampaign={campaign}
+        initialProducts={products}
+        initialProductDetail={productDetail}
       />
     </Suspense>
   );

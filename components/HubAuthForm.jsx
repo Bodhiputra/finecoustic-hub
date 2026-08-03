@@ -14,12 +14,10 @@ function HubAuthFormInner({
 }) {
   const searchParams = useSearchParams();
   const { t, locale } = useLocale();
-  const [mode, setMode] = useState('signin');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [showNotRegisteredHint, setShowNotRegisteredHint] = useState(false);
   const [loading, setLoading] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState(null);
   const [showRetriesRemaining, setShowRetriesRemaining] = useState(false);
@@ -27,8 +25,7 @@ function HubAuthFormInner({
   const [retryAfterSec, setRetryAfterSec] = useState(0);
 
   const loginEndpoint = '/api/auth/hub/login';
-  const signupEndpoint = '/api/auth/hub/signup';
-  const signinLocked = mode === 'signin' && locked;
+  const signinLocked = locked;
 
   const canSubmit =
     password.trim().length > 0 &&
@@ -84,28 +81,15 @@ function HubAuthFormInner({
     return () => { cancelled = true; };
   }, [loginEndpoint]);
 
-  function switchMode(next) {
-    setMode(next);
-    setError('');
-    setShowNotRegisteredHint(false);
-    if (next === 'signup') {
-      setLocked(false);
-      setShowRetriesRemaining(false);
-      setAttemptsLeft(null);
-    }
-  }
-
   async function onSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
 
     setLoading(true);
     setError('');
-    setShowNotRegisteredHint(false);
-    const endpoint = mode === 'signup' ? signupEndpoint : loginEndpoint;
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch(loginEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
@@ -119,11 +103,6 @@ function HubAuthFormInner({
         setLoading(false);
         return;
       }
-      if (res.status === 409 && data.error === 'name_taken') {
-        setError(t('hub.auth.nameTaken'));
-        setLoading(false);
-        return;
-      }
       if (res.status === 403 && data.error === 'name_master_only') {
         setError(t('common.nameMasterOnly'));
         setLoading(false);
@@ -131,22 +110,11 @@ function HubAuthFormInner({
       }
       if (res.status === 403 && data.error === 'not_registered') {
         setError(t('hub.auth.notRegistered'));
-        setShowNotRegisteredHint(true);
         setLoading(false);
         return;
       }
-      if (res.status === 400 && data.error === 'password_too_short') {
-        setError(t('hub.auth.passwordTooShort'));
-        setLoading(false);
-        return;
-      }
-      if (res.status === 401 && data.error === 'invalid_team_password') {
-        setError(t('hub.auth.invalidTeamPassword'));
-        setLoading(false);
-        return;
-      }
-      if (res.status === 503 && data.error === 'team_password_not_configured') {
-        setError(t('hub.auth.teamPasswordNotConfigured'));
+      if (res.status === 403 && data.error === 'account_blocked') {
+        setError(t('hub.auth.accountBlocked'));
         setLoading(false);
         return;
       }
@@ -155,7 +123,7 @@ function HubAuthFormInner({
           applyRateLimitState({ ...data, allowed: true });
           setShowRetriesRemaining(true);
         }
-        setError(mode === 'signup' ? t('hub.auth.signupFailed') : t('common.incorrectPassword'));
+        setError(t('common.incorrectPassword'));
         setLoading(false);
         return;
       }
@@ -186,16 +154,14 @@ function HubAuthFormInner({
         <ThemeToggle />
       </div>
       <form className="login-card" onSubmit={onSubmit}>
-        <h1>{mode === 'signup' ? t('hub.auth.signUp') : t('login.title')}</h1>
-        <p className="login-subtitle">
-          {mode === 'signup' ? t('hub.auth.signUpSubtitle') : t('hub.auth.signInSubtitle')}
-        </p>
+        <h1>{t('login.title')}</h1>
+        <p className="login-subtitle">{t('hub.auth.signInSubtitle')}</p>
 
         <label htmlFor={nameId}>{t('common.yourName')}</label>
         <input
           id={nameId}
           type="text"
-          autoComplete="name"
+          autoComplete="username"
           className="login-name-input"
           value={displayName}
           disabled={signinLocked}
@@ -228,7 +194,7 @@ function HubAuthFormInner({
           </button>
         </div>
 
-        {showRetriesRemaining && mode === 'signin' && (
+        {showRetriesRemaining && (
           <p className={retriesClass} aria-live="polite">
             {signinLocked
               ? t('common.rateLimited').replace('{time}', formatRetryTime(retryAfterSec))
@@ -238,24 +204,12 @@ function HubAuthFormInner({
           </p>
         )}
         {error && <p className="login-error" role="alert">{error}</p>}
-        {showNotRegisteredHint && (
-          <p className="login-not-registered-hint">
-            <button type="button" className="login-auth-link" onClick={() => switchMode('signup')}>
-              {t('hub.auth.signUp')}
-            </button>
-          </p>
-        )}
 
         <button type="submit" className={`btn-login${loading ? ' is-loading' : ''}`} disabled={!canSubmit || loading}>
-          {loading ? <span className="btn-login-spinner" aria-hidden="true" /> : mode === 'signup' ? t('hub.auth.signUp') : t('common.signIn')}
+          {loading ? <span className="btn-login-spinner" aria-hidden="true" /> : t('common.signIn')}
         </button>
 
-        <p className="login-auth-switch">
-          {mode === 'signin' ? t('hub.auth.switchToSignUp') : t('hub.auth.switchToSignIn')}{' '}
-          <button type="button" className="login-auth-link" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}>
-            {mode === 'signin' ? t('hub.auth.signUp') : t('common.signIn')}
-          </button>
-        </p>
+        <p className="login-subtitle login-admin-hint">{t('hub.auth.adminProvisionedHint')}</p>
       </form>
     </div>
   );

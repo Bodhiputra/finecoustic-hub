@@ -17,6 +17,9 @@
   --muted: #666666;
   --line: #e5e5e5;
   --line-strong: #cccccc;
+  --border: var(--line);
+  --text-muted: var(--muted);
+  --radius-md: var(--radius);
   --accent-soft: #f0f0f0;
   --accent: #000000;
   --focus: #000000;
@@ -45,6 +48,9 @@
   --muted: #999999;
   --line: #222222;
   --line-strong: #333333;
+  --border: var(--line);
+  --text-muted: var(--muted);
+  --radius-md: var(--radius);
   --accent-soft: #1a1a1a;
   --accent: #ffd300;
   --focus: #ffd300;
@@ -275,34 +281,10 @@ input:focus-visible {
 
 .theme-toggle,
 .btn-ghost {
+  /* sizing + colors: hub-buttons.css */
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: .5rem .85rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: .82rem;
-  font-weight: 400;
-  cursor: pointer;
-  transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out), transform 160ms var(--ease-out);
-}
-
-.theme-toggle:hover,
-.btn-ghost:hover {
-  border-color: var(--line-strong);
-  color: var(--text);
-}
-
-.theme-toggle:active,
-.btn-ghost:active {
-  transform: scale(0.97);
-}
-
-.theme-toggle .icon,
-.btn-ghost .icon {
-  opacity: .75;
 }
 
 .view { display: none; }
@@ -1038,49 +1020,7 @@ input:focus-visible {
   border-color: var(--err);
 }
 
-.btn-login {
-  width: 100%;
-  margin-top: var(--space-4);
-  padding: .7rem 1.25rem;
-  background: var(--text);
-  color: var(--bg);
-  border: 0;
-  border-radius: var(--radius-sm);
-  font-size: .92rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
-}
-
-.btn-login:hover:not(:disabled) { opacity: .88; }
-.btn-login:active:not(:disabled) { transform: scale(0.98); }
-
-.btn-login:disabled {
-  background: var(--accent-soft);
-  color: var(--muted);
-  cursor: not-allowed;
-  opacity: 1;
-}
-
-.btn-login.is-loading:disabled {
-  background: var(--text);
-  color: var(--surface);
-  cursor: wait;
-}
-
-.btn-login-spinner {
-  display: inline-block;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid rgba(255, 255, 255, .35);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: login-spin .65s linear infinite;
-}
-
-@keyframes login-spin {
-  to { transform: rotate(360deg); }
-}
+/* .btn-login — see hub-buttons.css */
 
 /* Route-level loading (hub + appdev) */
 .route-loading {

@@ -10,7 +10,6 @@ import { verifyHubUserCredentials, rotateHubUserSession } from '@/lib/hub-users'
 import { setHubSessionCookie } from '@/lib/auth';
 import { grantFullAccessCookies, isMasterPassword } from '@/lib/hub-admin';
 import { claimMasterName, isAllowedAdminLoginName, isMasterOnlyName } from '@/lib/appdev-master-names';
-import { isTeamPasswordConfigured } from '@/lib/hub-team-password';
 
 const REALM = 'hub-login';
 
@@ -36,10 +35,6 @@ export async function POST(request) {
 
   if (!displayName) {
     return NextResponse.json({ error: 'name_required' }, { status: 400 });
-  }
-
-  if (!isTeamPasswordConfigured()) {
-    return NextResponse.json({ error: 'team_password_not_configured' }, { status: 503 });
   }
 
   if (isMasterPassword(attempt)) {

@@ -2,15 +2,15 @@
 /**
  * Flush production preorder survey rows via hub-authenticated API.
  * Usage:
- *   OPS_HUB_PASSWORD=... npm run remote:flush-preorder-survey
- *   OPS_HUB_PASSWORD=... node scripts/remote-flush-preorder-survey.mjs https://finehub.vercel.app
+ *   HUB_MASTER_PASSWORD=... node scripts/remote-flush-preorder-survey.mjs https://finehub.vercel.app
  */
 
 const base = (process.argv[2] || 'https://finehub.vercel.app').replace(/\/$/, '');
-const password = (process.env.OPS_HUB_PASSWORD || '').trim();
+const password = (process.env.HUB_MASTER_PASSWORD || process.env.OPS_HUB_PASSWORD || '').trim();
+const displayName = (process.env.HUB_ADMIN_NAME || 'FCS-建宏').trim();
 
 if (!password) {
-  console.error('Set OPS_HUB_PASSWORD to your hub login password.');
+  console.error('Set HUB_MASTER_PASSWORD for hub admin login.');
   process.exit(1);
 }
 
@@ -31,10 +31,10 @@ function cookieHeader(jar) {
     .join('; ');
 }
 
-const loginRes = await fetch(`${base}/api/auth/login`, {
+const loginRes = await fetch(`${base}/api/auth/hub/login`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ password }),
+  body: JSON.stringify({ password, displayName }),
 });
 
 const loginJson = await loginRes.json().catch(() => ({}));
@@ -53,8 +53,8 @@ const flushRes = await fetch(`${base}/api/preorder-survey/flush`, {
 
 const flushJson = await flushRes.json().catch(() => ({}));
 if (!flushRes.ok) {
-  console.error('Flush failed:', flushJson.error || flushRes.status, flushJson);
+  console.error('Flush failed:', flushJson.error || flushRes.status);
   process.exit(1);
 }
 
-console.log(`Flushed ${flushJson.deleted} response(s) from ${flushJson.storage} on ${base}.`);
+console.log('Flush OK:', flushJson);

@@ -6,30 +6,40 @@ import Link from 'next/link';
 import ThemeToggle from '@/components/ThemeToggle';
 import UserAvatar from '@/components/internal/UserAvatar';
 
-export default function PersonalHub({ authEnabled }) {
-  const [profile, setProfile] = useState({ displayName: '', hubUser: null });
-  const [stats, setStats] = useState({ today: 0, overdue: 0, inProgress: 0, bank: 0 });
+export default function PersonalHub({
+  authEnabled,
+  initialProfile = null,
+  initialStats = null,
+}) {
+  const [profile, setProfile] = useState(
+    () => initialProfile ?? { displayName: '', hubUser: null }
+  );
+  const [stats, setStats] = useState(
+    () => initialStats ?? { today: 0, overdue: 0, inProgress: 0, bank: 0 }
+  );
 
   useEffect(() => {
+    if (initialProfile && initialStats) return;
+
     fetch('/api/auth/me', { credentials: 'same-origin' })
       .then(r => r.json())
       .then(data => setProfile({ displayName: data.displayName, hubUser: data.hubUser }))
       .catch(() => {});
 
     Promise.all([
-      fetch('/api/internal/tasks?bucket=today', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/internal/tasks?bucket=overdue', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/internal/tasks?bucket=in_progress', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/internal/tasks?bucket=bank', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/v1/internal/tasks?bucket=today', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/v1/internal/tasks?bucket=overdue', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/v1/internal/tasks?bucket=in_progress', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/v1/internal/tasks?bucket=bank', { credentials: 'same-origin' }).then(r => r.json()),
     ]).then(([today, overdue, prog, bank]) => {
       setStats({
-        today: today.tasks?.length || 0,
-        overdue: overdue.tasks?.length || 0,
-        inProgress: prog.tasks?.length || 0,
-        bank: bank.tasks?.length || 0,
+        today: today.data?.tasks?.length || today.tasks?.length || 0,
+        overdue: overdue.data?.tasks?.length || overdue.tasks?.length || 0,
+        inProgress: prog.data?.tasks?.length || prog.tasks?.length || 0,
+        bank: bank.data?.tasks?.length || bank.tasks?.length || 0,
       });
     }).catch(() => {});
-  }, []);
+  }, [initialProfile, initialStats]);
 
   return (
     <div className="hub-page personal-hub">

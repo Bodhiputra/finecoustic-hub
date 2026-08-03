@@ -96,6 +96,14 @@ const ICONS = {
       <circle cx="12" cy="17" r=".5" fill="currentColor" stroke="none" />
     </>
   ),
+  flow: (
+    <>
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="18" cy="6" r="2.5" />
+      <circle cx="12" cy="18" r="2.5" />
+      <path d="M8.2 7.4 10.8 16M15.8 7.4 13.2 16M8.2 6.8h7.6" />
+    </>
+  ),
   megaphone: (
     <>
       <path d="m3 11 18-5v12L3 13v-2Z" />
@@ -106,6 +114,12 @@ const ICONS = {
     <>
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <path d="M7 10l5 5 5-5M12 15V3" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </>
   ),
   menu: (

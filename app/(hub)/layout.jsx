@@ -1,4 +1,5 @@
 import '../styles/hub.css';
+import '../styles/hub-prose.css';
 import '../styles/panel.css';
 import '../styles/hub-task-panel.css';
 import '../styles/internal.css';

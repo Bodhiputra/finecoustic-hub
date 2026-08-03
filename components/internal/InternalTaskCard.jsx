@@ -36,6 +36,7 @@ export default function InternalTaskCard({
   const subtaskTotal = task.subtasks?.length || 0;
   const subtaskDone = task.subtasks?.filter(s => s.done).length || 0;
   const priority = task.priority && task.priority !== 'none' ? task.priority : null;
+  const isMilestone = task.kind === 'milestone';
   const hasChips = priority || task.subtype || due || subtaskTotal > 0 || assignee;
 
   return (
@@ -43,6 +44,7 @@ export default function InternalTaskCard({
       type="button"
       className={[
         'internal-task-card',
+        isMilestone && 'is-milestone',
         overdue && 'is-overdue',
         isDragging && 'is-dragging',
         className,
@@ -54,7 +56,12 @@ export default function InternalTaskCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
     >
-      <span className="internal-task-card-title">{task.title}</span>
+      <span className="internal-task-card-head">
+        {isMilestone ? (
+          <span className="internal-task-card-kind" aria-hidden="true">◇</span>
+        ) : null}
+        <span className="internal-task-card-title">{task.title}</span>
+      </span>
 
       {hasChips && (
         <div className="internal-task-card-chips">

@@ -4,13 +4,21 @@ import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import TaskPanel from '@/components/internal/TaskPanel';
 import InternalCalendarWorkspace from '@/components/internal/InternalCalendarWorkspace';
+import InternalScheduleFilters from '@/components/internal/InternalScheduleFilters';
 import InternalSidebar from '@/components/internal/InternalSidebar';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useInternalTasks } from '@/hooks/useInternalTasks';
 import { API_V1 } from '@/lib/api/routes';
-import { MASTER_CALENDAR_KIND_FILTERS, ALL_DEPARTMENTS_ID, newTaskDraft } from '@/lib/internal';
+import {
+  MASTER_CALENDAR_KIND_FILTERS,
+  ALL_DEPARTMENTS_ID,
+  DEPARTMENT_IDS,
+  calendarItemMatchesDepartmentFilter,
+  calendarItemMatchesKindFilter,
+  newTaskDraft,
+} from '@/lib/internal';
 
 const MASTER_KINDS = MASTER_CALENDAR_KIND_FILTERS;
 
@@ -44,6 +52,45 @@ export default function InternalHome({ authEnabled, initialTasks = [], displayNa
   const scheduleItems = useMemo(
     () => tasks.filter(t => t.status !== 'archived'),
     [tasks]
+  );
+
+  const [activeKindFilters, setActiveKindFilters] = useState(() => new Set(MASTER_KINDS));
+  const [activeDepartments, setActiveDepartments] = useState(() => new Set(DEPARTMENT_IDS));
+
+  function toggleKindFilter(id) {
+    setActiveKindFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleDepartmentFilter(id) {
+    setActiveDepartments(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const filteredScheduleItems = useMemo(
+    () =>
+      scheduleItems.filter(item => {
+        if (!calendarItemMatchesDepartmentFilter(item, activeDepartments)) return false;
+        if (item.kind === 'task') return activeKindFilters.has('tasks');
+        if (item.kind === 'milestone' || item.kind === 'event') return activeKindFilters.has('milestones');
+        return false;
+      }),
+    [scheduleItems, activeKindFilters, activeDepartments]
+  );
+
+  const calendarItemFilter = useMemo(
+    () => item =>
+      calendarItemMatchesKindFilter(item, activeKindFilters) &&
+      calendarItemMatchesDepartmentFilter(item, activeDepartments),
+    [activeKindFilters, activeDepartments]
   );
 
   const handleLogout = async () => {
@@ -128,6 +175,14 @@ export default function InternalHome({ authEnabled, initialTasks = [], displayNa
               <p className="internal-team-schedule-desc">{t('hub.internal.teamScheduleHint')}</p>
             </div>
             <div className="internal-team-schedule-actions">
+              <InternalScheduleFilters
+                activeFilters={activeKindFilters}
+                onToggleType={toggleKindFilter}
+                kinds={MASTER_KINDS}
+                activeDepartments={activeDepartments}
+                onToggleDepartment={toggleDepartmentFilter}
+                showDepartments
+              />
               <button
                 type="button"
                 className="appdev-btn-primary internal-add-btn"
@@ -140,7 +195,7 @@ export default function InternalHome({ authEnabled, initialTasks = [], displayNa
             </div>
           </div>
           <InternalCalendarWorkspace
-            tasks={scheduleItems}
+            tasks={filteredScheduleItems}
             holidaysByDate={{}}
             showHolidays={false}
             countries={[]}
@@ -148,9 +203,9 @@ export default function InternalHome({ authEnabled, initialTasks = [], displayNa
             onCursorChange={setCursor}
             onDayClick={date => openNewMilestone(date)}
             onTaskClick={setPanelTask}
+            calendarItemFilter={calendarItemFilter}
             showHolidayControls={false}
-            showToolbar
-            legendKinds={MASTER_KINDS}
+            showToolbar={false}
             showRail
             focusDay={focusDay}
             onFocusDay={setFocusDay}

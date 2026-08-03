@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isHubAuthEnabled } from '@/lib/auth';
 import { resolveSessionAccess } from '@/lib/session-token';
 
 function isPublicAsset(pathname) {
@@ -20,7 +21,13 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  const hubPassword = (process.env.OPS_HUB_PASSWORD || '').trim();
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.HUB_DEV_BYPASS_AUTH === '1'
+  ) {
+    return NextResponse.next();
+  }
+
   const appdevPassword = (process.env.APPDEV_PASSWORD || '').trim();
   const access = await resolveSessionAccess(request.cookies);
 
@@ -67,7 +74,7 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  if (!hubPassword) return NextResponse.next();
+  if (!isHubAuthEnabled()) return NextResponse.next();
   if (access.hasHub) return NextResponse.next();
 
   if (pathname.startsWith('/api/')) {

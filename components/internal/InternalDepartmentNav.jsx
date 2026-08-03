@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
-import { DEPARTMENTS, deptText, getDepartmentPath } from '@/lib/internal';
+import { DEPARTMENTS, deptText, getDepartmentLandingPath } from '@/lib/internal';
 
 export default function InternalDepartmentNav({ activeDepartmentId = null }) {
   const { t } = useLocale();
@@ -15,7 +15,7 @@ export default function InternalDepartmentNav({ activeDepartmentId = null }) {
         {DEPARTMENTS.map(d => (
           <Link
             key={d.id}
-            href={getDepartmentPath(d.id)}
+            href={getDepartmentLandingPath(d.id)}
             className={`nav${activeDepartmentId === d.id ? ' active' : ''}`}
             aria-current={activeDepartmentId === d.id ? 'page' : undefined}
             title={deptText(d, t, 'label')}

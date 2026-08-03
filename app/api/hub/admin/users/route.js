@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { requireHubActor } from '@/lib/hub-actor';
-import { deleteHubUser, listHubUsers, setHubUserBlocked } from '@/lib/hub-users';
+import {
+  createHubUserByAdmin,
+  deleteHubUser,
+  listHubUsers,
+  ROLES,
+  setHubUserBlocked,
+  updateHubUserDepartmentAccess,
+} from '@/lib/hub-users';
+import { HUB_DEPARTMENT_IDS } from '@/lib/hub-departments';
 
 export async function GET() {
   let actor;
@@ -14,6 +22,43 @@ export async function GET() {
   }
   const users = await listHubUsers();
   return NextResponse.json({ users });
+}
+
+export async function POST(request) {
+  let actor;
+  try {
+    actor = await requireHubActor();
+  } catch (e) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: e.status || 401 });
+  }
+  if (!actor.isManager) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const displayName = String(body.displayName ?? '').trim();
+  const password = String(body.password ?? '');
+  const role = String(body.role ?? 'member');
+
+  if (!displayName || !password.trim()) {
+    return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+  }
+
+  const result = await createHubUserByAdmin(displayName, password, { role });
+  if (!result.ok) {
+    if (result.reason === 'name_taken') {
+      return NextResponse.json({ error: 'name_taken' }, { status: 409 });
+    }
+    if (result.reason === 'name_reserved') {
+      return NextResponse.json({ error: 'name_master_only' }, { status: 403 });
+    }
+    if (result.reason === 'too_short') {
+      return NextResponse.json({ error: 'password_too_short' }, { status: 400 });
+    }
+    return NextResponse.json({ error: result.reason || 'create_failed' }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true, user: result.user }, { status: 201 });
 }
 
 export async function PATCH(request) {
@@ -52,5 +97,17 @@ export async function PATCH(request) {
     return NextResponse.json({ ok: true });
   }
 
+  if (action === 'departments') {
+    const access = body.department_access || body.departmentAccess;
+    if (!access || typeof access !== 'object') {
+      return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+    }
+    const user = await updateHubUserDepartmentAccess(userId, access);
+    if (!user) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    return NextResponse.json({ ok: true, user });
+  }
+
   return NextResponse.json({ error: 'invalid_action' }, { status: 400 });
 }
+
+export { ROLES, HUB_DEPARTMENT_IDS };

@@ -2,6 +2,8 @@
 
 import InternalTaskCard from '@/components/internal/InternalTaskCard';
 import { useLocale } from '@/components/LocaleProvider';
+import { sortTasksByFlowOrder } from '@/lib/internal-campaigns';
+import { useMemo } from 'react';
 
 const STATUS_KEYS = {
   todo: 'hub.internal.statusTodo',
@@ -11,18 +13,26 @@ const STATUS_KEYS = {
   cancelled: 'hub.internal.statusCancelled',
 };
 
-export default function InternalListView({ tasks, onTaskClick }) {
+export default function InternalListView({ tasks, onTaskClick, flowData = null }) {
   const { t } = useLocale();
 
-  if (tasks.length === 0) {
+  const items = useMemo(
+    () => (flowData ? sortTasksByFlowOrder(tasks, flowData) : tasks),
+    [tasks, flowData]
+  );
+
+  if (items.length === 0) {
     return <p className="internal-empty">{t('hub.internal.noTasks')}</p>;
   }
 
   return (
     <section className="internal-list-view">
       <ul className="internal-list-view-ul">
-        {tasks.map(task => (
+        {items.map(task => (
           <li key={task.id} className="internal-list-view-row">
+            <span className={`internal-list-view-kind${task.kind === 'milestone' ? ' is-milestone' : ''}`}>
+              {task.kind === 'milestone' ? '◇' : '□'}
+            </span>
             <span className={`internal-list-view-status is-${task.status}`}>
               {t(STATUS_KEYS[task.status] || 'hub.internal.statusTodo')}
             </span>

@@ -3,12 +3,28 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useConfirm } from '@/hooks/useConfirm';
+import { HUB_DEPARTMENT_IDS } from '@/lib/hub-departments';
+
+const ROLES = ['manager', 'member', 'intern'];
+
+const DEPARTMENT_LABELS = {
+  operations: 'Operations',
+  marketing: 'Marketing',
+  products: 'Products',
+  creatives: 'Creatives',
+  branding: 'Branding',
+  admin: 'Hub admin',
+};
 
 export default function HubAdminUsers() {
   const { requestConfirm, confirmDialog } = useConfirm();
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('member');
 
   async function loadUsers() {
     const res = await fetch('/api/hub/admin/users', { credentials: 'same-origin' });
@@ -21,7 +37,37 @@ export default function HubAdminUsers() {
     loadUsers().catch(() => setError('Could not load users (manager only).'));
   }, []);
 
-  async function patchUser(userId, action) {
+  async function createUser(e) {
+    e.preventDefault();
+    const displayName = newName.trim();
+    const password = newPassword.trim();
+    if (!displayName || !password) return;
+
+    setCreating(true);
+    setError('');
+    try {
+      const res = await fetch('/api/hub/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ displayName, password, role: newRole }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || 'Could not create user');
+      }
+      setNewName('');
+      setNewPassword('');
+      setNewRole('member');
+      await loadUsers();
+    } catch (err) {
+      setError(err.message || 'Could not create user.');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function patchUser(userId, action, extra = {}) {
     setBusyId(userId);
     setError('');
     try {
@@ -29,7 +75,7 @@ export default function HubAdminUsers() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ userId, action }),
+        body: JSON.stringify({ userId, action, ...extra }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -43,10 +89,16 @@ export default function HubAdminUsers() {
     }
   }
 
+  async function toggleDepartment(user, deptId) {
+    const access = { ...(user.department_access || {}) };
+    access[deptId] = !access[deptId];
+    await patchUser(user.id, 'departments', { department_access: access });
+  }
+
   async function removeUser(user) {
     const ok = await requestConfirm({
       title: 'Remove user',
-      message: `Remove ${user.display_name} from Fine Hub? They will need to sign up again.`,
+      message: `Remove ${user.display_name} from Fine Hub? They will no longer be able to sign in.`,
       confirmLabel: 'Remove',
       cancelLabel: 'Cancel',
     });
@@ -64,8 +116,45 @@ export default function HubAdminUsers() {
       <main className="hub-main personal-hub-main">
         <h1>Hub users</h1>
         <p className="personal-hub-hint">
-          Everyone signs in with the shared team password. Block or remove accounts here.
+          Create accounts with an individual name and password. Public sign-up is disabled.
+          Master admin (FCS-建宏) uses the master password and is not listed here.
         </p>
+
+        <form className="hub-admin-create-form personal-hub-card" onSubmit={createUser}>
+          <h2 className="hub-admin-create-title">Add user</h2>
+          <label>
+            Display name
+            <input
+              type="text"
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              autoComplete="off"
+              disabled={creating}
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              disabled={creating}
+            />
+          </label>
+          <label>
+            Role
+            <select value={newRole} onChange={e => setNewRole(e.target.value)} disabled={creating}>
+              {ROLES.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="appdev-btn-primary" disabled={creating || !newName.trim() || !newPassword.trim()}>
+            Create account
+          </button>
+        </form>
+
         {error && <p className="login-error">{error}</p>}
         <ul className="internal-list-ul">
           {users.map(u => (
@@ -107,6 +196,22 @@ export default function HubAdminUsers() {
                   >
                     Remove
                   </button>
+                </div>
+              </div>
+              <div className="hub-admin-dept-access">
+                <span className="hub-admin-dept-label">Department access</span>
+                <div className="hub-admin-dept-grid">
+                  {[...HUB_DEPARTMENT_IDS, 'admin'].map(deptId => (
+                    <label key={deptId} className="hub-admin-dept-toggle">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(u.department_access?.[deptId])}
+                        disabled={busyId === u.id}
+                        onChange={() => toggleDepartment(u, deptId)}
+                      />
+                      {DEPARTMENT_LABELS[deptId] || deptId}
+                    </label>
+                  ))}
                 </div>
               </div>
             </li>
