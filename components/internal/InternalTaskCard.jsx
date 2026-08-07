@@ -3,7 +3,7 @@
 import Icon from '@/components/Icon';
 import UserAvatar from '@/components/internal/UserAvatar';
 import { useLocale } from '@/components/LocaleProvider';
-import { isTaskOverdue, taskDueDate } from '@/lib/internal';
+import { isMilestonePast, isTaskOverdue, milestoneEndDate, taskDueDate } from '@/lib/internal';
 
 const PRIORITY_KEYS = {
   urgent: 'hub.internal.priorityUrgent',
@@ -30,8 +30,9 @@ export default function InternalTaskCard({
   className = '',
 }) {
   const { t } = useLocale();
-  const due = taskDueDate(task);
+  const due = task.kind === 'milestone' ? milestoneEndDate(task) : taskDueDate(task);
   const overdue = isTaskOverdue(task);
+  const pastMilestone = task.kind === 'milestone' && isMilestonePast(task);
   const assignee = task.assignee || task.owner || task.created_by;
   const subtaskTotal = task.subtasks?.length || 0;
   const subtaskDone = task.subtasks?.filter(s => s.done).length || 0;
@@ -46,6 +47,7 @@ export default function InternalTaskCard({
         'internal-task-card',
         isMilestone && 'is-milestone',
         overdue && 'is-overdue',
+        pastMilestone && 'is-past',
         isDragging && 'is-dragging',
         className,
       ]
@@ -77,8 +79,8 @@ export default function InternalTaskCard({
           )}
           {due && (
             <HintChip
-              className={`is-date${overdue ? ' is-overdue' : ''}`}
-              title={t('hub.internal.taskPanel.deadline')}
+              className={`is-date${overdue ? ' is-overdue' : ''}${pastMilestone ? ' is-past' : ''}`}
+              title={isMilestone ? t('hub.internal.taskPanel.eventEnd') : t('hub.internal.taskPanel.deadline')}
             >
               <Icon name="calendar" size={10} />
               {due}

@@ -3,7 +3,7 @@ import { deleteIssue, updateIssue } from '@/lib/appdev-data';
 import { resolveAppdevActor } from '@/lib/appdev-actor';
 
 const ERROR_MESSAGES = {
-  task_locked: 'Only the task assigner can change title, description, type, priority, and attachments.',
+  task_locked: 'Only the task assigner can change title, description, type, and attachments.',
   status_assigner_only: 'Done can only be set by the task assigner.',
   status_not_allowed: 'That status is not allowed on this task.',
   worker_required: 'Add at least one assignee before moving to In Progress.',

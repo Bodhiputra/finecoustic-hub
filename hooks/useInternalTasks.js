@@ -1,79 +1,121 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { API_V1, unwrapData, internalTasksQuery } from '@/lib/api/routes';
-
-function tasksSeedKey(list) {
-  if (!Array.isArray(list) || !list.length) return '__empty__';
-  return list.map(task => `${task.id}:${task.updated_at || ''}:${task.status || ''}`).join('|');
-}
+import { unwrapData, internalTasksQuery } from '@/lib/api/routes';
+import {
+  internalTasksFilterKey,
+  resolveInternalTasksQuery,
+  tasksListSeedKey,
+} from '@/lib/internal-tasks-filters';
 
 /**
- * Internal task list — hydrates from server `initialTasks`; refetches when filters
- * change or after explicit `refresh()` (save, status change, delete).
+ * Internal task list — hydrates from server `initialTasks`.
+ * Refetches only when filters change without a matching server seed, or on explicit `refresh()`.
  */
 export function useInternalTasks({
   departmentId = '',
-  bucket = '',
+  viewParam = '',
   boardId = '',
   campaignId = '',
   flowOnly = false,
   initialTasks = null,
+  initialTasksFilterKey = null,
   enabled = true,
 }) {
+  const filterKey = internalTasksFilterKey({
+    departmentId,
+    viewParam,
+    boardId,
+    campaignId,
+    flowOnly,
+  });
+
   const [tasks, setTasks] = useState(() => initialTasks ?? []);
-  const [loading, setLoading] = useState(enabled && initialTasks == null);
-  const filterKey = `${departmentId}|${bucket}|${boardId}|${campaignId}|${flowOnly ? '1' : '0'}`;
+  const [loading, setLoading] = useState(() => enabled && initialTasksFilterKey !== filterKey);
+
+  const queryRef = useRef({ departmentId, viewParam, boardId, campaignId, flowOnly, enabled });
+  queryRef.current = { departmentId, viewParam, boardId, campaignId, flowOnly, enabled };
+
+  const serverSeedFilterKey = useRef(
+    initialTasksFilterKey === filterKey ? filterKey : null
+  );
+  const lastSeedKey = useRef(
+    initialTasksFilterKey === filterKey && initialTasks != null
+      ? tasksListSeedKey(initialTasks)
+      : null
+  );
   const prevFilterKey = useRef(filterKey);
-  const seeded = useRef(initialTasks != null);
-  const lastSeedKey = useRef(initialTasks != null ? tasksSeedKey(initialTasks) : null);
 
   useEffect(() => {
-    if (initialTasks == null) return;
-    const key = tasksSeedKey(initialTasks);
-    if (lastSeedKey.current === key) return;
-    lastSeedKey.current = key;
+    if (initialTasks == null || initialTasksFilterKey == null) return;
+    if (initialTasksFilterKey !== filterKey) return;
+
+    const dataKey = tasksListSeedKey(initialTasks);
+    if (lastSeedKey.current === dataKey && serverSeedFilterKey.current === filterKey) return;
+
+    lastSeedKey.current = dataKey;
+    serverSeedFilterKey.current = filterKey;
     setTasks(initialTasks);
-    seeded.current = true;
-  }, [initialTasks]);
+    setLoading(false);
+  }, [initialTasks, initialTasksFilterKey, filterKey]);
 
   const refresh = useCallback(async () => {
-    if (!enabled) return true;
+    const q = queryRef.current;
+    if (!q.enabled) return true;
+
+    const resolved = resolveInternalTasksQuery({
+      departmentId: q.departmentId,
+      viewParam: q.viewParam,
+      boardId: q.boardId,
+      campaignId: q.campaignId,
+      flowOnly: q.flowOnly,
+    });
+
     const res = await fetch(
       internalTasksQuery({
-        department: departmentId,
-        bucket,
-        board_id: boardId,
-        campaign_id: campaignId,
-        flow_only: flowOnly,
+        department: resolved.department || undefined,
+        bucket: resolved.bucket || undefined,
+        board_id: resolved.boardId || undefined,
+        campaign_id: resolved.campaignId || undefined,
+        flow_only: resolved.flowOnly || undefined,
       }),
-      {
-      credentials: 'same-origin',
-    }
+      { credentials: 'same-origin' }
     );
+
     if (res.ok) {
       const body = await res.json();
       const payload = unwrapData(body);
-      setTasks(payload?.tasks ?? []);
+      const nextTasks = payload?.tasks ?? [];
+      setTasks(nextTasks);
+      serverSeedFilterKey.current = internalTasksFilterKey(q);
+      lastSeedKey.current = tasksListSeedKey(nextTasks);
     }
     return res.ok;
-  }, [departmentId, bucket, boardId, campaignId, flowOnly, enabled]);
+  }, []);
 
   useEffect(() => {
-    if (!enabled) return;
-    const filterChanged = prevFilterKey.current !== filterKey;
-    prevFilterKey.current = filterKey;
-
-    if (!filterChanged) {
-      if (!seeded.current) {
-        setLoading(true);
-        refresh().finally(() => setLoading(false));
-      }
+    if (!enabled) {
+      prevFilterKey.current = filterKey;
+      setLoading(false);
       return;
     }
 
-    refresh();
-  }, [filterKey, refresh]);
+    const filterChanged = prevFilterKey.current !== filterKey;
+    prevFilterKey.current = filterKey;
+
+    if (serverSeedFilterKey.current === filterKey) {
+      setLoading(false);
+      return;
+    }
+
+    if (!filterChanged && initialTasksFilterKey === filterKey) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    refresh().finally(() => setLoading(false));
+  }, [filterKey, enabled, initialTasksFilterKey, refresh]);
 
   return { tasks, setTasks, refresh, loading };
 }

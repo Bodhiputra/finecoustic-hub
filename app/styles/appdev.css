@@ -27,6 +27,45 @@
   padding: var(--space-4) clamp(var(--space-4), 3vw, var(--space-6));
 }
 
+.appdev-scope-notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  margin: 0;
+  padding: var(--space-4) clamp(var(--space-4), 3vw, var(--space-6));
+  border-top: 1px solid color-mix(in srgb, var(--warn) 30%, var(--line));
+  border-bottom: 1px solid color-mix(in srgb, var(--warn) 18%, var(--line));
+  border-left: 4px solid var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+  color: var(--text);
+  font-size: .9375rem;
+  line-height: 1.55;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--warn) 12%, transparent);
+}
+
+.appdev-scope-notice-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--warn);
+}
+
+.appdev-scope-notice-body p {
+  margin: 0;
+}
+
+.appdev-scope-notice-body p + p {
+  margin-top: var(--space-2);
+}
+
+.appdev-scope-notice-title {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--warn);
+  margin-bottom: var(--space-2) !important;
+}
+
 .appdev-header-secondary {
   --appdev-control-h: 2.125rem;
   display: flex;
@@ -461,7 +500,7 @@
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
-  font-size: .8125rem;
+  font-size: .875rem;
   line-height: 1.25;
   box-sizing: border-box;
 }
@@ -473,13 +512,19 @@
 }
 
 .appdev-view-desc {
-  margin: 0 0 0 auto;
+  margin: 0;
   color: var(--muted);
-  font-size: .8125rem;
+  font-size: .875rem;
   line-height: 1.35;
   max-width: 42ch;
   flex-shrink: 1;
   min-width: 0;
+}
+
+.appdev-new-issue-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  height: var(--appdev-control-h);
 }
 
 .appdev-empty-page {
@@ -510,7 +555,7 @@
   padding: var(--space-4) var(--space-3);
   text-align: center;
   color: var(--muted);
-  font-size: .78rem;
+  font-size: .875rem;
   border: 1px dashed var(--line);
   border-radius: var(--radius-sm);
 }
@@ -715,7 +760,7 @@
 }
 
 .appdev-column-head h2 {
-  font-size: .68rem;
+  font-size: .78rem;
   text-transform: uppercase;
   letter-spacing: .08em;
   color: var(--muted);
@@ -723,7 +768,7 @@
 }
 
 .appdev-column-count {
-  font-size: .68rem;
+  font-size: .78rem;
   font-weight: 700;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -811,11 +856,257 @@
 
 .appdev-issue-title {
   display: block;
-  font-size: .85rem;
+  font-size: .9375rem;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.45;
   letter-spacing: -0.01em;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.appdev-issue-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: var(--space-2);
+  align-items: center;
+}
+
+.appdev-issue-chips .appdev-hint-chip.is-assigner,
+.appdev-issue-chips .appdev-hint-chip.is-assignee {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.appdev-hint-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  font-size: .8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.appdev-hint-chip.is-priority.is-urgent {
+  border-color: color-mix(in srgb, var(--warn) 40%, var(--line));
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  color: var(--warn);
+}
+
+.appdev-hint-chip.is-priority.is-high {
+  border-color: color-mix(in srgb, #e8a030 40%, var(--line));
+  background: color-mix(in srgb, #e8a030 12%, var(--surface));
+  color: #c87810;
+}
+
+.appdev-hint-chip.is-priority.is-medium {
+  border-color: color-mix(in srgb, #5b8def 40%, var(--line));
+  background: color-mix(in srgb, #5b8def 12%, var(--surface));
+  color: #4a7ad4;
+}
+
+.appdev-hint-chip.is-type {
+  border-color: color-mix(in srgb, #8b6fd4 35%, var(--line));
+  background: color-mix(in srgb, #8b6fd4 10%, var(--surface));
+  color: color-mix(in srgb, #8b6fd4 85%, var(--text));
+}
+
+.appdev-hint-chip.is-date.is-overdue,
+.appdev-hint-chip.is-date.is-due-soon {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line));
+  background: color-mix(in srgb, var(--warn) 14%, var(--surface));
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.appdev-hint-chip.is-assigner {
+  border-color: color-mix(in srgb, #5b8def 40%, var(--line));
+  background: color-mix(in srgb, #5b8def 10%, var(--surface));
+  color: #4a7ad4;
+}
+
+.appdev-hint-chip.is-assignee {
+  border-color: color-mix(in srgb, #3d9a6a 40%, var(--line));
+  background: color-mix(in srgb, #3d9a6a 10%, var(--surface));
+  color: #2d7a52;
+}
+
+.appdev-hint-chip-role {
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.appdev-hint-chip-role::after {
+  content: '·';
+  margin: 0 3px;
+  opacity: 0.55;
+}
+
+.appdev-hint-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 10rem;
+}
+
+.appdev-issue.is-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.appdev-issue.is-overdue {
+  border-color: color-mix(in srgb, var(--warn) 35%, var(--line));
+}
+
+.appdev-column.is-drop-target {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+  outline: 2px dashed color-mix(in srgb, var(--accent) 45%, var(--line));
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.appdev-notifications {
+  position: relative;
+}
+
+.appdev-notifications-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+
+.appdev-notifications-trigger:hover,
+.appdev-notifications-trigger.is-open {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+
+.appdev-notifications-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.appdev-notifications-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(420px, 60vh);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.appdev-notifications-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.appdev-notifications-mark-all {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.appdev-notifications-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  overflow-y: auto;
+}
+
+.appdev-notifications-item {
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appdev-notifications-item:not(.is-read),
+.appdev-notifications-item.is-unread {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.appdev-notifications-item.is-action-required {
+  border-left: 3px solid var(--accent);
+}
+
+.appdev-notifications-item-badge {
+  align-self: flex-start;
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.appdev-notifications-item:hover {
+  background: var(--accent-soft);
+}
+
+.appdev-notifications-item-text {
+  font-size: .8125rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.appdev-notifications-item.is-read .appdev-notifications-item-text {
+  color: var(--muted);
+}
+
+.appdev-notifications-item-time {
+  font-size: .68rem;
+  color: var(--muted);
+}
+
+.appdev-notifications-empty {
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--muted);
+  font-size: .85rem;
 }
 
 .appdev-issue-foot {
@@ -1174,6 +1465,93 @@
   padding: var(--space-2) var(--space-3);
   font-size: .85rem;
   color: var(--text-muted);
+}
+
+.appdev-status-pick {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.appdev-status-pick-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.appdev-status-pick-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.appdev-status-pick-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  user-select: none;
+}
+
+.appdev-status-pick-option input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.appdev-status-pick-option:hover:not(.is-readonly) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+.appdev-status-pick-option.is-active {
+  font-weight: 600;
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.appdev-status-pick-option.is-todo.is-active {
+  border-color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, var(--surface));
+  color: var(--text);
+}
+
+.appdev-status-pick-option.is-in_progress.is-active {
+  border-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 12%, var(--surface));
+  color: #3b82f6;
+}
+
+.appdev-status-pick-option.is-in_review.is-active {
+  border-color: var(--fc-yellow);
+  background: color-mix(in srgb, var(--fc-yellow) 14%, var(--surface));
+  color: color-mix(in srgb, var(--fc-yellow) 85%, var(--text));
+}
+
+.appdev-status-pick-option.is-done.is-active {
+  border-color: #22c55e;
+  background: color-mix(in srgb, #22c55e 12%, var(--surface));
+  color: #22c55e;
+}
+
+.appdev-status-readonly {
+  padding-top: 2px;
+}
+
+.appdev-status-pick-option.is-readonly {
+  cursor: default;
 }
 
 .appdev-field-row {
@@ -1913,6 +2291,11 @@
   .appdev-header-secondary {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .appdev-new-issue-btn {
+    margin-left: 0;
+    align-self: flex-end;
   }
 
   .appdev-search-wrap {

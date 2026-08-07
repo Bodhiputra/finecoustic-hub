@@ -203,14 +203,14 @@ export default function ProductOverview({
       </article>
 
       {product.description ? (
-        <section className="products-sheet-card">
+        <section className="products-sheet-card products-sheet-card--about">
           <h2 className="products-sheet-section-label">About</h2>
           <p className="products-sheet-lead">{product.description}</p>
         </section>
       ) : null}
 
       {product.specs?.md ? (
-        <section className="products-sheet-card">
+        <section className="products-sheet-card products-sheet-card--specs">
           <h2 className="products-sheet-section-label">Specifications</h2>
           <HubProse markdown={product.specs.md} />
         </section>

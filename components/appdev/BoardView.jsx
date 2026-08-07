@@ -1,22 +1,46 @@
 'use client';
 
-import { STATUSES, formatIssueDate } from '@/lib/appdev';
-import { IssueTypeLabel } from '@/components/appdev/IssueTypeField';
-import { formatWorkersDisplay, getIssueWorkers } from '@/lib/appdev-workers';
-import Icon from '@/components/Icon';
-import { useLocale } from '@/components/LocaleProvider';
-function priorityClass(priority) {
-  if (priority && priority !== 'none') return `priority-${priority}`;
-  return '';
-}
+import { useState } from 'react';
+import { STATUSES } from '@/lib/appdev';
+import AppdevIssueCard from '@/components/appdev/AppdevIssueCard';
 
-export default function BoardView({ issuesByStatus, openIssue, t }) {
-  const { locale } = useLocale();
+export default function BoardView({ issuesByStatus, openIssue, onStatusChange, t, locale }) {
+  const [dragId, setDragId] = useState(null);
+  const [overCol, setOverCol] = useState(null);
+
+  function onDragStart(e, issueId) {
+    setDragId(issueId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', issueId);
+  }
+
+  function onDragOver(e, status) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setOverCol(status);
+  }
+
+  function onDrop(e, status) {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain') || dragId;
+    setDragId(null);
+    setOverCol(null);
+    if (!id) return;
+    const issue = STATUSES.flatMap(s => issuesByStatus[s] || []).find(i => i.id === id);
+    if (issue && issue.status !== status) onStatusChange?.(issue, status);
+  }
+
   return (
     <div className="appdev-board-wrap">
       <div className="appdev-board">
         {STATUSES.map(status => (
-          <section key={status} className="appdev-column">
+          <section
+            key={status}
+            className={`appdev-column${overCol === status ? ' is-drop-target' : ''}`}
+            onDragOver={e => onDragOver(e, status)}
+            onDragLeave={() => setOverCol(c => (c === status ? null : c))}
+            onDrop={e => onDrop(e, status)}
+          >
             <header className="appdev-column-head">
               <h2>{t(`appdev.status.${status}`)}</h2>
               <span className="appdev-column-count">{issuesByStatus[status]?.length || 0}</span>
@@ -28,43 +52,19 @@ export default function BoardView({ issuesByStatus, openIssue, t }) {
               )}
               {(issuesByStatus[status] || []).map(issue => (
                 <li key={issue.id}>
-                  <button
-                    type="button"
-                    className={`appdev-issue ${priorityClass(issue.priority)}`}
+                  <AppdevIssueCard
+                    issue={issue}
+                    locale={locale}
+                    t={t}
+                    draggable
+                    isDragging={dragId === issue.id}
+                    onDragStart={e => onDragStart(e, issue.id)}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setOverCol(null);
+                    }}
                     onClick={() => openIssue(issue)}
-                  >
-                    <div className="appdev-issue-top">
-                      <span className="appdev-issue-type"><IssueTypeLabel type={issue.type} /></span>
-                      {issue.priority !== 'none' && (
-                        <span className={`appdev-priority-dot ${priorityClass(issue.priority)}`} />
-                      )}
-                    </div>
-                    <span className="appdev-issue-title">{issue.title}</span>
-                    <div className="appdev-issue-foot">
-                      <div className="appdev-issue-meta">
-                        {issue.assigned_at && (
-                          <span className="appdev-issue-date" title={t('appdev.board.assignedAt')}>
-                            {formatIssueDate(issue.assigned_at, locale)}
-                          </span>
-                        )}
-                        {(issue.comments?.length || 0) > 0 && (
-                          <span className="appdev-comment-count" title={t('appdev.chat.title')}>
-                            <Icon name="message" size={12} />
-                            {issue.comments.length}
-                          </span>
-                        )}
-                      </div>
-                      {getIssueWorkers(issue).length > 0 ? (
-                        <span className="appdev-worker" title={t('appdev.board.assignee')}>
-                          {formatWorkersDisplay(issue, locale)}
-                        </span>
-                      ) : issue.assignee ? (
-                        <span className="appdev-worker appdev-worker-muted" title={t('appdev.board.assigner')}>
-                          {issue.assignee}
-                        </span>
-                      ) : null}
-                    </div>
-                  </button>
+                  />
                 </li>
               ))}
             </ul>

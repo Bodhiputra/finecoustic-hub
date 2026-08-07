@@ -2,6 +2,7 @@ import InternalHome from '@/components/InternalHome';
 import HubLogin from '@/components/HubLogin';
 import { isHubAuthEnabled, isHubAuthenticated } from '@/lib/auth';
 import { loadInternalTasksForPage } from '@/lib/internal-page-data';
+import { internalTasksFilterKey } from '@/lib/internal-tasks-filters';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,7 @@ export default async function HomePage() {
     <InternalHome
       authEnabled
       initialTasks={tasks}
+      initialTasksFilterKey={internalTasksFilterKey({})}
       displayName={displayName || ''}
     />
   );

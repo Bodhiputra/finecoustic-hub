@@ -77,8 +77,8 @@ export default function PersonalHub({
         {profile.hubUser?.isManager && (
           <section className="personal-hub-card">
             <h2>Admin</h2>
-            <p className="personal-hub-hint">View, block, or remove employee accounts.</p>
-            <Link href="/hub/admin" className="appdev-btn-primary">Manage users</Link>
+            <p className="personal-hub-hint">View, block, or remove team members.</p>
+            <Link href="/hub/admin" className="appdev-btn-primary">Team members</Link>
           </section>
         )}
       </main>

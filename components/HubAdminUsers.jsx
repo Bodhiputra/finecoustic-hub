@@ -34,7 +34,7 @@ export default function HubAdminUsers() {
   }
 
   useEffect(() => {
-    loadUsers().catch(() => setError('Could not load users (manager only).'));
+    loadUsers().catch(() => setError('Could not load team members (manager only).'));
   }, []);
 
   async function createUser(e) {
@@ -54,14 +54,14 @@ export default function HubAdminUsers() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'Could not create user');
+        throw new Error(data.error || 'Could not create team member');
       }
       setNewName('');
       setNewPassword('');
       setNewRole('member');
       await loadUsers();
     } catch (err) {
-      setError(err.message || 'Could not create user.');
+      setError(err.message || 'Could not create team member.');
     } finally {
       setCreating(false);
     }
@@ -97,7 +97,7 @@ export default function HubAdminUsers() {
 
   async function removeUser(user) {
     const ok = await requestConfirm({
-      title: 'Remove user',
+      title: 'Remove team member',
       message: `Remove ${user.display_name} from Fine Hub? They will no longer be able to sign in.`,
       confirmLabel: 'Remove',
       cancelLabel: 'Cancel',
@@ -113,46 +113,50 @@ export default function HubAdminUsers() {
           <Link href="/me">← Personal hub</Link>
         </div>
       </header>
-      <main className="hub-main personal-hub-main">
-        <h1>Hub users</h1>
+      <main className="hub-main personal-hub-main hub-admin-main">
+        <h1>Team members</h1>
         <p className="personal-hub-hint">
-          Create accounts with an individual name and password. Public sign-up is disabled.
+          Create team member accounts with an individual name and password. Public sign-up is disabled.
           Master admin (FCS-建宏) uses the master password and is not listed here.
         </p>
 
         <form className="hub-admin-create-form personal-hub-card" onSubmit={createUser}>
-          <h2 className="hub-admin-create-title">Add user</h2>
-          <label>
-            Display name
-            <input
-              type="text"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              autoComplete="off"
-              disabled={creating}
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              autoComplete="new-password"
-              disabled={creating}
-            />
-          </label>
-          <label>
-            Role
-            <select value={newRole} onChange={e => setNewRole(e.target.value)} disabled={creating}>
-              {ROLES.map(role => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" className="appdev-btn-primary" disabled={creating || !newName.trim() || !newPassword.trim()}>
-            Create account
-          </button>
+          <h2 className="hub-admin-create-title">Add team member</h2>
+          <div className="hub-admin-create-fields">
+            <label className="appdev-field">
+              <span>Display name</span>
+              <input
+                type="text"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                autoComplete="off"
+                disabled={creating}
+              />
+            </label>
+            <label className="appdev-field">
+              <span>Password</span>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                disabled={creating}
+              />
+            </label>
+            <label className="appdev-field">
+              <span>Role</span>
+              <select value={newRole} onChange={e => setNewRole(e.target.value)} disabled={creating}>
+                {ROLES.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="hub-admin-create-actions">
+            <button type="submit" className="appdev-btn-primary" disabled={creating || !newName.trim() || !newPassword.trim()}>
+              Create account
+            </button>
+          </div>
         </form>
 
         {error && <p className="login-error">{error}</p>}

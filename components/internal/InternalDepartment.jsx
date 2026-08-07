@@ -45,7 +45,6 @@ import {
 const BUCKET_VIEWS = ['today', 'overdue', 'in_progress', 'bank', 'milestones'];
 const TASK_VIEWS = ['list', 'board'];
 const FLOW_CVIEW = ['flow', 'board', 'list'];
-const EMPTY_TASKS = [];
 
 export default function InternalDepartment({
   departmentId,
@@ -53,6 +52,7 @@ export default function InternalDepartment({
   initialBucket = '',
   initialTool = '',
   initialTasks = null,
+  initialTasksFilterKey = null,
   opsData = null,
   marketingRows = [],
   initialCampaigns = [],
@@ -82,7 +82,6 @@ export default function InternalDepartment({
   const campaignListOnly = marketingCampaignMode && toolParam === 'campaigns' && !boardParam && !flowParam;
   const shouldLoadTasks = Boolean(boardParam || flowParam || (tasksEnabled && !campaignListOnly));
 
-  const bucket = BUCKET_VIEWS.includes(viewParam) ? viewParam : (searchParams.get('bucket') || '');
   const view = BUCKET_VIEWS.includes(viewParam)
     ? 'list'
     : (TASK_VIEWS.includes(viewParam) ? viewParam : 'board');
@@ -93,17 +92,20 @@ export default function InternalDepartment({
 
   const { tasks, refresh } = useInternalTasks({
     departmentId,
-    bucket,
+    viewParam,
     boardId: boardParam,
     campaignId: flowParam,
     flowOnly: Boolean(flowParam),
-    initialTasks: shouldLoadTasks ? initialTasks : EMPTY_TASKS,
+    initialTasks: shouldLoadTasks ? initialTasks : null,
+    initialTasksFilterKey: shouldLoadTasks ? initialTasksFilterKey : null,
     enabled: shouldLoadTasks,
   });
 
   const [panelTask, setPanelTask] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [me, setMe] = useState(() => initialMe ?? { displayName: '' });
   const [activeBoard, setActiveBoard] = useState(initialBoard);
   const [activeCampaign, setActiveCampaign] = useState(initialCampaign);
@@ -132,6 +134,17 @@ export default function InternalDepartment({
       })
       .catch(() => {});
   }, [initialMe]);
+
+  useEffect(() => {
+    fetch(API_V1.hubTeamMembers, { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(body => {
+        const data = unwrapData(body, 'members');
+        const members = Array.isArray(data?.members) ? data.members : Array.isArray(data) ? data : [];
+        if (members.length) setTeamMembers(members);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (departmentId === 'products') return;
@@ -247,7 +260,38 @@ export default function InternalDepartment({
       credentials: 'same-origin',
       body: JSON.stringify({ status }),
     });
-    if (res.ok) await refresh();
+    if (!res.ok) {
+      toast.error(t('hub.internal.workflow.transitionFailed'));
+      return;
+    }
+    const body = await res.json();
+    const data = unwrapData(body, 'task');
+    const updated = data?.task || data;
+    await refresh();
+    if (panelTask?.id === task.id && updated?.id) setPanelTask(updated);
+  }
+
+  async function handleWorkflowAction(taskId, action) {
+    setWorkflowBusy(true);
+    try {
+      const res = await fetch(API_V1.internalTask(taskId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ workflow_action: action }),
+      });
+      if (!res.ok) {
+        toast.error(t('hub.internal.workflow.transitionFailed'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body, 'task');
+      const updated = data?.task || data;
+      if (updated?.id) setPanelTask(updated);
+      await refresh();
+    } finally {
+      setWorkflowBusy(false);
+    }
   }
 
   async function handleDelete(id) {
@@ -659,11 +703,14 @@ export default function InternalDepartment({
           onSave={handleSave}
           onDelete={handleDelete}
           onPostComment={postComment}
+          onWorkflowAction={handleWorkflowAction}
           postingComment={postingComment}
+          workflowBusy={workflowBusy}
           displayName={me.displayName}
           lockDepartmentId={departmentId !== 'all' ? departmentId : null}
           lockBoard={lockBoard || lockFlow}
           statusColumns={boardStatusCols || flowStatusCols}
+          teamMembers={teamMembers}
           saving={saving}
         />
       )}

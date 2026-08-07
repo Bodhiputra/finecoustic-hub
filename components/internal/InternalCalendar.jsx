@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import { isMilestoneComplete, isMilestonePast } from '@/lib/internal';
 import { holidayLabel } from '@/lib/holidays';
 
 const MAX_VISIBLE_DEFAULT = 5;
@@ -128,10 +129,19 @@ function weekSegments(week, spanEvents) {
 
 function CalendarEvent({ task, onSelect }) {
   const kind = task.kind || 'task';
+  const isMilestone = kind === 'milestone';
+  const past = isMilestone && isMilestonePast(task);
+  const complete = isMilestone && isMilestoneComplete(task);
   return (
     <button
       type="button"
-      className={`internal-cal-event is-kind-${kind} is-${task.status}${kind === 'milestone' ? ' is-milestone' : ''}${kind === 'event' ? ' is-event' : ''}`}
+      className={[
+        `internal-cal-event is-kind-${kind} is-${task.status}`,
+        isMilestone && 'is-milestone',
+        kind === 'event' && 'is-event',
+        past && 'is-past',
+        complete && 'is-complete',
+      ].filter(Boolean).join(' ')}
       onClick={e => {
         e.stopPropagation();
         onSelect(task);
@@ -147,6 +157,8 @@ function CalendarEvent({ task, onSelect }) {
 function SpanEventBar({ segment, weekKey, onSelect }) {
   const { event, startCol, endCol, isStart, isEnd, lane } = segment;
   const isMilestone = event.kind === 'milestone';
+  const past = isMilestone && isMilestonePast(event);
+  const complete = isMilestone && isMilestoneComplete(event);
   return (
     <button
       type="button"
@@ -157,6 +169,8 @@ function SpanEventBar({ segment, weekKey, onSelect }) {
         isEnd && 'is-range-end',
         !isStart && 'is-continued',
         !isEnd && 'is-continuing',
+        past && 'is-past',
+        complete && 'is-complete',
       ]
         .filter(Boolean)
         .join(' ')}

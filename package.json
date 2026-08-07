@@ -12,6 +12,7 @@
     "test:auth": "node scripts/test-auth.mjs",
     "db:clear-hub-users": "node scripts/clear-hub-users.mjs",
     "db:seed": "node scripts/seed-db.mjs",
+    "db:migrate-appdev": "node scripts/migrate-appdev-blob.mjs",
     "db:flush-preorder-survey": "node scripts/flush-preorder-survey.mjs",
     "remote:flush-preorder-survey": "node scripts/remote-flush-preorder-survey.mjs",
     "import:rmp": "node scripts/import-rmp-tasks.mjs"

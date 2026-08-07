@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const HEARTBEAT_MS = 45_000;
-const STARTUP_DELAY_MS = 4_000;
+const HEARTBEAT_MS = 60_000;
+const STARTUP_DELAY_MS = 8_000;
 
 export function useAppdevPresence(enabled = true) {
   const onlineRef = useRef([]);

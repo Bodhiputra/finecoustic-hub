@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BoardView from '@/components/appdev/BoardView';
 import TableView from '@/components/appdev/TableView';
 import BoardFilters from '@/components/appdev/BoardFilters';
@@ -8,6 +8,7 @@ import PresenceAvatars from '@/components/appdev/PresenceAvatars';
 import { useAppdevPresence, usePresenceOnline } from '@/components/appdev/useAppdevPresence';
 import IssuePanel from '@/components/appdev/IssuePanel';
 import AppdevHelp from '@/components/appdev/AppdevHelp';
+import AppdevNotifications from '@/components/appdev/AppdevNotifications';
 import ConfirmModal from '@/components/ConfirmModal';
 import AppdevAdminUsers from '@/components/appdev/AppdevAdminUsers';
 import Icon from '@/components/Icon';
@@ -17,11 +18,15 @@ import { useLocale } from '@/components/LocaleProvider';
 import { STATUSES, peekNextIssueNumber, parseIssueIdNum, dedupeIssuesById, collectIssueTypeFilterOptions, mergeTaskTypes } from '@/lib/appdev';
 import { createDraftIssue, isDraftIssue } from '@/lib/appdev-draft';
 import { assigneeFilterOptions, filterIssues } from '@/lib/appdev-filters';
+import { sortIssuesByDueAt } from '@/lib/appdev-due';
 
 const VIEW_KEY = 'appdev-view';
 const HELP_KEY = 'appdev-help-dismissed';
 const FILTER_ASSIGNEE_KEY = 'appdev-filter-assignee';
 const FILTER_TYPE_KEY = 'appdev-filter-type';
+const BOARD_SYNC_MS = 30_000;
+const SESSION_CHECK_MS = 45_000;
+const LOCAL_EDIT_QUIET_MS = 10_000;
 
 const APPDEV_ERROR_KEYS = {
   task_locked: 'appdev.board.error.taskLocked',
@@ -61,7 +66,7 @@ function redirectForSignOut(reason) {
 }
 
 export default function AppdevBoard({ initialData = null }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [board, setBoard] = useState(initialData);
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState('');
@@ -76,6 +81,8 @@ export default function AppdevBoard({ initialData = null }) {
   const [currentUser, setCurrentUser] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const boardUpdatedAtRef = useRef(initialData?.meta?.updated_at || '');
+  const localEditUntilRef = useRef(0);
 
   const { subscribe: subscribePresence } = useAppdevPresence(true);
   const onlineUsers = usePresenceOnline(subscribePresence);
@@ -106,6 +113,10 @@ export default function AppdevBoard({ initialData = null }) {
   }, [currentUser]);
 
   useEffect(() => {
+    boardUpdatedAtRef.current = board?.meta?.updated_at || '';
+  }, [board?.meta?.updated_at]);
+
+  useEffect(() => {
     let cancelled = false;
 
     function commentsChanged(prevComments, nextComments) {
@@ -117,13 +128,20 @@ export default function AppdevBoard({ initialData = null }) {
     }
 
     async function syncBoard() {
+      if (Date.now() < localEditUntilRef.current) return;
       try {
-        const res = await fetch('/api/appdev/issues', { credentials: 'same-origin' });
+        const since = boardUpdatedAtRef.current;
+        const url = since
+          ? `/api/appdev/issues?since=${encodeURIComponent(since)}`
+          : '/api/appdev/issues';
+        const res = await fetch(url, { credentials: 'same-origin' });
         if (cancelled || !res.ok) return;
         if (redirectIfSessionRevoked(res)) return;
 
         const boardData = await res.json().catch(() => null);
-        if (cancelled || !boardData?.issues) return;
+        if (cancelled || boardData?.unchanged || !boardData?.issues) return;
+
+        boardUpdatedAtRef.current = boardData.meta?.updated_at || '';
 
         setBoard({
           ...boardData,
@@ -156,16 +174,17 @@ export default function AppdevBoard({ initialData = null }) {
           redirectForSignOut(data.signOutReason);
           return;
         }
-
-        await syncBoard();
       } catch {
         /* ignore transient network errors */
       }
     }
 
     const startupId = window.setTimeout(checkSession, 2000);
-    const interval = window.setInterval(syncBoard, 5000);
-    const sessionInterval = window.setInterval(checkSession, 15000);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      syncBoard();
+    }, BOARD_SYNC_MS);
+    const sessionInterval = window.setInterval(checkSession, SESSION_CHECK_MS);
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
         checkSession();
@@ -292,16 +311,24 @@ export default function AppdevBoard({ initialData = null }) {
     filteredIssues.forEach(issue => {
       if (map[issue.status]) map[issue.status].push(issue);
     });
+    for (const status of STATUSES) {
+      map[status] = sortIssuesByDueAt(map[status]);
+    }
     return map;
   }, [filteredIssues]);
 
   const openIssue = issue => setSelected(issue);
 
-  const applyIssueUpdate = (issue, people, task_types) => {
+  const applyIssueUpdate = (issue, people, task_types, boardUpdatedAt) => {
+    if (boardUpdatedAt) {
+      boardUpdatedAtRef.current = boardUpdatedAt;
+      localEditUntilRef.current = Date.now() + LOCAL_EDIT_QUIET_MS;
+    }
     setBoard(prev => ({
       ...prev,
       meta: {
         ...prev.meta,
+        ...(boardUpdatedAt ? { updated_at: boardUpdatedAt } : {}),
         ...(people ? { people } : {}),
         ...(task_types ? { task_types } : {}),
       },
@@ -341,16 +368,35 @@ export default function AppdevBoard({ initialData = null }) {
     priority: draft.priority,
     workers: draft.workers,
     assigned_at: draft.assigned_at,
+    due_at: draft.due_at,
     completed_at: draft.completed_at,
     image_urls: draft.image_urls,
     video_urls: draft.video_urls,
   });
 
-  const patchIssue = async (id, patch) => {
-    if (isDraftIssue(id)) return;
+  const patchIssue = async (id, patch, { silent = false } = {}) => {
+    if (isDraftIssue(id)) return { ok: false };
 
-    setSaving(true);
-    setError('');
+    let rollbackBoard = null;
+    let rollbackSelected = null;
+    if (silent) {
+      localEditUntilRef.current = Date.now() + LOCAL_EDIT_QUIET_MS;
+      setBoard(prev => {
+        rollbackBoard = prev;
+        return {
+          ...prev,
+          issues: prev.issues.map(i => (i.id === id ? { ...i, ...patch, updated_at: new Date().toISOString() } : i)),
+        };
+      });
+      setSelected(prev => {
+        if (!prev || prev.id !== id || isDraftIssue(prev)) return prev;
+        rollbackSelected = prev;
+        return { ...prev, ...patch, updated_at: new Date().toISOString() };
+      });
+    }
+
+    if (!silent) setSaving(true);
+    if (!silent) setError('');
     try {
       const res = await fetch(`/api/appdev/issues/${encodeURIComponent(id)}`, {
         method: 'PATCH',
@@ -359,18 +405,41 @@ export default function AppdevBoard({ initialData = null }) {
         body: JSON.stringify(patch),
       });
       const data = await res.json().catch(() => ({}));
-      if (redirectIfSessionRevoked(res)) return;
+      if (redirectIfSessionRevoked(res)) return { ok: false };
       if (!res.ok) {
-        setError(appdevErrorMessage(data, t));
-        return;
+        if (silent && rollbackBoard) {
+          setBoard(rollbackBoard);
+          if (rollbackSelected) setSelected(rollbackSelected);
+        }
+        const msg = appdevErrorMessage(data, t);
+        if (!silent) setError(msg);
+        return { ok: false, message: msg };
       }
-      const { issue, people, task_types } = data;
-      applyIssueUpdate(issue, people, task_types);
+      const { issue, people, task_types, board_updated_at: boardUpdatedAt } = data;
+      applyIssueUpdate(issue, people, task_types, boardUpdatedAt);
+      return { ok: true };
     } catch {
-      setError(t('appdev.board.saveError'));
+      if (silent && rollbackBoard) {
+        setBoard(rollbackBoard);
+        if (rollbackSelected) setSelected(rollbackSelected);
+      }
+      const msg = t('appdev.board.saveError');
+      if (!silent) setError(msg);
+      return { ok: false, message: msg };
     } finally {
-      setSaving(false);
+      if (!silent) setSaving(false);
     }
+  };
+
+  const handleStatusChange = async (issue, newStatus) => {
+    if (!issue || issue.status === newStatus) return;
+    const result = await patchIssue(issue.id, { status: newStatus }, { silent: true });
+    if (!result.ok) setError(result.message || t('appdev.board.saveError'));
+  };
+
+  const openIssueById = issueId => {
+    const issue = savedIssues.find(i => i.id === issueId);
+    if (issue) setSelected(issue);
   };
 
   const saveIssue = async draft => {
@@ -448,8 +517,9 @@ export default function AppdevBoard({ initialData = null }) {
         return;
       }
       const { issue, people, task_types } = data;
-      applyIssueUpdate(issue, people, task_types);
-      setSelected(null);
+      applyIssueUpdate(issue, people, task_types, data.board_updated_at);
+      setSelected(issue);
+      return;
     } catch {
       setError(t('appdev.board.saveError'));
     } finally {
@@ -509,8 +579,9 @@ export default function AppdevBoard({ initialData = null }) {
         setError(msg);
         throw new Error(msg);
       }
-      const { issue, people } = await res.json();
-      applyIssueUpdate(issue, people);
+      const data = await res.json();
+      const { issue, people, board_updated_at: boardUpdatedAt } = data;
+      applyIssueUpdate(issue, people, null, boardUpdatedAt);
     } catch {
       setError(t('appdev.chat.postError'));
       throw new Error('comment');
@@ -543,10 +614,15 @@ export default function AppdevBoard({ initialData = null }) {
           </div>
           <div className="appdev-topbar-actions">
             <PresenceAvatars online={onlineUsers} currentUser={currentUser} t={t} />
-            <button type="button" className="appdev-btn-primary" onClick={newIssue} disabled={loading || editingDraft}>
-              <Icon name="plus" size={15} />
-              {t('appdev.board.newIssue')}
-            </button>
+            {currentUser && (
+              <AppdevNotifications
+                t={t}
+                locale={locale}
+                currentUser={currentUser}
+                onOpenIssue={openIssueById}
+                refreshKey={board?.meta?.updated_at || ''}
+              />
+            )}
             <LocaleSwitch />
             <ThemeToggle />
             {isAdmin && <AppdevAdminUsers t={t} />}
@@ -562,6 +638,16 @@ export default function AppdevBoard({ initialData = null }) {
             </button>
           </div>
         </div>
+
+        <aside className="appdev-scope-notice" aria-label={t('appdev.scopeNotice.title')}>
+          <Icon name="helpCircle" size={20} className="appdev-scope-notice-icon" />
+          <div className="appdev-scope-notice-body">
+            <p className="appdev-scope-notice-title">{t('appdev.scopeNotice.title')}</p>
+            <p>{t('appdev.scopeNotice.p1')}</p>
+            <p>{t('appdev.scopeNotice.p2')}</p>
+            <p>{t('appdev.scopeNotice.p3')}</p>
+          </div>
+        </aside>
 
         <div className="appdev-header-secondary">
           <div className="appdev-view-switch" role="tablist" aria-label={t('appdev.views.label')}>
@@ -616,6 +702,16 @@ export default function AppdevBoard({ initialData = null }) {
                 : viewDesc}
             </p>
           )}
+
+          <button
+            type="button"
+            className="appdev-btn-primary appdev-new-issue-btn"
+            onClick={newIssue}
+            disabled={loading || editingDraft}
+          >
+            <Icon name="plus" size={15} />
+            {t('appdev.board.newIssue')}
+          </button>
         </div>
       </header>
 
@@ -669,6 +765,8 @@ export default function AppdevBoard({ initialData = null }) {
           <BoardView
             issuesByStatus={issuesByStatus}
             openIssue={openIssue}
+            onStatusChange={handleStatusChange}
+            locale={locale}
             t={t}
           />
         )}

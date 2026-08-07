@@ -10,7 +10,8 @@ import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useInternalTasks } from '@/hooks/useInternalTasks';
-import { API_V1 } from '@/lib/api/routes';
+import { useToast } from '@/hooks/useToast';
+import { API_V1, unwrapData } from '@/lib/api/routes';
 import {
   MASTER_CALENDAR_KIND_FILTERS,
   ALL_DEPARTMENTS_ID,
@@ -22,12 +23,23 @@ import {
 
 const MASTER_KINDS = MASTER_CALENDAR_KIND_FILTERS;
 
-export default function InternalHome({ authEnabled, initialTasks = [], displayName = '' }) {
+export default function InternalHome({
+  authEnabled,
+  initialTasks = [],
+  initialTasksFilterKey = null,
+  displayName = '',
+}) {
   const { t } = useLocale();
   const { requestConfirm, confirmDialog } = useConfirm();
-  const { tasks, refresh } = useInternalTasks({ initialTasks });
+  const { toast, toastStack } = useToast();
+  const { tasks, refresh } = useInternalTasks({
+    initialTasks,
+    initialTasksFilterKey,
+  });
   const [panelTask, setPanelTask] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [me, setMe] = useState({ displayName });
 
   useEffect(() => {
@@ -42,6 +54,17 @@ export default function InternalHome({ authEnabled, initialTasks = [], displayNa
       })
       .catch(() => {});
   }, [displayName]);
+
+  useEffect(() => {
+    fetch(API_V1.hubTeamMembers, { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(body => {
+        const data = unwrapData(body, 'members');
+        const members = Array.isArray(data?.members) ? data.members : Array.isArray(data) ? data : [];
+        if (members.length) setTeamMembers(members);
+      })
+      .catch(() => {});
+  }, []);
 
   const [focusDay, setFocusDay] = useState(null);
   const [cursor, setCursor] = useState(() => {
@@ -155,6 +178,29 @@ export default function InternalHome({ authEnabled, initialTasks = [], displayNa
     }
   }
 
+  async function handleWorkflowAction(taskId, action) {
+    setWorkflowBusy(true);
+    try {
+      const res = await fetch(API_V1.internalTask(taskId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ workflow_action: action }),
+      });
+      if (!res.ok) {
+        toast.error(t('hub.internal.workflow.transitionFailed'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body, 'task');
+      const updated = data?.task || data;
+      if (updated?.id) setPanelTask(updated);
+      await refresh();
+    } finally {
+      setWorkflowBusy(false);
+    }
+  }
+
   return (
     <HubLayout
       className="internal-home-layout"
@@ -220,11 +266,16 @@ export default function InternalHome({ authEnabled, initialTasks = [], displayNa
           onClose={() => setPanelTask(null)}
           onSave={handleSaveItem}
           onDelete={handleDelete}
+          onWorkflowAction={handleWorkflowAction}
+          workflowBusy={workflowBusy}
+          displayName={me.displayName}
+          teamMembers={teamMembers}
           saving={saving}
         />
       )}
 
       {confirmDialog}
+      {toastStack}
     </HubLayout>
   );
 }

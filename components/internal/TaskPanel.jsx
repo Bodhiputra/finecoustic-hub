@@ -15,6 +15,7 @@ import {
   deptText,
 } from '@/lib/internal';
 import { statusColumnLabel } from '@/lib/internal-campaigns';
+import { getWorkflowActions } from '@/lib/task-workflow';
 import { useLocale } from '@/components/LocaleProvider';
 import { uploadInternalMediaFile } from '@/lib/hub-upload-client';
 
@@ -42,7 +43,7 @@ function normalizeDraftForPanel(task) {
   };
 }
 
-function prepareSave(draft, lockDepartmentId, lockBoard = null) {
+function prepareSave(draft, lockDepartmentId, lockBoard = null, isNew = false) {
   const kind = draft.kind === 'event' ? 'milestone' : (draft.kind || 'task');
   let next = { ...draft };
   if (lockDepartmentId && lockDepartmentId !== ALL_DEPARTMENTS_ID) {
@@ -62,6 +63,10 @@ function prepareSave(draft, lockDepartmentId, lockBoard = null) {
     if (end && !start) start = end;
     return { ...next, kind: 'milestone', planned_for: start, deadline: end };
   }
+  if (kind === 'task') {
+    if (isNew) next.status = 'todo';
+    else delete next.status;
+  }
   return { ...next, kind: 'task', planned_for: null };
 }
 
@@ -77,6 +82,39 @@ const VISIBILITY_KEYS = {
   team: 'hub.internal.visibilityTeam',
   private: 'hub.internal.visibilityPrivate',
 };
+
+const MILESTONE_STATUS_VALUES = [
+  { id: 'todo', labelKey: 'hub.internal.taskPanel.milestoneScheduled' },
+  { id: 'done', labelKey: 'hub.internal.taskPanel.milestoneCompleted' },
+  { id: 'cancelled', labelKey: 'hub.internal.taskPanel.milestoneCancelled' },
+];
+
+/** Single choice — pill toggles (not a dropdown). */
+function HubSinglePick({ legend, name, value, options, onChange, disabled = false }) {
+  return (
+    <fieldset className="hub-single-pick appdev-field">
+      <legend className="hub-single-pick-label">{legend}</legend>
+      <div className="hub-single-pick-options" role="radiogroup" aria-label={legend}>
+        {options.map(opt => (
+          <label
+            key={opt.value}
+            className={`hub-single-pick-option${value === opt.value ? ' is-active' : ''}`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+              disabled={disabled}
+            />
+            <span>{opt.label}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 function SubtasksEditor({ subtasks = [], onChange, disabled, t }) {
   const [draftTitle, setDraftTitle] = useState('');
@@ -148,18 +186,75 @@ function SubtasksEditor({ subtasks = [], onChange, disabled, t }) {
   );
 }
 
+const WORKFLOW_ACTION_KEYS = {
+  accept: 'hub.internal.workflow.accept',
+  request_review: 'hub.internal.workflow.requestReview',
+  approve: 'hub.internal.workflow.approve',
+  send_back: 'hub.internal.workflow.sendBack',
+};
+
+function TaskWorkflowSection({ task, displayName, statusColumns, onAction, busy, t }) {
+  const status = task?.status || 'todo';
+  const statusLabel = useMemo(() => {
+    const col = statusColumns?.find(c => (typeof c === 'string' ? c : c.id) === status);
+    if (col) return statusColumnLabel(col, t);
+    const key = {
+      todo: 'hub.internal.statusTodo',
+      in_progress: 'hub.internal.statusInProgress',
+      in_review: 'hub.internal.statusInReview',
+      done: 'hub.internal.statusDone',
+      cancelled: 'hub.internal.statusCancelled',
+    }[status];
+    return key ? t(key) : status.replace(/_/g, ' ');
+  }, [status, statusColumns, t]);
+
+  const actions = useMemo(
+    () => getWorkflowActions(task, displayName),
+    [task, displayName]
+  );
+
+  return (
+    <div className="task-workflow">
+      <div className="task-workflow-status">
+        <span className="task-workflow-status-label">{t('hub.internal.taskPanel.status')}</span>
+        <span className={`task-workflow-badge is-${status}`}>{statusLabel}</span>
+      </div>
+      {actions.length > 0 && onAction ? (
+        <div className="task-workflow-actions">
+          {actions.map(action => (
+            <button
+              key={action}
+              type="button"
+              className={action === 'approve' ? 'appdev-btn-primary' : 'btn-ghost'}
+              disabled={busy}
+              onClick={() => onAction(task.id, action)}
+            >
+              {t(WORKFLOW_ACTION_KEYS[action] || action)}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="appdev-field-hint">{t('hub.internal.workflow.noActions')}</p>
+      )}
+    </div>
+  );
+}
+
 export default function TaskPanel({
   task,
   onClose,
   onSave,
   onDelete,
   onPostComment,
+  onWorkflowAction,
   saving = false,
   postingComment = false,
+  workflowBusy = false,
   displayName = '',
   lockDepartmentId = null,
   lockBoard = null,
   statusColumns = null,
+  teamMembers = [],
 }) {
   const { locale, t } = useLocale();
   const [draft, setDraft] = useState(task);
@@ -182,6 +277,36 @@ export default function TaskPanel({
     if (statusColumns?.length) return statusColumns;
     return TASK_STATUSES.filter(s => s !== 'archived').map(id => ({ id, label: id }));
   }, [statusColumns]);
+
+  const assigneeOptions = useMemo(() => {
+    const names = new Set(teamMembers.filter(Boolean));
+    if (draft?.assignee) names.add(draft.assignee);
+    return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [teamMembers, draft?.assignee]);
+
+  const priorityPickOptions = useMemo(
+    () => TASK_PRIORITIES.map(p => ({
+      value: p,
+      label: t(PRIORITY_KEYS[p] || p),
+    })),
+    [t]
+  );
+
+  const visibilityPickOptions = useMemo(
+    () => VISIBILITY.map(v => ({
+      value: v,
+      label: t(VISIBILITY_KEYS[v] || v),
+    })),
+    [t]
+  );
+
+  const milestoneStatusPickOptions = useMemo(
+    () => MILESTONE_STATUS_VALUES.map(opt => ({
+      value: opt.id,
+      label: t(opt.labelKey),
+    })),
+    [t]
+  );
 
   if (!task) return null;
 
@@ -253,36 +378,23 @@ export default function TaskPanel({
             />
           )}
 
-          <div className="appdev-field-row">
+          {!hideDepartment ? (
             <label className="appdev-field">
-              <span>{t('hub.internal.taskPanel.type')}</span>
+              <span>{t('hub.internal.taskPanel.department')}</span>
               <select
-                value={isMilestone ? 'milestone' : 'task'}
-                onChange={e => set('kind', e.target.value)}
+                value={draft.department || 'operations'}
+                onChange={e => set('department', e.target.value)}
                 disabled={saving}
               >
-                <option value="task">{t('hub.internal.kindTask')}</option>
-                <option value="milestone">{t('hub.internal.kindMilestone')}</option>
+                <option value={ALL_DEPARTMENTS_ID}>{t('hub.internal.allDepartments')}</option>
+                {DEPARTMENTS.map(d => (
+                  <option key={d.id} value={d.id}>{deptText(d, t, 'label')}</option>
+                ))}
               </select>
             </label>
-            {!hideDepartment && (
-              <label className="appdev-field">
-                <span>{t('hub.internal.taskPanel.department')}</span>
-                <select
-                  value={draft.department || 'operations'}
-                  onChange={e => set('department', e.target.value)}
-                  disabled={saving}
-                >
-                  <option value={ALL_DEPARTMENTS_ID}>{t('hub.internal.allDepartments')}</option>
-                  {DEPARTMENTS.map(d => (
-                    <option key={d.id} value={d.id}>{deptText(d, t, 'label')}</option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </div>
+          ) : null}
 
-          {isTask && (
+          {isTask ? (
             <>
               <div className="appdev-field-row">
                 <label className="appdev-field">
@@ -300,81 +412,75 @@ export default function TaskPanel({
                     ))}
                   </datalist>
                 </label>
-                <label className="appdev-field">
-                  <span>{t('hub.internal.taskPanel.priority')}</span>
-                  <select
-                    value={draft.priority || 'none'}
-                    onChange={e => set('priority', e.target.value)}
-                    disabled={saving}
-                  >
-                    {TASK_PRIORITIES.map(p => (
-                      <option key={p} value={p}>{t(PRIORITY_KEYS[p] || p)}</option>
-                    ))}
-                  </select>
-                </label>
               </div>
 
+              <HubSinglePick
+                legend={t('hub.internal.taskPanel.priority')}
+                name="task-priority"
+                value={draft.priority || 'none'}
+                options={priorityPickOptions}
+                onChange={v => set('priority', v)}
+                disabled={saving}
+              />
+
+              {!isNew ? (
+                <TaskWorkflowSection
+                  task={draft}
+                  displayName={displayName}
+                  statusColumns={statusOptions}
+                  onAction={onWorkflowAction}
+                  busy={saving || workflowBusy}
+                  t={t}
+                />
+              ) : (
+                <p className="appdev-field-hint">{t('hub.internal.workflow.newTaskHint')}</p>
+              )}
+
+              <HubSinglePick
+                legend={t('hub.internal.taskPanel.visibility')}
+                name="task-visibility"
+                value={draft.visibility || 'team'}
+                options={visibilityPickOptions}
+                onChange={v => set('visibility', v)}
+                disabled={saving}
+              />
+            </>
+          ) : null}
+
+          {isMilestone && (
+            <>
               <div className="appdev-field-row">
                 <label className="appdev-field">
-                  <span>{t('hub.internal.taskPanel.status')}</span>
-                  <select
-                    value={draft.status || 'todo'}
-                    onChange={e => set('status', e.target.value)}
+                  <span>{t('hub.internal.taskPanel.eventStart')}</span>
+                  <DatePicker
+                    value={draft.planned_for}
+                    onChange={v => set('planned_for', v)}
                     disabled={saving}
-                  >
-                    {statusOptions.map(col => {
-                      const id = typeof col === 'string' ? col : col.id;
-                      return (
-                        <option key={id} value={id}>
-                          {statusColumnLabel(col, t)}
-                        </option>
-                      );
-                    })}
-                  </select>
+                    locale={locale}
+                    placeholder={t('hub.internal.taskPanel.pickDate')}
+                  />
                 </label>
                 <label className="appdev-field">
-                  <span>{t('hub.internal.taskPanel.visibility')}</span>
-                  <select
-                    value={draft.visibility || 'team'}
-                    onChange={e => set('visibility', e.target.value)}
+                  <span>{t('hub.internal.taskPanel.eventEnd')}</span>
+                  <DatePicker
+                    value={draft.deadline}
+                    onChange={v => set('deadline', v)}
                     disabled={saving}
-                  >
-                    {VISIBILITY.map(v => (
-                      <option key={v} value={v}>{t(VISIBILITY_KEYS[v] || v)}</option>
-                    ))}
-                  </select>
+                    locale={locale}
+                    placeholder={t('hub.internal.taskPanel.pickDate')}
+                  />
                 </label>
               </div>
+              <HubSinglePick
+                legend={t('hub.internal.taskPanel.milestoneStatus')}
+                name="milestone-status"
+                value={draft.status === 'done' ? 'done' : draft.status === 'cancelled' ? 'cancelled' : 'todo'}
+                options={milestoneStatusPickOptions}
+                onChange={v => set('status', v)}
+                disabled={saving}
+              />
+              <p className="appdev-field-hint">{t('hub.internal.taskPanel.milestoneHint')}</p>
             </>
-          )}
-
-          {isMilestone && (
-            <div className="appdev-field-row">
-              <label className="appdev-field">
-                <span>{t('hub.internal.taskPanel.eventStart')}</span>
-                <DatePicker
-                  value={draft.planned_for}
-                  onChange={v => set('planned_for', v)}
-                  disabled={saving}
-                  locale={locale}
-                  placeholder={t('hub.internal.taskPanel.pickDate')}
-                />
-              </label>
-              <label className="appdev-field">
-                <span>{t('hub.internal.taskPanel.eventEnd')}</span>
-                <DatePicker
-                  value={draft.deadline}
-                  onChange={v => set('deadline', v)}
-                  disabled={saving}
-                  locale={locale}
-                  placeholder={t('hub.internal.taskPanel.pickDate')}
-                />
-              </label>
-            </div>
-          )}
-
-          {isMilestone && (
-            <p className="appdev-field-hint">{t('hub.internal.taskPanel.eventHint')}</p>
           )}
 
           {isTask && (
@@ -394,12 +500,16 @@ export default function TaskPanel({
           {isTask && (
             <label className="appdev-field">
               <span>{t('hub.internal.taskPanel.assignee')}</span>
-              <input
+              <select
                 value={draft.assignee || ''}
                 onChange={e => set('assignee', e.target.value)}
                 disabled={saving}
-                placeholder={t('hub.internal.taskPanel.assigneePlaceholder')}
-              />
+              >
+                <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
+                {assigneeOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
             </label>
           )}
 
@@ -448,7 +558,7 @@ export default function TaskPanel({
             <button
               type="button"
               className="appdev-btn-primary"
-              onClick={() => onSave(prepareSave(draft, lockDepartmentId, lockBoard))}
+              onClick={() => onSave(prepareSave(draft, lockDepartmentId, lockBoard, isNew))}
               disabled={saving || !canSave}
             >
               {saving ? t('hub.internal.taskPanel.saving') : isNew ? t('hub.internal.taskPanel.create') : t('hub.internal.taskPanel.save')}

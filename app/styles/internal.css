@@ -774,6 +774,28 @@
   background: color-mix(in srgb, #d4a017 16%, var(--surface));
   border-color: color-mix(in srgb, #d4a017 35%, transparent);
 }
+.internal-cal-event.is-milestone.is-past,
+.internal-cal-span.is-milestone.is-past {
+  opacity: 0.72;
+  border-style: dashed;
+}
+.internal-cal-event.is-milestone.is-complete,
+.internal-cal-span.is-milestone.is-complete {
+  opacity: 0.55;
+}
+.internal-cal-event.is-milestone.is-complete .internal-cal-span-title,
+.internal-cal-event.is-milestone.is-complete .internal-cal-event-title {
+  text-decoration: line-through;
+}
+.internal-task-card.is-milestone.is-past:not(.is-dragging) {
+  border-style: dashed;
+  opacity: 0.85;
+}
+.internal-hint-chip.is-date.is-past {
+  color: var(--muted);
+  border-color: var(--line);
+  background: var(--surface-raised);
+}
 .internal-cal-event.is-event {
   background: color-mix(in srgb, #3d9a6a 20%, var(--surface));
   border: 1px solid color-mix(in srgb, #3d9a6a 38%, transparent);
@@ -2253,19 +2275,9 @@
   min-height: 5.5rem;
   line-height: 1.5;
 }
+/* TaskPanel uses .appdev-panel + .internal-task-panel — layout/z-index from panel.css only. */
 .internal-task-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: min(520px, 100vw);
-  height: 100vh;
-  height: 100dvh;
-  background: var(--surface);
-  border-left: 1px solid var(--border, var(--line));
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-md);
+  /* keep class hook for hub-specific overrides; never set z-index below .appdev-overlay (65) */
 }
 .internal-task-panel-head {
   display: flex;
@@ -2503,7 +2515,27 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-width: 52rem;
+  width: 100%;
+  max-width: none;
+}
+.products-sheet-card--about {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: var(--space-4) var(--space-5);
+  align-items: start;
+}
+.products-sheet-card--about .products-sheet-section-label {
+  margin: 0;
+  padding-top: 0.15rem;
+}
+.products-sheet-card--about .products-sheet-lead {
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .products-sheet-card--about {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
 }
 .products-hero {
   display: grid;
@@ -2687,7 +2719,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-width: 56rem;
+  width: 100%;
+  max-width: none;
 }
 .products-overview-grid {
   display: grid;
@@ -2981,7 +3014,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-width: 52rem;
+  width: 100%;
+  max-width: none;
 }
 .products-items-section .products-toolbar {
   margin-bottom: 0;
@@ -3018,7 +3052,8 @@
   color: var(--text-muted);
 }
 .products-discussion {
-  max-width: 720px;
+  width: 100%;
+  max-width: none;
 }
 .product-item-panel {
   z-index: 40;

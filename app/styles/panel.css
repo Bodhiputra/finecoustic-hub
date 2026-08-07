@@ -125,6 +125,100 @@
   letter-spacing: normal;
 }
 
+.hub-single-pick {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.hub-single-pick-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.hub-single-pick-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.hub-single-pick-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+  user-select: none;
+}
+.hub-single-pick-option input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.hub-single-pick-option:hover {
+  border-color: color-mix(in srgb, var(--fc-yellow) 40%, var(--line));
+}
+.hub-single-pick-option.is-active {
+  border-color: color-mix(in srgb, var(--fc-yellow) 55%, var(--line));
+  background: color-mix(in srgb, var(--fc-yellow) 12%, var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fc-yellow) 25%, transparent);
+}
+.hub-single-pick-option.is-active span {
+  font-weight: 600;
+}
+
+.task-workflow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+}
+
+.task-workflow-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.task-workflow-status-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.task-workflow-badge {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+}
+
+.task-workflow-badge.is-todo { color: var(--text-muted); }
+.task-workflow-badge.is-in_progress { color: var(--fc-blue, #3b82f6); }
+.task-workflow-badge.is-in_review { color: var(--fc-yellow, #eab308); }
+.task-workflow-badge.is-done { color: var(--fc-green, #22c55e); }
+
+.task-workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .appdev-field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

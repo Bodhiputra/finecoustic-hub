@@ -11,7 +11,7 @@ export default async function InternalDepartmentLoader({
   departmentId,
   searchParams,
 }) {
-  const { sp, tasks, opsData, marketingRows, campaigns, board, campaign, products, productDetail, hubMe } =
+  const { sp, tasks, tasksFilterKey, opsData, marketingRows, campaigns, board, campaign, products, productDetail, hubMe } =
     await loadDepartmentPage({
       departmentId,
       searchParams,
@@ -26,6 +26,7 @@ export default async function InternalDepartmentLoader({
         initialBucket={sp?.view || ''}
         initialTool={sp?.tool || ''}
         initialTasks={tasks}
+        initialTasksFilterKey={tasksFilterKey}
         opsData={opsData}
         marketingRows={marketingRows}
         initialCampaigns={campaigns}

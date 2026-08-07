@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createIssue, getAppdevData } from '@/lib/appdev-data';
+import { createIssue, getAppdevDataSince } from '@/lib/appdev-data';
 import { resolveAppdevActor } from '@/lib/appdev-actor';
 
-export async function GET() {
-  const data = await getAppdevData();
+export async function GET(request) {
+  const since = new URL(request.url).searchParams.get('since') || '';
+  const data = await getAppdevDataSince(since);
   return NextResponse.json(data);
 }
 

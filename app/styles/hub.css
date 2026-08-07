@@ -169,6 +169,49 @@
   gap: var(--space-2);
 }
 
+.hub-admin-main {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+.hub-main.hub-admin-main {
+  max-width: none;
+  margin: 0;
+}
+
+.hub-admin-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.hub-admin-create-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.hub-admin-create-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.hub-admin-create-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  .hub-admin-create-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 .hub-main-shell {
   min-width: 0;
   min-height: 100vh;
