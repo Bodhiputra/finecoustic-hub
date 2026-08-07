@@ -168,10 +168,14 @@ function AppdevAuthFormInner({
         if (res.status === 401 && typeof data.attemptsLeft === 'number') {
           applyRateLimitState({ ...data, allowed: true });
           setShowRetriesRemaining(true);
+          setError(t('common.incorrectPassword'));
+        } else if (res.status >= 500) {
+          setError(t('common.somethingWrong'));
+        } else {
+          setError(
+            mode === 'signup' ? t('appdev.auth.signupFailed') : t('common.incorrectPassword')
+          );
         }
-        setError(
-          mode === 'signup' ? t('appdev.auth.signupFailed') : t('common.incorrectPassword')
-        );
         setLoading(false);
         return;
       }
