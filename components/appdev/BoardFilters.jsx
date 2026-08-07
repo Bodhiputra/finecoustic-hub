@@ -7,7 +7,6 @@ export default function BoardFilters({
   onAssigneeFilterChange,
   typeFilter,
   onTypeFilterChange,
-  assigneeOptions = [],
   typeOptions = [],
   t,
 }) {
@@ -22,11 +21,6 @@ export default function BoardFilters({
         >
           <option value="">{t('appdev.board.filterAssigneeAll')}</option>
           <option value="__me__">{t('appdev.board.filterAssigneeMe')}</option>
-          {assigneeOptions.map(name => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
         </select>
       </label>
 

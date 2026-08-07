@@ -58,6 +58,7 @@ export default function IssuePanel({
   onPatch,
   onDelete,
   onPostComment,
+  onEditActivity,
   t,
   saving,
   postingComment,
@@ -67,12 +68,36 @@ export default function IssuePanel({
   const [panelNotice, setPanelNotice] = useState('');
   const pendingPatchRef = useRef(null);
   const debounceTimerRef = useRef(null);
+  const issueIdRef = useRef(issue?.id);
 
   useEffect(() => {
+    if (!issue) return;
+
+    const switched = issueIdRef.current !== issue.id;
+    issueIdRef.current = issue.id;
+
+    const hasPendingText =
+      Boolean(pendingPatchRef.current) || Boolean(debounceTimerRef.current);
+
+    if (switched) {
+      setDraft(issue);
+      setPanelNotice('');
+      pendingPatchRef.current = null;
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+      return;
+    }
+
+    if (hasPendingText) {
+      setDraft(prev => ({
+        ...prev,
+        comments: issue.comments,
+        updated_at: issue.updated_at,
+      }));
+      return;
+    }
+
     setDraft(issue);
-    setPanelNotice('');
-    pendingPatchRef.current = null;
-    clearTimeout(debounceTimerRef.current);
   }, [issue]);
 
   useEffect(
@@ -106,6 +131,7 @@ export default function IssuePanel({
 
   const scheduleTextPatch = useCallback(
     patch => {
+      onEditActivity?.();
       pendingPatchRef.current = { ...(pendingPatchRef.current || {}), ...patch };
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(async () => {
@@ -114,13 +140,15 @@ export default function IssuePanel({
         if (queued) await commitPatch(queued);
       }, TEXT_PATCH_DELAY_MS);
     },
-    [commitPatch]
+    [commitPatch, onEditActivity]
   );
 
   const applyPatch = useCallback(
     async (patch, { debounce = false } = {}) => {
       setDraft(prev => ({ ...prev, ...patch }));
       if (isDraftIssue(issue)) return;
+
+      onEditActivity?.();
 
       if (debounce) {
         scheduleTextPatch(patch);
@@ -130,7 +158,7 @@ export default function IssuePanel({
       await flushPendingPatch();
       await commitPatch(patch);
     },
-    [issue, commitPatch, flushPendingPatch, scheduleTextPatch]
+    [issue, commitPatch, flushPendingPatch, scheduleTextPatch, onEditActivity]
   );
 
   if (!issue) return null;

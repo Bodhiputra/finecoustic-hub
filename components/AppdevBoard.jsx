@@ -17,7 +17,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { useLocale } from '@/components/LocaleProvider';
 import { STATUSES, peekNextIssueNumber, parseIssueIdNum, dedupeIssuesById, collectIssueTypeFilterOptions, mergeTaskTypes } from '@/lib/appdev';
 import { createDraftIssue, isDraftIssue } from '@/lib/appdev-draft';
-import { assigneeFilterOptions, filterIssues } from '@/lib/appdev-filters';
+import { filterIssues } from '@/lib/appdev-filters';
 import { sortIssuesByDueAt } from '@/lib/appdev-due';
 
 const VIEW_KEY = 'appdev-view';
@@ -91,7 +91,7 @@ export default function AppdevBoard({ initialData = null }) {
     const storedView = localStorage.getItem(VIEW_KEY);
     if (storedView === 'board' || storedView === 'table') setView(storedView);
     setShowHelp(localStorage.getItem(HELP_KEY) !== '1');
-    setAssigneeFilter(localStorage.getItem(FILTER_ASSIGNEE_KEY) || '');
+    setAssigneeFilter(localStorage.getItem(FILTER_ASSIGNEE_KEY) === '__me__' ? '__me__' : '');
     setTypeFilter(localStorage.getItem(FILTER_TYPE_KEY) || '');
 
     fetch('/api/auth/me', { credentials: 'same-origin' })
@@ -254,8 +254,9 @@ export default function AppdevBoard({ initialData = null }) {
   }, [initialData, load]);
 
   const setAssigneeFilterMode = value => {
-    setAssigneeFilter(value);
-    localStorage.setItem(FILTER_ASSIGNEE_KEY, value);
+    const next = value === '__me__' ? '__me__' : '';
+    setAssigneeFilter(next);
+    localStorage.setItem(FILTER_ASSIGNEE_KEY, next);
   };
 
   const setTypeFilterMode = value => {
@@ -279,11 +280,6 @@ export default function AppdevBoard({ initialData = null }) {
       currentUser,
     });
   }, [savedIssues, search, assigneeFilter, typeFilter, currentUser]);
-
-  const assigneeOptions = useMemo(
-    () => assigneeFilterOptions(savedIssues, assignablePeople),
-    [savedIssues, assignablePeople]
-  );
 
   const typeOptions = useMemo(
     () => collectIssueTypeFilterOptions(savedIssues, board?.meta?.task_types),
@@ -318,6 +314,10 @@ export default function AppdevBoard({ initialData = null }) {
   }, [filteredIssues]);
 
   const openIssue = issue => setSelected(issue);
+
+  const bumpLocalEditQuiet = useCallback(() => {
+    localEditUntilRef.current = Date.now() + LOCAL_EDIT_QUIET_MS;
+  }, []);
 
   const applyIssueUpdate = (issue, people, task_types, boardUpdatedAt) => {
     if (boardUpdatedAt) {
@@ -676,7 +676,6 @@ export default function AppdevBoard({ initialData = null }) {
             onAssigneeFilterChange={setAssigneeFilterMode}
             typeFilter={typeFilter}
             onTypeFilterChange={setTypeFilterMode}
-            assigneeOptions={assigneeOptions}
             typeOptions={typeOptions}
             t={t}
           />
@@ -786,6 +785,7 @@ export default function AppdevBoard({ initialData = null }) {
           onPatch={patchIssue}
           onDelete={id => setDeleteConfirmId(id)}
           onPostComment={payload => postComment(selected.id, payload)}
+          onEditActivity={bumpLocalEditQuiet}
           t={t}
           saving={saving}
           postingComment={postingComment}
