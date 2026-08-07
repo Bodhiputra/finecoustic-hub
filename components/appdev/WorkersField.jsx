@@ -68,7 +68,11 @@ export default function WorkersField({
   };
 
   const joinAsMe = () => {
-    if (!currentUser) return;
+    if (!currentUser || disabled) return;
+    if (mode === 'contributor') {
+      onChange(addWorker(normalized, currentUser));
+      return;
+    }
     add(currentUser);
   };
 

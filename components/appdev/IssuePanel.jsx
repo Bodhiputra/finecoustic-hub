@@ -152,19 +152,25 @@ export default function IssuePanel({
       return;
     }
 
-    const hadWorkers = hasWorkers(draft);
-    let assigned_at = draft.assigned_at;
-    if (nextWorkers.length && !hadWorkers) {
-      assigned_at = new Date().toISOString();
-    } else if (!nextWorkers.length) {
-      assigned_at = null;
-    }
-
-    applyPatch({
+    const patch = {
       workers: nextWorkers,
       worker: nextWorkers[0] || '',
-      assigned_at,
-    });
+    };
+
+    // Only assigner/admin may set assigned_at — contributors joining must not send it
+    // (server auto-stamps when the first assignee is added).
+    if (caps.canManageWorkers) {
+      const hadWorkers = hasWorkers(draft);
+      let assigned_at = draft.assigned_at;
+      if (nextWorkers.length && !hadWorkers) {
+        assigned_at = new Date().toISOString();
+      } else if (!nextWorkers.length) {
+        assigned_at = null;
+      }
+      patch.assigned_at = assigned_at;
+    }
+
+    applyPatch(patch);
   };
 
   const setStatus = status => {
