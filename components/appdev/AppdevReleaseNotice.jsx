@@ -9,12 +9,10 @@ const STORAGE_KEY = `appdev-release-notice-${RELEASE_NOTICE_ID}`;
 const FEATURE_KEYS = [
   'autosave',
   'statusPills',
-  'noPriority',
   'joinAssignee',
   'notifications',
   'reviewNotify',
   'filterMe',
-  'instantFeedback',
 ];
 
 /** Changelog modal — copy is Chinese-first for the appdev team. */
