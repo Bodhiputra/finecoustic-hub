@@ -2629,6 +2629,89 @@ textarea.appdev-input-readonly:disabled {
   margin-top: var(--space-5);
 }
 
+.appdev-release-backdrop {
+  z-index: 75;
+}
+
+.appdev-release-notice {
+  width: min(520px, calc(100vw - 2rem));
+  max-height: min(85vh, 640px);
+  padding: var(--space-5);
+  overflow: auto;
+}
+
+.appdev-release-header {
+  margin-bottom: var(--space-4);
+}
+
+.appdev-release-badge {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-fg, #111);
+  background: var(--accent, #f5d547);
+  border-radius: 999px;
+}
+
+.appdev-release-title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.appdev-release-intro {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.appdev-release-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.appdev-release-list li {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+}
+
+.appdev-release-list strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.appdev-release-list span {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.appdev-release-foot {
+  margin-top: var(--space-5);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.appdev-release-dismiss {
+  min-width: 7rem;
+}
+
 .appdev-admin-intro {
   margin: 0 0 var(--space-4);
   font-size: .88rem;

@@ -8,6 +8,7 @@ import PresenceAvatars from '@/components/appdev/PresenceAvatars';
 import { useAppdevPresence, usePresenceOnline } from '@/components/appdev/useAppdevPresence';
 import IssuePanel from '@/components/appdev/IssuePanel';
 import AppdevHelp from '@/components/appdev/AppdevHelp';
+import AppdevReleaseNotice from '@/components/appdev/AppdevReleaseNotice';
 import AppdevNotifications from '@/components/appdev/AppdevNotifications';
 import ConfirmModal from '@/components/ConfirmModal';
 import AppdevAdminUsers from '@/components/appdev/AppdevAdminUsers';
@@ -714,6 +715,7 @@ export default function AppdevBoard({ initialData = null }) {
         </div>
       </header>
 
+      <AppdevReleaseNotice />
       <AppdevHelp open={showHelp} onClose={dismissHelp} onToggle={toggleHelp} t={t} />
 
       {error && (
