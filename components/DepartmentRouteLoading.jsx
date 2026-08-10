@@ -4,7 +4,7 @@ const LABELS = {
   operations: 'Loading operations…',
   marketing: 'Loading marketing…',
   products: 'Loading products…',
-  branding: 'Loading branding…',
+  finecoustic: 'Loading All About Finecoustic…',
   creatives: 'Loading creatives…',
   all: 'Loading tasks…',
 };

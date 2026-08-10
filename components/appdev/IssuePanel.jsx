@@ -382,6 +382,13 @@ export default function IssuePanel({
 
           <div className="appdev-field-row">
             <div className="appdev-field">
+              <span>{t('appdev.board.issuedAt')}</span>
+              <ReadonlyValue>{formatIssueDate(draft.created_at, locale)}</ReadonlyValue>
+            </div>
+          </div>
+
+          <div className="appdev-field-row">
+            <div className="appdev-field">
               <span>{t('appdev.board.assignedAt')}</span>
               {caps.canEditDates ? (
                 <DatePicker

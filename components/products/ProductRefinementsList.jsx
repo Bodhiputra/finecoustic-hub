@@ -2,6 +2,7 @@
 
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
+import { productPlatformLabel } from '@/lib/products';
 
 const STATUS_LABELS = {
   idea: 'Idea',
@@ -52,6 +53,13 @@ export default function ProductRefinementsList({
                 </span>
                 <span className="products-refinement-copy">
                   <span className="products-refinement-title">{item.title}</span>
+                  {(item.suggested_by || item.platform) ? (
+                    <span className="products-refinement-meta">
+                      {item.suggested_by ? item.suggested_by : null}
+                      {item.suggested_by && item.platform ? ' · ' : null}
+                      {item.platform ? productPlatformLabel(item.platform, t) : null}
+                    </span>
+                  ) : null}
                   {item.body ? (
                     <span className="products-refinement-preview">
                       {item.body.length > 120 ? `${item.body.slice(0, 120)}…` : item.body}

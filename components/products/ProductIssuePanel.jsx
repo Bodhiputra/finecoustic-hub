@@ -5,7 +5,14 @@ import IssueChat from '@/components/appdev/IssueChat';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { ISSUE_SOURCES, ISSUE_STATUSES, issueSourceLabel, issueStatusLabel } from '@/lib/products';
+import {
+  ISSUE_PLATFORMS,
+  ISSUE_REPORTER_TYPES,
+  ISSUE_STATUSES,
+  issueReporterTypeLabel,
+  issueStatusLabel,
+  productPlatformLabel,
+} from '@/lib/products';
 import { uploadInternalMediaFile } from '@/lib/hub-upload-client';
 
 export default function ProductIssuePanel({
@@ -72,7 +79,7 @@ export default function ProductIssuePanel({
               value={draft.title || ''}
               onChange={e => set('title', e.target.value)}
               disabled={saving}
-              placeholder="Question or problem summary"
+              placeholder={t('hub.products.issueTitlePlaceholder')}
               autoFocus={isNew}
             />
           </div>
@@ -84,25 +91,54 @@ export default function ProductIssuePanel({
               value={draft.body || ''}
               onChange={e => set('body', e.target.value)}
               disabled={saving}
-              placeholder="Details from KOL, customer, or internal report…"
+              placeholder={t('hub.products.issueBodyPlaceholder')}
             />
           </div>
 
+          <label className="appdev-field">
+            <span>{t('hub.products.correspondent')}</span>
+            <input
+              type="text"
+              value={draft.correspondent || ''}
+              onChange={e => set('correspondent', e.target.value)}
+              disabled={saving}
+              placeholder={t('hub.products.correspondentPlaceholder')}
+            />
+          </label>
+
           <div className="appdev-field-row">
             <label className="appdev-field">
-              <span>Source</span>
+              <span>{t('hub.products.reporterType')}</span>
               <select
-                value={draft.source || 'other'}
-                onChange={e => set('source', e.target.value)}
+                value={draft.reporter_type || 'end_user'}
+                onChange={e => set('reporter_type', e.target.value)}
                 disabled={saving}
               >
-                {ISSUE_SOURCES.map(source => (
-                  <option key={source} value={source}>{issueSourceLabel(source)}</option>
+                {ISSUE_REPORTER_TYPES.map(type => (
+                  <option key={type} value={type}>{issueReporterTypeLabel(type)}</option>
                 ))}
               </select>
             </label>
             <label className="appdev-field">
-              <span>Status</span>
+              <span>{t('hub.products.platform')}</span>
+              <select
+                value={draft.platform || ''}
+                onChange={e => set('platform', e.target.value)}
+                disabled={saving}
+              >
+                <option value="">{t('hub.products.platformUnset')}</option>
+                {ISSUE_PLATFORMS.map(platform => (
+                  <option key={platform} value={platform}>
+                    {productPlatformLabel(platform, t)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="appdev-field-row">
+            <label className="appdev-field">
+              <span>{t('hub.products.issueStatus')}</span>
               <select
                 value={draft.status || 'open'}
                 onChange={e => set('status', e.target.value)}
@@ -113,18 +149,17 @@ export default function ProductIssuePanel({
                 ))}
               </select>
             </label>
+            <label className="appdev-field">
+              <span>{t('hub.products.assigneePm')}</span>
+              <input
+                type="text"
+                value={draft.assignee || ''}
+                onChange={e => set('assignee', e.target.value)}
+                disabled={saving}
+                placeholder={t('hub.products.assigneePmPlaceholder')}
+              />
+            </label>
           </div>
-
-          <label className="appdev-field">
-            <span>Assignee (PM)</span>
-            <input
-              type="text"
-              value={draft.assignee || ''}
-              onChange={e => set('assignee', e.target.value)}
-              disabled={saving}
-              placeholder="Who is answering"
-            />
-          </label>
 
           {!isNew ? (
             <IssueChat
@@ -145,7 +180,7 @@ export default function ProductIssuePanel({
         <footer className="appdev-panel-foot">
           {!isNew && onDelete ? (
             <button type="button" className="appdev-btn-danger" onClick={() => onDelete(draft.id)} disabled={saving}>
-              Delete
+              {t('hub.products.deleteItem')}
             </button>
           ) : (
             <span />
@@ -157,7 +192,7 @@ export default function ProductIssuePanel({
               onClick={handleSave}
               disabled={saving || !draft.title?.trim()}
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? t('hub.products.savingItem') : t('hub.products.saveItem')}
             </button>
           </div>
         </footer>

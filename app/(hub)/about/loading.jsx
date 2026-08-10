@@ -1,5 +1,5 @@
 import DepartmentRouteLoading from '@/components/DepartmentRouteLoading';
 
-export default function BrandingLoading() {
+export default function AboutFinecousticLoading() {
   return <DepartmentRouteLoading departmentId="finecoustic" />;
 }

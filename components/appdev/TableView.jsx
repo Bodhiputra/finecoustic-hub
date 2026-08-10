@@ -38,6 +38,7 @@ export default function TableView({
               <th>{t('appdev.board.status')}</th>
               <th>{t('appdev.board.assigner')}</th>
               <th>{t('appdev.board.assignee')}</th>
+              <th>{t('appdev.board.issuedAt')}</th>
               <th>{t('appdev.board.assignedAt')}</th>
               <th>{t('appdev.board.dueAt')}</th>
               <th>{t('appdev.board.completedAt')}</th>
@@ -46,7 +47,7 @@ export default function TableView({
           <tbody>
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={8} className="appdev-table-empty">
+                <td colSpan={9} className="appdev-table-empty">
                   {t('appdev.board.emptyTable')}
                 </td>
               </tr>
@@ -97,6 +98,7 @@ export default function TableView({
                   </td>
                   <td>{issue.assignee || '—'}</td>
                   <td>{formatWorkersDisplay(issue, locale)}</td>
+                  <td className="appdev-table-date">{formatIssueDate(issue.created_at, locale)}</td>
                   <td className="appdev-table-date">{formatIssueDate(issue.assigned_at, locale)}</td>
                   <td className="appdev-table-date">{formatIssueDate(issue.due_at, locale)}</td>
                   <td className="appdev-table-date">{formatIssueDate(issue.completed_at, locale)}</td>

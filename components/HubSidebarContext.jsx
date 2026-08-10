@@ -7,11 +7,83 @@ import HubTopNav from '@/components/HubTopNav';
 import { useLocale } from '@/components/LocaleProvider';
 
 const STORAGE_KEY = 'hub-sidebar-open';
+const MOBILE_MQ = '(max-width: 768px)';
 
 const HubSidebarContext = createContext(null);
 
 export function useHubSidebar() {
   return useContext(HubSidebarContext);
+}
+
+function useSidebarViewport() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mq = window.matchMedia(MOBILE_MQ);
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
+}
+
+function HubSidebarCollapseRail() {
+  const ctx = useHubSidebar();
+  const { t } = useLocale();
+  if (!ctx?.open) return null;
+
+  const label = t('hub.internal.minimizeSidebar');
+
+  return (
+    <button
+      type="button"
+      className="hub-sidebar-rail"
+      onClick={ctx.close}
+      aria-label={label}
+      title={label}
+    >
+      <Icon name="chevronLeft" size={16} />
+    </button>
+  );
+}
+
+function HubSidebarExpandTab() {
+  const ctx = useHubSidebar();
+  const { t } = useLocale();
+  if (!ctx || ctx.open) return null;
+
+  const label = t('hub.internal.expandSidebar');
+
+  return (
+    <button
+      type="button"
+      className="hub-sidebar-expand-tab"
+      onClick={ctx.toggle}
+      aria-label={label}
+      title={label}
+    >
+      <Icon name="chevronRight" size={16} />
+      <span className="hub-sidebar-expand-tab-label">{label}</span>
+    </button>
+  );
+}
+
+function HubSidebarMobileDone() {
+  const ctx = useHubSidebar();
+  const { t } = useLocale();
+  if (!ctx?.open) return null;
+
+  const label = t('hub.internal.backToContent');
+
+  return (
+    <button type="button" className="hub-sidebar-mobile-done" onClick={ctx.close}>
+      <Icon name="chevronLeft" size={18} />
+      <span>{label}</span>
+    </button>
+  );
 }
 
 export function HubLayout({
@@ -30,6 +102,7 @@ export function HubLayout({
   const sidebarId = useId();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isMobile = useSidebarViewport();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -128,7 +201,10 @@ export function HubLayout({
           aria-label={sidebarLabel}
         >
           <div className="hub-sidebar-inner">{sidebar}</div>
+          {!isMobile && open ? <HubSidebarCollapseRail /> : null}
+          {isMobile ? <HubSidebarMobileDone /> : null}
         </aside>
+        {!isMobile && !open ? <HubSidebarExpandTab /> : null}
         <div className="hub-main-shell">
           <HubTopNav
             title={topNavTitle}
@@ -147,22 +223,27 @@ export function HubLayout({
 export function HubMenuButton({ label }) {
   const ctx = useHubSidebar();
   const { t } = useLocale();
+  const isMobile = useSidebarViewport();
   if (!ctx) return null;
 
   const { open, toggle, sidebarId } = ctx;
-  const buttonLabel = label || (open ? t('hub.internal.closeSidebar') : t('hub.internal.openSidebar'));
+
+  // Desktop: edge rail + expand tab handle show/hide — no top-nav toggle.
+  if (!isMobile) return null;
+
+  const buttonLabel = label || (open ? t('hub.internal.backToContent') : t('hub.internal.openSidebar'));
 
   return (
     <button
       type="button"
-      className="hub-menu-btn"
+      className={`hub-menu-btn${open ? ' is-open' : ''}`}
       onClick={toggle}
       aria-expanded={open}
       aria-controls={sidebarId}
       aria-label={buttonLabel}
       title={buttonLabel}
     >
-      <Icon name={open ? 'x' : 'menu'} size={20} />
+      <Icon name={open ? 'chevronLeft' : 'menu'} size={20} />
     </button>
   );
 }

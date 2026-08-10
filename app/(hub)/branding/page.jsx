@@ -1,7 +1,6 @@
-import InternalDepartmentLoader from '@/components/internal/InternalDepartmentLoader';
+import { redirect } from 'next/navigation';
+import { getAboutFinecousticLandingPath } from '@/lib/internal';
 
-export const dynamic = 'force-dynamic';
-
-export default function BrandingPage({ searchParams }) {
-  return <InternalDepartmentLoader departmentId="branding" searchParams={searchParams} />;
+export default function BrandingPage() {
+  redirect(getAboutFinecousticLandingPath());
 }

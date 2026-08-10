@@ -12,7 +12,7 @@ const DEPARTMENT_LABELS = {
   marketing: 'Marketing',
   products: 'Products',
   creatives: 'Creatives',
-  branding: 'Branding',
+  finecoustic: 'All About Finecoustic',
   admin: 'Hub admin',
 };
 

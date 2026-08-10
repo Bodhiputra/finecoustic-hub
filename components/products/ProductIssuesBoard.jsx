@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import ProductIssueCard from '@/components/products/ProductIssueCard';
 import { useLocale } from '@/components/LocaleProvider';
-import { ISSUE_BOARD_COLUMNS, issueSourceLabel, issueStatusLabel } from '@/lib/products';
+import { ISSUE_BOARD_COLUMNS, issueReporterTypeLabel, issueStatusLabel, productPlatformLabel } from '@/lib/products';
 
 export default function ProductIssuesBoard({
   sku,
@@ -101,7 +101,9 @@ export default function ProductIssuesBoard({
                 </span>
                 <span className="products-issue-list-title">{item.title}</span>
                 <span className="products-issue-list-meta">
-                  {issueSourceLabel(item.source)}
+                  {issueReporterTypeLabel(item.reporter_type || item.source)}
+                  {item.platform ? ` · ${productPlatformLabel(item.platform, t)}` : ''}
+                  {item.correspondent ? ` · ${item.correspondent}` : ''}
                   {item.comments?.length ? ` · ${item.comments.length} msg` : ''}
                 </span>
               </button>

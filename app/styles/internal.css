@@ -2848,6 +2848,11 @@
   font-size: 0.95rem;
   line-height: 1.35;
 }
+.products-refinement-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
 .products-refinement-preview {
   font-size: 0.85rem;
   color: var(--muted);
