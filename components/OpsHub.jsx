@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import Icon from '@/components/Icon';
+import OpsStockPanel from '@/components/ops/OpsStockPanel';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 import {
@@ -13,7 +14,6 @@ import {
   calcStockReconciliation,
   customerDataUpdatedAt,
   inventoryDataUpdatedAt,
-  shopifyDataUpdatedAt,
   formatDataDate,
   formatDate,
   partnerAllocations,
@@ -21,7 +21,6 @@ import {
   productsOrdered,
   shipmentCounts,
   shipmentStatusClass,
-  shopifyQty,
 } from '@/lib/ops';
 
 const VIEW_META = {
@@ -38,7 +37,12 @@ const NAV_ITEMS = [
   { id: 'stock', href: '/ops?tool=stock', label: 'Stock' },
 ];
 
-export function OpsHubContent({ initialData, view = 'dashboard' }) {
+export function OpsHubContent({
+  initialData,
+  view = 'dashboard',
+  shopifyConfigured = false,
+  shopifySnapshot = null,
+}) {
   const ops = initialData;
 
   const metrics = useMemo(() => calcMetrics(ops), [ops]);
@@ -59,7 +63,6 @@ export function OpsHubContent({ initialData, view = 'dashboard' }) {
 
   const customerDataUpdated = formatDataDate(customerDataUpdatedAt(ops));
   const inventoryDataUpdated = formatDataDate(inventoryDataUpdatedAt(ops));
-  const shopifyDataUpdated = formatDataDate(shopifyDataUpdatedAt(ops));
 
   return (
     <>
@@ -149,109 +152,6 @@ export function OpsHubContent({ initialData, view = 'dashboard' }) {
                   );
                 })}
               </div>
-
-              {reconciliation.hasAnyIssue && (
-                <div className="stock-reconcile" role="note">
-                  <header className="stock-reconcile-head">
-                    <strong>Numbers don&apos;t match yet</strong>
-                    <p>
-                      Axia&apos;s warehouse count and our customer order log should fit together — they
-                      don&apos;t right now. Treat &ldquo;free to use&rdquo; as unreliable until this is
-                      cleared with Axia.
-                    </p>
-                  </header>
-                  <div className="stock-reconcile-grid">
-                    {reconciliation.items.map(row => (
-                      <div key={row.sku} className="stock-reconcile-card">
-                        <h3>{productName(ops, row.sku)}</h3>
-                        <div className="stock-reconcile-compare">
-                          <div className="stock-reconcile-col">
-                            <h4>What Axia says</h4>
-                            <ul>
-                              <li>
-                                <span>In warehouse</span>
-                                <strong>{row.warehouseQty}</strong>
-                              </li>
-                              <li>
-                                <span>Free to use</span>
-                                <strong>{row.axiaAfterOrders ?? '—'}</strong>
-                              </li>
-                            </ul>
-                          </div>
-                          <div className="stock-reconcile-col">
-                            <h4>What we logged</h4>
-                            <p className="stock-reconcile-note">
-                              Shipped and waiting orders both count against warehouse stock.
-                            </p>
-                            <ul>
-                              <li>
-                                <span>Shipped (still in stock)</span>
-                                <strong>{row.b2bShipped}</strong>
-                              </li>
-                              <li>
-                                <span>Waiting to ship</span>
-                                <strong>{row.b2bReserved}</strong>
-                              </li>
-                              <li>
-                                <span>Personal samples</span>
-                                <strong>{row.internal}</strong>
-                              </li>
-                              <li>
-                                <span>Free to use</span>
-                                <strong>{row.axiaAfterOrders ?? '—'}</strong>
-                              </li>
-                            </ul>
-                            {row.waitingCustomers.length > 0 && (
-                              <p className="stock-reconcile-customers">
-                                Still waiting: {row.waitingCustomers.join(', ')}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="stock-reconcile-problem">
-                          <h4>What&apos;s wrong</h4>
-                          <ul>
-                            {row.overCommitted && (
-                              <li>
-                                Axia says <strong>{row.warehouseQty}</strong> are in the warehouse, but
-                                shipped ({row.b2bShipped}) + waiting ({row.b2bReserved}) + samples (
-                                {row.internal}) + free ({row.axiaAfterOrders ?? '—'}) adds up to{' '}
-                                <strong>{row.inWarehouseAccounted}</strong> —{' '}
-                                <strong>{Math.abs(row.inWarehouseGap)} units</strong> more than fit.
-                              </li>
-                            )}
-                            {!row.overCommitted && row.inWarehouseGap > 0 && (
-                              <li>
-                                Axia says <strong>{row.warehouseQty}</strong> are in the warehouse, but
-                                shipped + waiting + samples + free only accounts for{' '}
-                                <strong>{row.inWarehouseAccounted}</strong> —{' '}
-                                <strong>{row.inWarehouseGap} units</strong> missing from our log.
-                              </li>
-                            )}
-                            {row.axiaDelta != null && row.axiaDelta !== 0 && (
-                              <li>
-                                Axia says <strong>{row.axiaAfterOrders}</strong> are free to use. After
-                                all customer orders ({row.b2bAll}) and samples ({row.internal}), we&apos;d
-                                expect <strong>{row.calcAvailable}</strong> — a difference of{' '}
-                                <strong>{Math.abs(row.axiaDelta)}</strong>.
-                              </li>
-                            )}
-                          </ul>
-                          <p className="stock-reconcile-cause">
-                            Customer orders take warehouse stock whether they&apos;ve shipped or not.
-                            The gap means our order quantities, warehouse count, or Axia&apos;s free count
-                            don&apos;t agree — confirm all three with Axia.
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="stock-reconcile-foot">
-                    Next step: confirm warehouse count, free count, and which orders are still in
-                    Dongguan with Axia before the next shipment or transfer.
-                  </p>
-                </div>
-              )}
             </article>
 
             {ops.b2b_pending_review && (
@@ -315,44 +215,35 @@ export function OpsHubContent({ initialData, view = 'dashboard' }) {
         )}
 
         {view === 'stock' && (
-          <section className="view active">
-            <p className="data-updated-label">
-              Inventory last updated: {inventoryDataUpdated} · Shopify last updated: {shopifyDataUpdated}
-            </p>
-            <div className="stock-cards">
-              {ACTIVE_SKUS.map(sku => {
-                const m = metrics.metrics[sku];
-                const shop = shopifyQty(null, ops, sku);
-                return (
-                  <article key={sku} className="stock-card">
-                    <h3>{productName(ops, sku)}</h3>
-                    <div className="stock-card-locations">
-                      <div>
-                        <span className="stock-location-label">Available (Axia)</span>
-                        <span className="stock-location-value">{m.axiaAfterOrders ?? '—'}</span>
-                        <span className="stock-location-hint">{m.warehouseQty} in warehouse · {m.b2bShipped} shipped</span>
-                      </div>
-                      <div>
-                        <span className="stock-location-label">Online store</span>
-                        <span className="stock-location-value">{shop != null ? shop : '—'}</span>
-                        <span className="stock-location-hint">Not synced yet</span>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+          <OpsStockPanel
+            initialOps={ops}
+            shopifyConfigured={shopifyConfigured}
+            shopifySnapshot={shopifySnapshot}
+          />
         )}
     </>
   );
 }
 
-export default function OpsHub({ initialData, authEnabled, view = 'dashboard', embedded = false }) {
+export default function OpsHub({
+  initialData,
+  authEnabled,
+  view = 'dashboard',
+  embedded = false,
+  shopifyConfigured = false,
+  shopifySnapshot = null,
+}) {
   const ops = initialData;
   const { t } = useLocale();
   const [title, subtitle] = VIEW_META[view] || VIEW_META.dashboard;
-  const content = <OpsHubContent initialData={initialData} view={view} />;
+  const content = (
+    <OpsHubContent
+      initialData={initialData}
+      view={view}
+      shopifyConfigured={shopifyConfigured}
+      shopifySnapshot={shopifySnapshot}
+    />
+  );
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });

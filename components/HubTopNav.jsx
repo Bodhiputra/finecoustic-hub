@@ -6,7 +6,10 @@ import Icon from '@/components/Icon';
 import { HubMenuButton } from '@/components/HubSidebarContext';
 import LocaleSwitch from '@/components/LocaleSwitch';
 import ThemeToggle from '@/components/ThemeToggle';
+import PresenceAvatars from '@/components/appdev/PresenceAvatars';
+import HubNotifications from '@/components/internal/HubNotifications';
 import UserAvatar from '@/components/internal/UserAvatar';
+import { useHubPresence, useHubPresenceOnline } from '@/components/internal/useHubPresence';
 import { useLocale } from '@/components/LocaleProvider';
 
 export default function HubTopNav({
@@ -18,6 +21,8 @@ export default function HubTopNav({
 }) {
   const { t } = useLocale();
   const [displayName, setDisplayName] = useState(displayNameProp);
+  const { subscribe: subscribePresence } = useHubPresence(authEnabled);
+  const onlineUsers = useHubPresenceOnline(subscribePresence);
 
   useEffect(() => {
     if (displayNameProp) {
@@ -53,6 +58,13 @@ export default function HubTopNav({
         )}
       </div>
       <div className="hub-topnav-actions">
+        <PresenceAvatars
+          online={onlineUsers}
+          currentUser={displayName}
+          t={t}
+          youLabel={t('hub.internal.you')}
+        />
+        <HubNotifications />
         <LocaleSwitch />
         <ThemeToggle />
         <Link href="/me" className="hub-topnav-user" aria-label={t('hub.internal.personalHub')}>

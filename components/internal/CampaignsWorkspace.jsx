@@ -8,9 +8,9 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { usePrompt } from '@/hooks/usePrompt';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { campaignBoardUrl, campaignFlowUrl } from '@/lib/campaign-urls';
+import { campaignBoardUrl, campaignFlowUrl, campaignKolUrl } from '@/lib/campaign-urls';
 
-export default function CampaignsWorkspace({ departmentId = 'marketing', initialCampaigns = null }) {
+export default function CampaignsWorkspace({ initialCampaigns = null }) {
   const { t } = useLocale();
   const { requestConfirm, confirmDialog } = useConfirm();
   const { requestPrompt, promptDialog } = usePrompt();
@@ -20,9 +20,7 @@ export default function CampaignsWorkspace({ departmentId = 'marketing', initial
   const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (departmentId) params.set('department', departmentId);
-    const res = await fetch(`${API_V1.internalCampaigns}?${params.toString()}`, {
+    const res = await fetch(API_V1.internalCampaigns, {
       credentials: 'same-origin',
     });
     if (!res.ok) return false;
@@ -30,7 +28,7 @@ export default function CampaignsWorkspace({ departmentId = 'marketing', initial
     const data = unwrapData(body);
     setCampaigns(Array.isArray(data?.campaigns) ? data.campaigns : []);
     return true;
-  }, [departmentId]);
+  }, []);
 
   useEffect(() => {
     if (initialCampaigns != null) return;
@@ -52,7 +50,7 @@ export default function CampaignsWorkspace({ departmentId = 'marketing', initial
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ name, department: departmentId }),
+        body: JSON.stringify({ name, department: 'all' }),
       });
       if (res.ok) {
         await refresh();
@@ -79,7 +77,7 @@ export default function CampaignsWorkspace({ departmentId = 'marketing', initial
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ name, department: departmentId }),
+        body: JSON.stringify({ name, department: 'all' }),
       });
       if (res.ok) {
         await refresh();
@@ -212,38 +210,47 @@ export default function CampaignsWorkspace({ departmentId = 'marketing', initial
                     <p className="internal-campaign-card-desc">{campaign.description}</p>
                   ) : null}
 
-                  {hasWorkstreams ? (
-                    <ul className="internal-campaign-card-boards">
-                      {hasFlow ? (
-                        <li>
-                          <Link
-                            href={campaignFlowUrl(campaign.id)}
-                            className="internal-campaign-board-chip internal-campaign-flow-chip"
-                          >
-                            <Icon name="flow" size={14} />
-                            <span>
-                              {t('hub.internal.campaignFlowChip').replace('{name}', campaign.name)}
-                            </span>
-                          </Link>
-                        </li>
-                      ) : null}
-                      {campaign.boards?.map(board => (
-                        <li key={board.id}>
-                          <Link
-                            href={campaignBoardUrl(board.id)}
-                            className="internal-campaign-board-chip"
-                          >
-                            <Icon name="kanban" size={14} />
-                            <span>
-                              {t('hub.internal.boardWorkstreamChip').replace('{name}', board.name)}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
+                  <ul className="internal-campaign-card-boards">
+                    <li>
+                      <Link
+                        href={campaignKolUrl(campaign.id)}
+                        className="internal-campaign-board-chip internal-campaign-kol-chip"
+                      >
+                        <Icon name="users" size={14} />
+                        <span>{t('hub.campaignKol.chip')}</span>
+                      </Link>
+                    </li>
+                    {hasFlow ? (
+                      <li>
+                        <Link
+                          href={campaignFlowUrl(campaign.id)}
+                          className="internal-campaign-board-chip internal-campaign-flow-chip"
+                        >
+                          <Icon name="flow" size={14} />
+                          <span>
+                            {t('hub.internal.campaignFlowChip').replace('{name}', campaign.name)}
+                          </span>
+                        </Link>
+                      </li>
+                    ) : null}
+                    {campaign.boards?.map(board => (
+                      <li key={board.id}>
+                        <Link
+                          href={campaignBoardUrl(board.id)}
+                          className="internal-campaign-board-chip"
+                        >
+                          <Icon name="kanban" size={14} />
+                          <span>
+                            {t('hub.internal.boardWorkstreamChip').replace('{name}', board.name)}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {!hasWorkstreams ? (
                     <p className="internal-campaign-card-empty">{t('hub.internal.noWorkstreams')}</p>
-                  )}
+                  ) : null}
 
                   <footer className="internal-campaign-card-foot">
                     {!hasFlow ? (

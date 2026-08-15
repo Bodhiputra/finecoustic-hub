@@ -7,6 +7,7 @@ const LABELS = {
   finecoustic: 'Loading All About Finecoustic…',
   creatives: 'Loading creatives…',
   all: 'Loading tasks…',
+  campaigns: 'Loading campaigns…',
 };
 
 export default function DepartmentRouteLoading({ departmentId = 'all' }) {

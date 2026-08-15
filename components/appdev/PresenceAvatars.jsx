@@ -28,8 +28,10 @@ export default function PresenceAvatars({
   online = [],
   currentUser = '',
   t,
+  youLabel,
   maxVisible = MAX_VISIBLE,
 }) {
+  const youSuffix = youLabel ?? (t ? t('appdev.board.you') : 'you');
   const selfKey = personKey(currentUser);
   const names = [];
   const seen = new Set();
@@ -61,7 +63,7 @@ export default function PresenceAvatars({
             name={name}
             isSelf={personKey(name) === selfKey}
             zIndex={visible.length - i}
-            label={personKey(name) === selfKey ? `${name} (${t('appdev.board.you')})` : name}
+            label={personKey(name) === selfKey ? `${name} (${youSuffix})` : name}
           />
         ))}
         {overflow > 0 && (

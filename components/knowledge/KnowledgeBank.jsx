@@ -10,10 +10,18 @@ import { API_V1, unwrapData } from '@/lib/api/routes';
 import { knowledgeContentToHtml, normalizeKnowledgeHtml } from '@/lib/knowledge-content';
 import { knowledgeBankUrl, KNOWLEDGE_PAGES_CHANGED } from '@/lib/knowledge';
 
-export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
+export default function KnowledgeBank({
+  departmentId,
+  deptBase,
+  pageId = '',
+  i18nPrefix = 'knowledge',
+  pageUrl = knowledgeBankUrl,
+  welcomeClassName = 'knowledge-bank-welcome',
+}) {
   const { t } = useLocale();
   const { requestConfirm, confirmDialog } = useConfirm();
   const router = useRouter();
+  const tk = useCallback(key => t(`hub.${i18nPrefix}.${key}`), [t, i18nPrefix]);
   const [activePage, setActivePage] = useState(null);
   const [loading, setLoading] = useState(Boolean(pageId));
   const [draft, setDraft] = useState({ title: '', content: '' });
@@ -109,9 +117,9 @@ export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
   async function deleteActivePage() {
     if (!activePage) return;
     const ok = await requestConfirm({
-      title: t('hub.knowledge.delete'),
-      message: t('hub.knowledge.deleteConfirm'),
-      confirmLabel: t('hub.knowledge.delete'),
+      title: tk('delete'),
+      message: tk('deleteConfirm'),
+      confirmLabel: tk('delete'),
       cancelLabel: t('common.cancel'),
     });
     if (!ok) return;
@@ -121,25 +129,25 @@ export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
     });
     if (!res.ok) return;
     notifyPagesChanged();
-    router.push(knowledgeBankUrl(deptBase));
+    router.push(pageUrl(deptBase));
   }
 
   if (!pageId) {
     return (
-      <div className="knowledge-bank-welcome">
+      <div className={welcomeClassName}>
         <Icon name="book" size={32} />
-        <h3>{t('hub.knowledge.welcomeTitle')}</h3>
-        <p>{t('hub.knowledge.welcomePickPage')}</p>
+        <h3>{tk('welcomeTitle')}</h3>
+        <p>{tk('welcomePickPage')}</p>
       </div>
     );
   }
 
   if (loading) {
-    return <p className="knowledge-bank-muted knowledge-bank-loading">{t('hub.knowledge.loading')}</p>;
+    return <p className="knowledge-bank-muted knowledge-bank-loading">{tk('loading')}</p>;
   }
 
   if (!activePage) {
-    return <p className="knowledge-bank-muted knowledge-bank-loading">{t('hub.knowledge.empty')}</p>;
+    return <p className="knowledge-bank-muted knowledge-bank-loading">{tk('empty')}</p>;
   }
 
   return (
@@ -153,15 +161,15 @@ export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
             setSaveState('idle');
             setDraft(d => ({ ...d, title: e.target.value }));
           }}
-          placeholder={t('hub.knowledge.untitled')}
-          aria-label={t('hub.knowledge.pageTitle')}
+          placeholder={tk('untitled')}
+          aria-label={tk('pageTitle')}
         />
         <div className="knowledge-note-actions">
           <span className="knowledge-note-save" aria-live="polite">
-            {saveState === 'saving' && t('hub.knowledge.saving')}
-            {saveState === 'saved' && t('hub.knowledge.saved')}
-            {saveState === 'error' && t('hub.knowledge.saveError')}
-            {saveState === 'idle' && isDirty && t('hub.knowledge.unsaved')}
+            {saveState === 'saving' && tk('saving')}
+            {saveState === 'saved' && tk('saved')}
+            {saveState === 'error' && tk('saveError')}
+            {saveState === 'idle' && isDirty && tk('unsaved')}
           </span>
           <button
             type="button"
@@ -169,14 +177,14 @@ export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
             onClick={persist}
             disabled={!isDirty || saveState === 'saving'}
           >
-            {saveState === 'saving' ? t('hub.knowledge.saving') : t('hub.knowledge.save')}
+            {saveState === 'saving' ? tk('saving') : tk('save')}
           </button>
           <button
             type="button"
             className="btn-ghost knowledge-note-delete"
             onClick={deleteActivePage}
           >
-            {t('hub.knowledge.delete')}
+            {tk('delete')}
           </button>
         </div>
       </header>
@@ -185,7 +193,7 @@ export default function KnowledgeBank({ departmentId, deptBase, pageId = '' }) {
         key={pageId}
         pageKey={pageId}
         content={draft.content}
-        placeholder={t('hub.knowledge.contentPlaceholder')}
+        placeholder={tk('contentPlaceholder')}
         onChange={handleContentChange}
       />
 

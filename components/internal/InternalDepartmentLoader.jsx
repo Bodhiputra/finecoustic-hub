@@ -11,7 +11,7 @@ export default async function InternalDepartmentLoader({
   departmentId,
   searchParams,
 }) {
-  const { sp, tasks, tasksFilterKey, opsData, marketingRows, campaigns, board, campaign, products, productDetail, hubMe } =
+  const { sp, tasks, tasksFilterKey, opsData, shopifyConfigured, shopifySnapshot, marketingRows, campaigns, board, campaign, products, productDetail, kolPool, campaignKol, expenses, hubMe } =
     await loadDepartmentPage({
       departmentId,
       searchParams,
@@ -28,12 +28,17 @@ export default async function InternalDepartmentLoader({
         initialTasks={tasks}
         initialTasksFilterKey={tasksFilterKey}
         opsData={opsData}
+        shopifyConfigured={shopifyConfigured}
+        shopifySnapshot={shopifySnapshot}
         marketingRows={marketingRows}
         initialCampaigns={campaigns}
         initialBoard={board}
         initialCampaign={campaign}
         initialProducts={products}
         initialProductDetail={productDetail}
+        initialKolPool={kolPool}
+        initialCampaignKol={campaignKol}
+        initialExpenses={expenses}
       />
     </Suspense>
   );

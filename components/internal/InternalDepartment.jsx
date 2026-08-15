@@ -10,6 +10,7 @@ import InternalListView from '@/components/internal/InternalListView';
 import InternalTaskFilters from '@/components/internal/InternalTaskFilters';
 import InternalSidebar from '@/components/internal/InternalSidebar';
 import CampaignsWorkspace from '@/components/internal/CampaignsWorkspace';
+import CampaignKolWorkspace from '@/components/marketing/CampaignKolWorkspace';
 import CampaignFlowCanvas from '@/components/internal/CampaignFlowCanvas';
 import BoardStatusEditor from '@/components/internal/BoardStatusEditor';
 import { HubLayout } from '@/components/HubSidebarContext';
@@ -18,7 +19,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { useInternalTasks } from '@/hooks/useInternalTasks';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { campaignBoardUrl, campaignFlowUrl, campaignListUrl } from '@/lib/campaign-urls';
+import { campaignBoardUrl, campaignFlowUrl, campaignKolUrl, campaignListUrl } from '@/lib/campaign-urls';
 import { boardStatusColumns, flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
 import {
   collectPeopleFromTasks,
@@ -27,7 +28,10 @@ import {
   deptText,
   getDepartment,
   getDepartmentPath,
+  CAMPAIGNS_ID,
+  CAMPAIGNS_PATH,
   newTaskDraft,
+  serializePeopleParam,
   parsePeopleParam,
   taskMatchesPeopleFilter,
   taskBelongsToDepartment,
@@ -35,9 +39,14 @@ import {
 } from '@/lib/internal';
 import { MarketingHubContent } from '@/components/MarketingHub';
 import { OpsHubContent } from '@/components/OpsHub';
+import OpsStockPanel from '@/components/ops/OpsStockPanel';
+import OpsExpensesPanel from '@/components/ops/OpsExpensesPanel';
 import ProductsWorkspace from '@/components/products/ProductsWorkspace';
 import KnowledgeBank from '@/components/knowledge/KnowledgeBank';
+import FinecousticWiki from '@/components/wiki/FinecousticWiki';
 import {
+  finecousticWikiUrl,
+  isFinecousticWikiDepartment,
   isKnowledgeBankTool,
   knowledgeBankUrl,
 } from '@/lib/knowledge';
@@ -54,12 +63,17 @@ export default function InternalDepartment({
   initialTasks = null,
   initialTasksFilterKey = null,
   opsData = null,
+  shopifyConfigured = false,
+  shopifySnapshot = null,
   marketingRows = [],
   initialCampaigns = [],
   initialBoard = null,
   initialCampaign = null,
   initialProducts = null,
   initialProductDetail = null,
+  initialKolPool = null,
+  initialCampaignKol = null,
+  initialExpenses = [],
   initialMe = null,
 }) {
   const dept = getDepartment(departmentId);
@@ -72,15 +86,17 @@ export default function InternalDepartment({
   const toolParam = searchParams.get('tool') || initialTool || '';
   const boardParam = searchParams.get('board') || '';
   const flowParam = searchParams.get('flow') || '';
+  const kolParam = searchParams.get('kol') || '';
+  const kviewParam = searchParams.get('kview') || 'board';
   const cviewParam = searchParams.get('cview') || '';
   const pageParam = searchParams.get('page') || '';
   const productParam = searchParams.get('product') || '';
   const tabParam = searchParams.get('tab') || 'overview';
   const productsMode = departmentId === 'products';
+  const campaignsMode = departmentId === CAMPAIGNS_ID;
   const tasksEnabled = departmentId === 'all' || departmentTasksEnabled(dept);
-  const marketingCampaignMode = departmentId === 'marketing';
-  const campaignListOnly = marketingCampaignMode && toolParam === 'campaigns' && !boardParam && !flowParam;
-  const shouldLoadTasks = Boolean(boardParam || flowParam || (tasksEnabled && !campaignListOnly));
+  const campaignListOnly = campaignsMode && !boardParam && !flowParam && !kolParam;
+  const shouldLoadTasks = Boolean(boardParam || flowParam || (tasksEnabled && !campaignListOnly && !kolParam));
 
   const view = BUCKET_VIEWS.includes(viewParam)
     ? 'list'
@@ -122,6 +138,8 @@ export default function InternalDepartment({
 
   const boardView = Boolean(boardParam && activeBoard);
   const flowView = Boolean(flowParam && activeCampaign?.flow_enabled);
+  const kolView = Boolean(kolParam && activeCampaign && activeCampaign.id === kolParam);
+  const kolKview = kviewParam === 'list' ? 'list' : 'board';
   const flowCview = FLOW_CVIEW.includes(cviewParam) ? cviewParam : 'flow';
   const boardCview = cviewParam === 'list' ? 'list' : 'board';
 
@@ -148,17 +166,22 @@ export default function InternalDepartment({
 
   useEffect(() => {
     if (departmentId === 'products') return;
-    if (departmentId === 'marketing' && !toolParam && !boardParam && !flowParam && !initialTool) {
-      router.replace('/marketing?tool=campaigns');
+    if (departmentId === 'finecoustic' && toolParam === 'knowledge-bank') {
+      router.replace(finecousticWikiUrl(getDepartmentPath(departmentId), { pageId: pageParam || undefined }));
       return;
     }
-    if (tasksEnabled || toolParam || boardParam || flowParam) return;
+    if (departmentId === 'marketing' && !toolParam && !boardParam && !flowParam && !kolParam && !initialTool) {
+      router.replace(dept?.dataLinks?.[0]?.href || '/marketing?tool=kol-pool');
+      return;
+    }
+    if (departmentId === 'finecoustic') return;
+    if (tasksEnabled || toolParam || boardParam || flowParam || kolParam) return;
     if (dept?.dataLinks?.length) {
       router.replace(dept.dataLinks[0].href);
       return;
     }
     router.replace(knowledgeBankUrl(getDepartmentPath(departmentId)));
-  }, [tasksEnabled, toolParam, boardParam, flowParam, dept, router, departmentId, initialTool]);
+  }, [tasksEnabled, toolParam, boardParam, flowParam, kolParam, dept, router, departmentId, initialTool, pageParam]);
 
   const lockBoard = boardView && activeBoard
     ? { board_id: activeBoard.id, campaign_id: activeBoard.campaign_id || activeBoard.campaign?.id || null }
@@ -188,11 +211,6 @@ export default function InternalDepartment({
     [filtered]
   );
 
-  const peopleOptions = useMemo(
-    () => collectPeopleFromTasks(baseTaskItems),
-    [baseTaskItems]
-  );
-
   const taskItems = useMemo(
     () => baseTaskItems.filter(task => taskMatchesPeopleFilter(task, activePeople)),
     [baseTaskItems, activePeople]
@@ -208,6 +226,28 @@ export default function InternalDepartment({
   );
 
   const workspaceItems = flowView ? flowItems : taskItems;
+
+  const peopleOptions = useMemo(
+    () => collectPeopleFromTasks(
+      filtered.filter(task => task.kind === 'task' && task.status !== 'archived')
+    ),
+    [filtered]
+  );
+
+  const campaignPeopleQuery = useMemo(
+    () => serializePeopleParam(activePeople),
+    [activePeople]
+  );
+
+  const flowTaskFilterUrl = useCallback(
+    ({ people }) => campaignFlowUrl(activeCampaign?.id, flowCview, { people }),
+    [activeCampaign?.id, flowCview]
+  );
+
+  const boardTaskFilterUrl = useCallback(
+    ({ people }) => campaignBoardUrl(activeBoard?.id, boardCview, { people }),
+    [activeBoard?.id, boardCview]
+  );
 
   async function handleSave(draft) {
     setSaving(true);
@@ -331,7 +371,7 @@ export default function InternalDepartment({
     const defaultStatus = boardStatusCols?.[0]?.id || flowStatusCols?.[0]?.id || 'todo';
     const lock = lockBoard || lockFlow;
     setPanelTask(newTaskDraft({
-      department: departmentId === 'all' ? 'operations' : departmentId,
+      department: departmentId === 'all' || campaignsMode ? 'operations' : departmentId,
       visibility: 'team',
       status: defaultStatus,
       kind,
@@ -372,12 +412,16 @@ export default function InternalDepartment({
     window.location.href = '/';
   };
 
-  if (!dept && departmentId !== 'all') {
+  if (!dept && departmentId !== 'all' && departmentId !== CAMPAIGNS_ID) {
     return <p>Department not found.</p>;
   }
 
-  const deptBase = getDepartmentPath(departmentId);
-  const sidebarMode = departmentId === 'all' ? 'all-tasks' : 'department';
+  const deptBase = departmentId === CAMPAIGNS_ID ? CAMPAIGNS_PATH : getDepartmentPath(departmentId);
+  const sidebarMode = departmentId === 'all'
+    ? 'all-tasks'
+    : departmentId === CAMPAIGNS_ID
+      ? 'campaigns'
+      : 'department';
 
   function viewHref(viewId) {
     return internalTasksUrl(deptBase, { view: viewId, people: activePeople });
@@ -390,11 +434,10 @@ export default function InternalDepartment({
   }
 
   function isToolActive(toolId) {
-    if (toolId === 'campaigns' && (boardParam || flowParam)) return true;
     return toolParam === toolId;
   }
 
-  const deptTaskSection = tasksEnabled && !toolParam && !marketingCampaignMode;
+  const deptTaskSection = tasksEnabled && !toolParam && !campaignsMode;
   const boardTaskSection = boardView;
   const flowTaskSection = flowView;
 
@@ -419,9 +462,11 @@ export default function InternalDepartment({
 
   const topNavTitle = boardView
     ? activeBoard.name
+    : kolView
+      ? `${activeCampaign.name} · ${t('hub.campaignKol.title')}`
     : flowView
       ? `${activeCampaign.name} · ${t('hub.internal.viewFlow')}`
-    : toolParam === 'campaigns' && marketingCampaignMode
+    : campaignListOnly
       ? t('hub.internal.campaignList')
       : departmentId === 'all'
       ? t('hub.internal.allTasks')
@@ -431,6 +476,8 @@ export default function InternalDepartment({
     ? (activeBoard.campaign?.name || t('hub.internal.campaignList'))
     : flowView
       ? t('hub.internal.campaignList')
+    : isFinecousticWikiDepartment(departmentId)
+      ? t('hub.wiki.subtitle')
     : isKnowledgeBankTool(toolParam)
       ? t('hub.knowledge.title')
       : (activeToolLink ? dataLinkLabel(activeToolLink, t) : '');
@@ -444,7 +491,11 @@ export default function InternalDepartment({
       displayName={me.displayName}
       onLogout={handleLogout}
       sidebarClassName="internal-dept-sidebar"
-      sidebarLabel={departmentId === 'all' ? t('hub.internal.allTasks') : (dept ? t(dept.labelKey) : '')}
+      sidebarLabel={departmentId === 'all'
+        ? t('hub.internal.allTasks')
+        : campaignsMode
+          ? t('hub.internal.campaignList')
+          : (dept ? t(dept.labelKey) : '')}
       sidebar={
         <InternalSidebar
           mode={sidebarMode}
@@ -486,7 +537,7 @@ export default function InternalDepartment({
               {flowViews.map(({ id, label, icon }) => (
                 <Link
                   key={id}
-                  href={campaignFlowUrl(activeCampaign.id, id)}
+                  href={campaignFlowUrl(activeCampaign.id, id, { people: campaignPeopleQuery })}
                   className={`internal-dept-view-tab${flowCview === id ? ' is-active' : ''}`}
                   aria-current={flowCview === id ? 'page' : undefined}
                 >
@@ -522,7 +573,7 @@ export default function InternalDepartment({
               {taskViews.map(({ id, label, icon }) => (
                 <Link
                   key={id}
-                  href={campaignBoardUrl(activeBoard.id, id)}
+                  href={campaignBoardUrl(activeBoard.id, id, { people: campaignPeopleQuery })}
                   className={`internal-dept-view-tab${boardCview === id ? ' is-active' : ''}`}
                   aria-current={boardCview === id ? 'page' : undefined}
                 >
@@ -588,6 +639,17 @@ export default function InternalDepartment({
           </div>
         )}
 
+        {(flowTaskSection || boardTaskSection) && (
+          <InternalTaskFilters
+            deptBase={deptBase}
+            activePeople={activePeople}
+            people={peopleOptions}
+            currentUserName={me.displayName}
+            getTaskUrl={flowTaskSection ? flowTaskFilterUrl : boardTaskFilterUrl}
+            peopleOnly
+          />
+        )}
+
         {deptTaskSection && (
           <InternalTaskFilters
             deptBase={deptBase}
@@ -595,6 +657,7 @@ export default function InternalDepartment({
             taskView={view}
             activePeople={activePeople}
             people={peopleOptions}
+            currentUserName={me.displayName}
           />
         )}
 
@@ -606,19 +669,50 @@ export default function InternalDepartment({
           <p className="internal-empty">{t('hub.internal.flowNotFound')}</p>
         )}
 
-        {toolParam === 'campaigns' && !boardParam && !flowParam && (
-          <CampaignsWorkspace departmentId={departmentId} initialCampaigns={initialCampaigns} />
+        {campaignListOnly && (
+          <CampaignsWorkspace initialCampaigns={initialCampaigns} />
         )}
 
-        {toolParam && departmentId === 'marketing' && toolParam !== 'campaigns' && (
-          <MarketingHubContent view={toolParam} initialRows={marketingRows} />
+        {kolView && activeCampaign && (
+          <CampaignKolWorkspace
+            campaign={activeCampaign}
+            initialEntries={initialCampaignKol?.entries || []}
+            initialPoolRecords={initialCampaignKol?.poolRecords || []}
+            kview={kolKview}
+          />
+        )}
+
+        {kolParam && !kolView && (
+          <p className="internal-empty">{t('hub.internal.flowNotFound')}</p>
+        )}
+
+        {toolParam && departmentId === 'marketing' && (
+          <MarketingHubContent
+            view={toolParam}
+            initialRows={marketingRows}
+            initialKolPool={initialKolPool}
+          />
         )}
 
         {toolParam && departmentId === 'operations' && opsData && !isKnowledgeBankTool(toolParam) && (
-          <OpsHubContent initialData={opsData} view={toolParam} />
+          toolParam === 'stock' ? (
+            <OpsStockPanel
+              initialOps={opsData}
+              shopifyConfigured={shopifyConfigured}
+              shopifySnapshot={shopifySnapshot}
+            />
+          ) : toolParam === 'expenses' ? (
+            <OpsExpensesPanel initialExpenses={initialExpenses} />
+          ) : (
+            <OpsHubContent initialData={opsData} view={toolParam} />
+          )
         )}
 
-        {isKnowledgeBankTool(toolParam) && departmentId !== 'all' && (
+        {isFinecousticWikiDepartment(departmentId) && (
+          <FinecousticWiki deptBase={deptBase} pageId={pageParam} />
+        )}
+
+        {isKnowledgeBankTool(toolParam) && departmentId !== 'all' && !isFinecousticWikiDepartment(departmentId) && (
           <KnowledgeBank
             departmentId={departmentId}
             deptBase={deptBase}
@@ -637,7 +731,7 @@ export default function InternalDepartment({
           />
         )}
 
-        {!deptTaskSection && !toolParam && !boardView && dept && !marketingCampaignMode && !productsMode && (
+        {!deptTaskSection && !toolParam && !boardView && dept && !campaignsMode && !productsMode && (
           <p className="internal-empty personal-hub-hint">{deptText(dept, t, 'description')}</p>
         )}
 
@@ -707,7 +801,7 @@ export default function InternalDepartment({
           postingComment={postingComment}
           workflowBusy={workflowBusy}
           displayName={me.displayName}
-          lockDepartmentId={departmentId !== 'all' ? departmentId : null}
+          lockDepartmentId={departmentId !== 'all' && !campaignsMode ? departmentId : null}
           lockBoard={lockBoard || lockFlow}
           statusColumns={boardStatusCols || flowStatusCols}
           teamMembers={teamMembers}

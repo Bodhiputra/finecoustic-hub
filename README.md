@@ -89,6 +89,7 @@ npm run test:auth
      - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (preferred — files go to `finehub/appdev` in your Cloudinary account)
      - `BLOB_READ_WRITE_TOKEN` (fallback — public Vercel Blob URLs)
      - If neither is set, uploads only work locally (`data/appdev-uploads/`).
+   - **Notion KOL sync (Marketing):** `NOTION_API_KEY`, `NOTION_KOL_DATABASE_ID` — connect Finecoustic_Team integration to KOL POOLS in Notion.
 
 ## Appdev field names
 

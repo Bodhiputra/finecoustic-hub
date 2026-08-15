@@ -9,6 +9,8 @@ import SidebarSection from '@/components/internal/SidebarSection';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, knowledgePagesQuery, unwrapData } from '@/lib/api/routes';
 import {
+  finecousticWikiUrl,
+  isFinecousticWikiDepartment,
   isKnowledgeBankTool,
   knowledgeBankUrl,
   KNOWLEDGE_PAGES_CHANGED,
@@ -23,6 +25,7 @@ import {
   getDepartmentTaskNav,
 } from '@/lib/internal';
 import InternalDepartmentNav from '@/components/internal/InternalDepartmentNav';
+import FinecousticWikiSidebarSection from '@/components/wiki/FinecousticWikiSidebarSection';
 
 export default function InternalSidebar({
   mode = 'home',
@@ -38,7 +41,9 @@ export default function InternalSidebar({
   const [kbPages, setKbPages] = useState([]);
 
   const deptBase = departmentId ? getDepartmentPath(departmentId) : '';
-  const knowledgeActive = isKnowledgeBankTool(toolParam);
+  const isWikiDept = isFinecousticWikiDepartment(departmentId);
+  const knowledgeActive = isWikiDept ? !toolParam : isKnowledgeBankTool(toolParam);
+  const wikiPageUrl = isWikiDept ? finecousticWikiUrl : knowledgeBankUrl;
   const dataActive = Boolean(toolParam && dept?.dataLinks?.some(link => link.id === toolParam));
   const taskNav = getDepartmentTaskNav(dept);
   const tasksActive = taskNav
@@ -83,7 +88,10 @@ export default function InternalSidebar({
       body: JSON.stringify({
         department: departmentId,
         parent_id: null,
-        title: t('hub.knowledge.untitled'),
+        title:
+          departmentId === 'finecoustic'
+            ? t('hub.wiki.untitled')
+            : t('hub.knowledge.untitled'),
         content: '',
       }),
     });
@@ -93,7 +101,7 @@ export default function InternalSidebar({
     if (!data?.page) return;
     await loadKbPages();
     window.dispatchEvent(new CustomEvent(KNOWLEDGE_PAGES_CHANGED));
-    router.push(knowledgeBankUrl(deptBase, { pageId: data.page.id }));
+    router.push(wikiPageUrl(deptBase, { pageId: data.page.id }));
   }
 
   if (mode === 'department' && dept) {
@@ -106,20 +114,6 @@ export default function InternalSidebar({
           backHref="/"
           backLabel={t('hub.internal.home')}
         />
-
-        {taskNav?.type === 'campaigns' ? (
-          <nav className="sidebar-nav internal-sidebar-primary" aria-label={t('hub.internal.campaignList')}>
-            <Link
-              href={taskNav.href}
-              className={`nav${tasksActive ? ' active' : ''}`}
-              aria-current={tasksActive ? 'page' : undefined}
-              title={t(taskNav.labelKey)}
-            >
-              <Icon name="megaphone" size={15} />
-              <span className="nav-label">{t(taskNav.labelKey)}</span>
-            </Link>
-          </nav>
-        ) : null}
 
         {departmentTaskNavEnabled(dept) && taskNav?.type !== 'campaigns' && (
           <SidebarSection
@@ -178,6 +172,9 @@ export default function InternalSidebar({
           </SidebarSection>
         )}
 
+        {isWikiDept ? (
+          <FinecousticWikiSidebarSection variant="dept" pageParam={pageParam} />
+        ) : (
         <SidebarSection
           title={t('hub.knowledge.section')}
           defaultOpen={knowledgeActive || rootPages.length > 0}
@@ -201,6 +198,19 @@ export default function InternalSidebar({
             ))}
           </nav>
         </SidebarSection>
+        )}
+      </>
+    );
+  }
+
+  if (mode === 'campaigns') {
+    return (
+      <>
+        <HubSidebarBrand
+          title={t('hub.internal.campaignList')}
+          backHref="/"
+          backLabel={t('hub.internal.home')}
+        />
       </>
     );
   }
@@ -220,7 +230,9 @@ export default function InternalSidebar({
   return (
     <>
       <HubSidebarBrand title={teamTitle} />
-      <InternalDepartmentNav />
+      <div className="internal-sidebar-home-shell">
+        <InternalDepartmentNav />
+      </div>
     </>
   );
 }

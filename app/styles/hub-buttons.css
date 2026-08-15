@@ -44,6 +44,7 @@
 
 /* —— Primary (brand yellow) —— */
 .hub-btn--primary,
+.btn-primary,
 .appdev-btn-primary,
 .btn-login {
   display: inline-flex;
@@ -71,6 +72,7 @@
 }
 
 .hub-btn--primary:hover:not(:disabled),
+.btn-primary:hover:not(:disabled),
 .appdev-btn-primary:hover:not(:disabled),
 .btn-login:hover:not(:disabled) {
   background: color-mix(in srgb, var(--fc-yellow) 88%, #ffffff);
@@ -78,12 +80,14 @@
 }
 
 .hub-btn--primary:active:not(:disabled),
+.btn-primary:active:not(:disabled),
 .appdev-btn-primary:active:not(:disabled),
 .btn-login:active:not(:disabled) {
   transform: scale(0.98);
 }
 
 .hub-btn--primary:disabled,
+.btn-primary:disabled,
 .appdev-btn-primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -248,6 +252,9 @@
 }
 
 .theme-toggle .icon,
-.btn-ghost .icon {
-  opacity: 0.85;
+.btn-ghost .icon,
+.btn-primary .icon,
+.appdev-btn-primary .icon,
+.hub-btn .icon {
+  opacity: 0.9;
 }

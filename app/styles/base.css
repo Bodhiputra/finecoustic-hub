@@ -102,7 +102,7 @@ button, input, select, textarea { font: inherit; }
 
 .icon {
   flex-shrink: 0;
-  display: block;
+  vertical-align: -0.15em;
 }
 
 button:focus-visible,
@@ -764,6 +764,27 @@ input:focus-visible {
 }
 
 .stock-location-hint { display: block; margin-top: var(--space-2); font-size: .82rem; color: var(--muted); }
+.stock-location-hint.is-warn { color: var(--warn); font-weight: 500; }
+
+.ops-stock-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.ops-stock-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ops-stock-sync-hint {
+  margin: 0 0 var(--space-4);
+}
 
 .panel-details {
   background: var(--surface);

@@ -4,10 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Icon from '@/components/Icon';
 import PreorderSurveyDashboard from '@/components/PreorderSurveyDashboard';
+import KolPoolWorkspace from '@/components/marketing/KolPoolWorkspace';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 
 export const MARKETING_VIEW_META = {
+  'kol-pool': {
+    titleKey: 'hub.kol.title',
+    descKey: 'hub.kol.subtitle',
+  },
   'preorder-survey': {
     titleKey: 'hub.internal.fbsPreorderSurvey',
     descKey: 'hub.internal.fbsPreorderSurveyDesc',
@@ -22,9 +27,17 @@ const NAV_ITEMS = [
   { id: 'preorder-survey', href: '/marketing?tool=preorder-survey', labelKey: 'hub.internal.fbsPreorderSurvey' },
 ];
 
-export function MarketingHubContent({ view = 'preorder-survey', initialRows = [] }) {
+export function MarketingHubContent({ view = 'preorder-survey', initialRows = [], initialKolPool = null }) {
   return (
     <>
+      {view === 'kol-pool' && (
+        <KolPoolWorkspace
+          initialRecords={initialKolPool?.records || []}
+          initialMeta={initialKolPool?.meta}
+          initialCounts={initialKolPool?.counts}
+          initialConfigured={Boolean(initialKolPool?.configured)}
+        />
+      )}
       {view === 'preorder-survey' && (
         <PreorderSurveyDashboard initialRows={initialRows} />
       )}

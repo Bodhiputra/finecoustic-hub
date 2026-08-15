@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import UserAvatar from '@/components/internal/UserAvatar';
 import { useLocale } from '@/components/LocaleProvider';
+import { personKey } from '@/lib/appdev';
 import { togglePeopleKey, internalTasksUrl } from '@/lib/internal';
 
 const FILTER_IDS = ['in_progress', 'today', 'overdue'];
@@ -13,8 +14,13 @@ export default function InternalTaskFilters({
   taskView = 'board',
   activePeople = new Set(),
   people = [],
+  currentUserName = '',
+  getTaskUrl = null,
+  peopleOnly = false,
 }) {
   const { t } = useLocale();
+  const meKey = currentUserName ? personKey(currentUserName) : '';
+  const meActive = Boolean(meKey && activePeople.size === 1 && activePeople.has(meKey));
 
   const filters = [
     { id: 'in_progress', label: t('hub.internal.inProgress') },
@@ -27,6 +33,7 @@ export default function InternalTaskFilters({
   const currentView = bucketActive ? activeView : taskView;
 
   function hrefFor({ view, peopleKeys = activePeople }) {
+    if (getTaskUrl) return getTaskUrl({ view, people: peopleKeys });
     return internalTasksUrl(deptBase, { view, people: peopleKeys });
   }
 
@@ -36,6 +43,7 @@ export default function InternalTaskFilters({
 
   return (
     <div className="internal-task-filters">
+      {!peopleOnly && (
       <div className="internal-task-filters-group">
         <span className="internal-task-filters-label">{t('hub.internal.filters')}</span>
         <div className="internal-task-filters-row h-scroll h-scroll--bleed" role="toolbar" aria-label={t('hub.internal.filters')}>
@@ -51,12 +59,28 @@ export default function InternalTaskFilters({
           ))}
         </div>
       </div>
+      )}
 
-      {people.length > 0 && (
+      {(meKey || people.length > 0) && (
         <div className="internal-task-filters-group">
           <span className="internal-task-filters-label">{t('hub.internal.filterPeople')}</span>
           <div className="internal-task-filters-row h-scroll h-scroll--bleed" role="toolbar" aria-label={t('hub.internal.filterPeople')}>
-            {people.map(({ key, name }) => (
+            {meKey ? (
+              <Link
+                href={hrefFor({
+                  view: currentView,
+                  peopleKeys: meActive ? new Set() : new Set([meKey]),
+                })}
+                className={`internal-task-filter internal-task-filter-person internal-task-filter-me${meActive ? ' is-active' : ''}`}
+                aria-pressed={meActive}
+              >
+                <UserAvatar name={currentUserName} size={18} />
+                <span>{t('hub.internal.filterMe')}</span>
+              </Link>
+            ) : null}
+            {people
+              .filter(({ key }) => key !== meKey)
+              .map(({ key, name }) => (
               <Link
                 key={key}
                 href={personHref(key)}
@@ -71,7 +95,7 @@ export default function InternalTaskFilters({
         </div>
       )}
 
-      {(bucketActive || peopleActive) && (
+      {(peopleOnly ? peopleActive : bucketActive || peopleActive) && (
         <div className="internal-task-filters-clear">
           <Link href={hrefFor({ view: taskView, peopleKeys: new Set() })} className="internal-task-filter is-clear">
             {t('hub.internal.clearFilters')}

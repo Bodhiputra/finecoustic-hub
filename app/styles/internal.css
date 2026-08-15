@@ -1639,6 +1639,38 @@
   letter-spacing: 0.04em;
   padding: 0 var(--space-2);
 }
+
+.internal-sidebar-home-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.internal-sidebar-home-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--space-4);
+}
+
+.internal-sidebar-home-nav-main {
+  flex: 1;
+  min-height: 0;
+}
+
+.internal-sidebar-wiki-footer {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.internal-sidebar-wiki-footer .internal-sidebar-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
 .sidebar-nav-sub {
   gap: 2px;
 }
@@ -3161,5 +3193,372 @@
   gap: 0.35rem;
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+/* KOL pool + campaign outreach */
+.kol-pool-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.kol-pool-header {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.kol-pool-title {
+  margin: 0;
+  font-size: 1.35rem;
+}
+.kol-pool-subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  max-width: 42rem;
+}
+.kol-pool-meta {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.kol-pool-meta-error {
+  color: var(--danger, #dc2626);
+}
+.kol-pool-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.kol-pool-notice {
+  margin: 0;
+}
+.kol-pool-tabs {
+  gap: 0.5rem;
+}
+.kol-pool-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.kol-pool-tab:hover {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.kol-pool-tab.active {
+  border-color: var(--accent, #2563eb);
+  background: color-mix(in srgb, var(--accent, #2563eb) 10%, transparent);
+}
+.kol-pool-tab-count {
+  min-width: 1.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-size: 0.75rem;
+  text-align: center;
+}
+.kol-pool-tab.active .kol-pool-tab-count {
+  background: color-mix(in srgb, var(--accent, #2563eb) 18%, transparent);
+}
+.kol-pool-toolbar {
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.kol-pool-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  max-width: 22rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.kol-pool-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  min-width: 0;
+}
+.kol-pool-search input:focus {
+  outline: none;
+}
+.kol-pool-result-count {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.kol-pool-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.kol-pool-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.kol-pool-table th,
+.kol-pool-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+}
+.kol-pool-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.kol-pool-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.kol-pool-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+.kol-pool-channel a {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+.kol-pool-channel a:hover {
+  color: var(--accent, #2563eb);
+  text-decoration: underline;
+}
+.kol-pool-desc-cell {
+  max-width: 16rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.kol-pool-collab,
+.kol-pool-shipping {
+  max-width: 12rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.kol-pool-edit-btn {
+  padding: 0.35rem 0.5rem;
+}
+.kol-pool-row-click {
+  cursor: pointer;
+}
+.kol-pool-source-chip {
+  display: block;
+  margin-top: 0.25rem;
+  width: fit-content;
+}
+.kol-pool-links a {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.kol-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.kol-chip-platform.kol-chip-instagram {
+  background: color-mix(in srgb, #e1306c 14%, transparent);
+}
+.kol-chip-platform.kol-chip-youtube {
+  background: color-mix(in srgb, #ff0000 12%, transparent);
+}
+.kol-chip-platform.kol-chip-x {
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+.kol-chip-country {
+  background: color-mix(in srgb, #5b8def 12%, transparent);
+}
+.kol-chip-tag {
+  background: color-mix(in srgb, var(--fc-yellow) 18%, transparent);
+}
+.kol-chip-status {
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+.kol-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: color-mix(in srgb, var(--bg) 20%, rgba(0, 0, 0, 0.45));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.kol-modal {
+  width: min(480px, 100%);
+  max-height: min(85vh, 720px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+}
+.kol-modal--wide {
+  width: min(640px, 100%);
+}
+.kol-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.5rem;
+}
+.kol-modal-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.kol-modal-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.kol-modal-search {
+  display: block;
+  width: calc(100% - 2rem);
+  margin: 0 1rem 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.kol-modal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.5rem;
+  max-height: 320px;
+  overflow: auto;
+}
+.kol-modal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.kol-modal-row:hover {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.kol-modal-row-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.kol-modal-empty,
+.kol-modal-foot {
+  padding: 0.75rem 1rem 1rem;
+}
+.kol-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.kol-edit-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
+}
+.kol-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.kol-edit-form input,
+.kol-edit-form select,
+.kol-edit-form textarea {
+  font: inherit;
+  font-weight: 400;
+  color: var(--text);
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.kol-edit-form-full,
+.kol-edit-form fieldset {
+  grid-column: 1 / -1;
+}
+.kol-edit-form fieldset {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin: 0;
+}
+.kol-edit-form legend {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0 0.35rem;
+}
+.kol-edit-summary {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.campaign-kol-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.campaign-kol-board {
+  align-items: flex-start;
+}
+.campaign-kol-card {
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: grab;
+}
+.campaign-kol-card strong {
+  font-size: 0.88rem;
+}
+.campaign-kol-row-click {
+  cursor: pointer;
+}
+.campaign-kol-row-click:hover td {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.internal-campaign-kol-chip {
+  background: color-mix(in srgb, #8b5cf6 12%, transparent);
+}
+.ops-expenses-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.ops-expense-form {
+  margin-bottom: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.ops-expense-total {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
