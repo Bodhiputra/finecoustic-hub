@@ -125,13 +125,17 @@ const board = blobRows[0].data;
 const issues = Array.isArray(board.issues) ? board.issues : [];
 const existing = beforeIssues[0]?.c ?? 0;
 
-if (existing >= issues.length && issues.length > 0) {
-  console.log('\nAlready synced — relational store has all blob issues. Legacy blob preserved.');
+if (existing > 0) {
+  console.log(
+    '\nRelational store already active — skipping blob import so deleted issues are not restored.',
+  );
+  console.log(`  relational issues: ${existing}, blob issues: ${issues.length}`);
   process.exit(0);
 }
 
-if (existing > 0) {
-  console.log(`\nResuming migration (${existing}/${issues.length} issues already copied)...`);
+if (issues.length === 0) {
+  console.log('\nLegacy blob has no issues — nothing to migrate.');
+  process.exit(0);
 }
 
 for (const issue of issues) {

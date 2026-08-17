@@ -546,8 +546,15 @@ export default function AppdevBoard({ initialData = null }) {
         setError(appdevErrorMessage(data, t));
         return;
       }
+      if (data.board_updated_at) {
+        boardUpdatedAtRef.current = data.board_updated_at;
+        localEditUntilRef.current = Date.now() + LOCAL_EDIT_QUIET_MS;
+      }
       setBoard(prev => ({
         ...prev,
+        meta: data.board_updated_at
+          ? { ...prev.meta, updated_at: data.board_updated_at }
+          : prev.meta,
         issues: prev.issues.filter(i => i.id !== id),
       }));
       setSelected(null);

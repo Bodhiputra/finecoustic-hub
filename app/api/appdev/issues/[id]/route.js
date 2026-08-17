@@ -57,7 +57,10 @@ export async function DELETE(request, { params }) {
     if (!result.ok) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      ...(result.board_updated_at ? { board_updated_at: result.board_updated_at } : {}),
+    });
   } catch (err) {
     console.error('[appdev] DELETE issue failed:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
