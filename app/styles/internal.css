@@ -4009,6 +4009,25 @@ button.internal-campaign-card {
   border-color: var(--accent);
   color: var(--accent);
 }
+.kol-outreach-card-follow-up {
+  align-self: flex-start;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.72rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.kol-outreach-card-follow-up.is-due {
+  border-color: #f39c12;
+  color: #f39c12;
+  background: color-mix(in srgb, #f39c12 10%, transparent);
+}
+.kol-outreach-card-follow-up:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .kol-outreach-card-hint {
   margin: 0;
   font-size: 0.68rem;

@@ -1,4 +1,5 @@
 import { processScheduleAlerts } from '@/lib/hub-schedule-alerts';
+import { processKolOutreachAlerts } from '@/lib/kol-outreach-alerts';
 
 function authorizeCron(request) {
   const secret = (process.env.CRON_SECRET || '').trim();
@@ -15,7 +16,8 @@ export async function GET(request) {
 
   try {
     const scheduleSent = await processScheduleAlerts();
-    return Response.json({ ok: true, scheduleSent });
+    const kol = await processKolOutreachAlerts();
+    return Response.json({ ok: true, scheduleSent, kol });
   } catch (err) {
     console.error('[cron/schedule-alerts]', err);
     return Response.json({ error: 'schedule_alerts_failed' }, { status: 500 });

@@ -3,7 +3,8 @@
 import Icon from '@/components/Icon';
 import UserAvatar from '@/components/internal/UserAvatar';
 import { useLocale } from '@/components/LocaleProvider';
-import { canDragOutreachCard, isNoDealCard, kolCardChips } from '@/lib/kol-outreach-utils';
+import { canDragOutreachCard, isNoDealCard, kolCardChips, needsFollowUp } from '@/lib/kol-outreach-utils';
+import { normalizeKolOutreachStatus } from '@/lib/kol-outreach-shared';
 
 export default function KolOutreachCard({
   task,
@@ -15,12 +16,14 @@ export default function KolOutreachCard({
   isDragging = false,
   onOpenCard,
   onMoreInfo,
+  onFollowUp,
 }) {
   const { t } = useLocale();
   const chips = kolCardChips(task, poolRecord, t);
   const assignee = task.assignee || '';
   const dimmed = isNoDealCard(task);
   const canDrag = draggable && canDragOutreachCard(task, displayName);
+  const showFollowUp = normalizeKolOutreachStatus(task.status) === 'waiting_response';
 
   return (
     <article
@@ -66,6 +69,18 @@ export default function KolOutreachCard({
       >
         {t('hub.campaignKol.moreInfo')}
       </button>
+      {showFollowUp ? (
+        <button
+          type="button"
+          className={`kol-outreach-card-follow-up${needsFollowUp(task) ? ' is-due' : ''}`}
+          onClick={e => {
+            e.stopPropagation();
+            onFollowUp?.(task);
+          }}
+        >
+          {t('hub.campaignKol.followUpAction')}
+        </button>
+      ) : null}
       {!canDrag && draggable && assignee && assignee !== displayName ? (
         <p className="kol-outreach-card-hint">{t('hub.campaignKol.assigneeOnlyDrag')}</p>
       ) : null}

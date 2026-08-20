@@ -14,6 +14,7 @@ import { appendKanbanNodeToFlow, appendTaskNodeToFlow } from '@/lib/campaign-flo
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import { flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
+import { initiativeFromCampaign } from '@/lib/kol-outreach-shared';
 
 const CampaignFlowCanvas = dynamic(() => import('@/components/internal/CampaignFlowCanvas'), { ssr: false });
 
@@ -331,7 +332,11 @@ export default function CampaignFlowInline({
           boards={campaign.boards || []}
           flowDataVersion={flowDataVersion}
           onTaskClick={onTaskClick}
-          onKanbanClick={boardId => navigateToBoardOrigin(router, boardId, campaign.boards || [])}
+          onKanbanClick={boardId =>
+            navigateToBoardOrigin(router, boardId, campaign.boards || [], {
+              initiative: initiativeFromCampaign(campaign),
+            })
+          }
           onSaveFlowData={handleSaveFlowData}
           statusLabelFor={flowStatusLabel}
         />

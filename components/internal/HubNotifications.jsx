@@ -48,6 +48,12 @@ function notificationText(item, t) {
       return item.title || t('hub.notifications.broadcast');
     case 'kol_sync':
       return t('hub.notifications.kolSync').replace('{title}', title);
+    case 'kol_waiting_3d':
+      return t('hub.notifications.kolWaiting3d').replace('{title}', title);
+    case 'kol_auto_no_deal':
+      return t('hub.notifications.kolAutoNoDeal').replace('{title}', title);
+    case 'kol_arrived_weekly':
+      return t('hub.notifications.kolArrivedWeekly').replace('{title}', title);
     default:
       return title;
   }

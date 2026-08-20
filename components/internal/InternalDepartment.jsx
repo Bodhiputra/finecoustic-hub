@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { boardUrlForContext, campaignBoardUrl, campaignFlowUrl, campaignListHomeUrl, campaignListUrl, departmentBoardUrl, marketingKolOutreachUrl, personalBoardUrl } from '@/lib/campaign-urls';
 import { navigateToBoardOrigin } from '@/lib/client-board-nav';
+import { initiativeFromCampaign } from '@/lib/kol-outreach-shared';
 import { KOL_OUTREACH_BOARD_ID } from '@/lib/kol-outreach-shared';
 import { marketingToolFromPathname, marketingToolPath } from '@/lib/marketing-routes';
 import { MarketingHubContent } from '@/components/MarketingHub';
@@ -1390,7 +1391,11 @@ export default function InternalDepartment({
             boards={resolvedCampaign?.boards || []}
             flowDataVersion={flowDataVersion}
             onTaskClick={setPanelTask}
-            onKanbanClick={boardId => navigateToBoardOrigin(router, boardId, resolvedCampaign?.boards || [])}
+            onKanbanClick={boardId =>
+              navigateToBoardOrigin(router, boardId, resolvedCampaign?.boards || [], {
+                initiative: initiativeFromCampaign(resolvedCampaign),
+              })
+            }
             onSaveFlowData={handleSaveFlowData}
             statusLabelFor={flowStatusLabel}
           />

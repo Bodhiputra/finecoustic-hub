@@ -7,6 +7,7 @@ import KolOutreachBoardActions from '@/components/marketing/KolOutreachBoardActi
 import KolOutreachKanban from '@/components/marketing/KolOutreachKanban';
 import KolOutreachCardModal from '@/components/marketing/KolOutreachCardModal';
 import KolOutreachMoreInfoModal from '@/components/marketing/KolOutreachMoreInfoModal';
+import KolOutreachFollowUpModal from '@/components/marketing/KolOutreachFollowUpModal';
 import KolOutreachTransitionModal from '@/components/marketing/KolOutreachTransitionModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
@@ -61,6 +62,7 @@ export default function KolOutreachWorkspace({
   const [poolRecords, setPoolRecords] = useState(initialPoolRecords);
   const [cardTask, setCardTask] = useState(null);
   const [moreInfoTask, setMoreInfoTask] = useState(null);
+  const [followUpTask, setFollowUpTask] = useState(null);
   const [transition, setTransition] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -214,6 +216,21 @@ export default function KolOutreachWorkspace({
     }
   }
 
+  async function handleFollowUpSave(patch) {
+    if (!followUpTask?.id) return;
+    setBusy(true);
+    try {
+      await patchTask(followUpTask.id, patch);
+      setFollowUpTask(null);
+      toast.success(t('hub.campaignKol.followUpSaved'));
+      await onTasksChanged?.();
+    } catch {
+      toast.error(t('common.somethingWrong'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function handleStatusChange(task, toStatus) {
     setTransition({ task, toStatus });
   }
@@ -315,6 +332,7 @@ export default function KolOutreachWorkspace({
             onStatusChange={handleStatusChange}
             onOpenCard={setCardTask}
             onMoreInfo={setMoreInfoTask}
+            onFollowUp={setFollowUpTask}
           />
         ) : (
           <div className="kol-pool-table-wrap h-scroll">
@@ -372,6 +390,14 @@ export default function KolOutreachWorkspace({
             });
           }
         }}
+      />
+
+      <KolOutreachFollowUpModal
+        open={Boolean(followUpTask)}
+        task={followUpTask}
+        onClose={() => setFollowUpTask(null)}
+        onSave={handleFollowUpSave}
+        busy={busy}
       />
 
       <KolOutreachTransitionModal
