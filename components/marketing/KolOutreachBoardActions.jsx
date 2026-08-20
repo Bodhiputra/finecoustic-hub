@@ -6,11 +6,11 @@ import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP } from '@/lib/kol-outreach-shared';
+import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey } from '@/lib/kol-outreach-shared';
 import { platformChipClass } from '@/lib/kol-pool';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 
-function KolPickerModal({ open, poolRecords, existingIds, onClose, onAdd, busy }) {
+function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, onAdd, busy }) {
   const { t } = useLocale();
   const [selected, setSelected] = useState(new Set());
   const [query, setQuery] = useState('');
@@ -24,7 +24,9 @@ function KolPickerModal({ open, poolRecords, existingIds, onClose, onAdd, busy }
 
   if (!open) return null;
 
-  const available = poolRecords.filter(r => !existingIds.has(r.notion_page_id));
+  const available = poolRecords.filter(
+    r => !existingKeys.has(outreachRowKey(r.notion_page_id, initiative))
+  );
   const q = query.trim().toLowerCase();
   const filtered = q
     ? available.filter(r => [r.channel_name, r.main_platform, r.country].join(' ').toLowerCase().includes(q))
@@ -47,6 +49,12 @@ function KolPickerModal({ open, poolRecords, existingIds, onClose, onAdd, busy }
           <Icon name="x" size={16} />
         </button>
       </header>
+      <p className="kol-modal-sub">
+        {t('hub.campaignKol.addFromPoolInitiative').replace(
+          '{initiative}',
+          KOL_INITIATIVES.find(item => item.id === initiative)?.label || initiative.toUpperCase()
+        )}
+      </p>
       <input
         type="search"
         className="kol-modal-search"
@@ -94,6 +102,8 @@ export default function KolOutreachBoardActions({
   initialPoolRecords = [],
   onTasksChanged,
   canCreate = false,
+  defaultInitiative = 'fbs',
+  existingKeys = null,
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
@@ -101,9 +111,17 @@ export default function KolOutreachBoardActions({
   const [newKolOpen, setNewKolOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [poolRecords, setPoolRecords] = useState(initialPoolRecords);
+  const [initiative, setInitiative] = useState(defaultInitiative || 'fbs');
 
   useEffect(() => {
-    if (initialPoolRecords.length) return;
+    setInitiative(defaultInitiative || 'fbs');
+  }, [defaultInitiative]);
+
+  useEffect(() => {
+    if (initialPoolRecords.length) {
+      setPoolRecords(initialPoolRecords);
+      return;
+    }
     fetch(API_V1.marketingKolPool, { credentials: 'same-origin' })
       .then(r => (r.ok ? r.json() : null))
       .then(body => {
@@ -112,18 +130,18 @@ export default function KolOutreachBoardActions({
         if (records.length) setPoolRecords(records);
       })
       .catch(() => {});
-  }, [initialPoolRecords.length]);
+  }, [initialPoolRecords]);
 
-  const existingIds = useMemo(
-    () => new Set(
+  const outreachKeys = useMemo(() => {
+    if (existingKeys) return existingKeys;
+    return new Set(
       tasks
-        .map(task => task.custom_values?.[KOL_BOARD_PROP.kolPoolId])
-        .filter(Boolean)
-    ),
-    [tasks]
-  );
+        .map(task => outreachRowKey(task.custom_values?.[KOL_BOARD_PROP.kolPoolId], task.custom_values?.[KOL_BOARD_PROP.initiative] || 'general'))
+        .filter(key => !key.startsWith(':'))
+    );
+  }, [existingKeys, tasks]);
 
-  const createTaskForKol = useCallback(async (kol) => {
+  const createTaskForKol = useCallback(async kol => {
     const res = await fetch(API_V1.internalTasks, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -136,13 +154,14 @@ export default function KolOutreachBoardActions({
         status: 'not_started',
         custom_values: {
           [KOL_BOARD_PROP.kolPoolId]: kol.notion_page_id,
+          [KOL_BOARD_PROP.initiative]: initiative,
         },
       }),
     });
     if (!res.ok) throw new Error('create_failed');
     const body = await res.json();
     return unwrapData(body, 'task')?.task || unwrapData(body);
-  }, []);
+  }, [initiative]);
 
   async function addFromPool(ids) {
     setBusy(true);
@@ -150,7 +169,7 @@ export default function KolOutreachBoardActions({
       let created = 0;
       for (const id of ids) {
         const kol = poolRecords.find(r => r.notion_page_id === id);
-        if (!kol || existingIds.has(id)) continue;
+        if (!kol || outreachKeys.has(outreachRowKey(id, initiative))) continue;
         await createTaskForKol(kol);
         created += 1;
       }
@@ -200,6 +219,14 @@ export default function KolOutreachBoardActions({
 
   return (
     <>
+      <label className="kol-outreach-initiative-pick">
+        <span>{t('hub.campaignKol.initiative')}</span>
+        <select value={initiative} onChange={e => setInitiative(e.target.value)} disabled={busy}>
+          {KOL_INITIATIVES.map(item => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
+        </select>
+      </label>
       <button type="button" className="appdev-btn-ghost" onClick={() => setPickerOpen(true)} disabled={busy}>
         <Icon name="users" size={16} />
         {t('hub.campaignKol.addFromPool')}
@@ -212,7 +239,8 @@ export default function KolOutreachBoardActions({
       <KolPickerModal
         open={pickerOpen}
         poolRecords={poolRecords}
-        existingIds={existingIds}
+        existingKeys={outreachKeys}
+        initiative={initiative}
         onClose={() => setPickerOpen(false)}
         onAdd={addFromPool}
         busy={busy}

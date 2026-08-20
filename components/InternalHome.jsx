@@ -18,6 +18,7 @@ import { useTaskDeepLink } from '@/hooks/useTaskDeepLink';
 import { useToast } from '@/hooks/useToast';
 import { HOME_TAB, homeTabFromSearchParams, homeTabToUrl } from '@/lib/home-tabs';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
 import {
   canCreateTask,
   isHubAdmin,
@@ -90,6 +91,7 @@ export default function InternalHome({
   });
   const [saving, setSaving] = useState(false);
   const [workflowBusy, setWorkflowBusy] = useState(false);
+  const [postingComment, setPostingComment] = useState(false);
   const [teamMembers, setTeamMembers] = useState(() => initialTeamMembers || []);
   const displayNameResolved = profile.displayName || displayName;
 
@@ -270,9 +272,33 @@ export default function InternalHome({
           if (isNew && updated?.id) setSavedFlowTask(updated);
           setFlowTasksRefreshKey(key => key + 1);
         }
+        signalHubNotificationsRefresh();
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function postComment(taskId, payload) {
+    setPostingComment(true);
+    try {
+      const res = await fetch(API_V1.internalTaskComments(taskId), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('comment');
+      const body = await res.json();
+      const data = unwrapData(body, 'task');
+      const task = data?.task || data;
+      if (task?.id) {
+        mergeTask(task);
+        setPanelTask(task);
+        signalHubNotificationsRefresh();
+      }
+    } finally {
+      setPostingComment(false);
     }
   }
 
@@ -444,7 +470,9 @@ export default function InternalHome({
             panelTask && canDeleteTaskFor(panelTask) ? handleDelete : undefined
           }
           onWorkflowAction={handleWorkflowAction}
+          onPostComment={postComment}
           workflowBusy={workflowBusy}
+          postingComment={postingComment}
           displayName={displayNameResolved}
           teamMembers={teamMembers}
           saving={saving}

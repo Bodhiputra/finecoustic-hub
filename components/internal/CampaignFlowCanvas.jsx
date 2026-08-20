@@ -36,7 +36,8 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
       className={`campaign-flow-node${typeClass}${selected ? ' is-selected' : ''}`}
       aria-label={`${typeLabel}: ${data.label || 'Untitled'}`}
     >
-      <Handle type="target" position={Position.Top} />
+      <Handle id="target-top" type="target" position={Position.Top} />
+      <Handle id="target-left" type="target" position={Position.Left} />
       <div className="campaign-flow-node-meta">
         <span className="campaign-flow-node-type-icon" aria-hidden="true">
           {isKanban ? '▦' : isMilestone ? '◇' : '□'}
@@ -47,7 +48,8 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
       </div>
       <span className="campaign-flow-node-label">{data.label}</span>
       {isKanban ? <span className="campaign-flow-node-hint">Open board →</span> : null}
-      <Handle type="source" position={Position.Bottom} />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} />
+      <Handle id="source-right" type="source" position={Position.Right} />
     </div>
   );
 });
@@ -116,6 +118,8 @@ function buildFlowGraph(flowData, tasks, boards = [], statusLabelFor) {
       id: edge.id,
       source: edge.source,
       target: edge.target,
+      sourceHandle: edge.sourceHandle || 'source-bottom',
+      targetHandle: edge.targetHandle || 'target-top',
       markerEnd: { type: MarkerType.ArrowClosed },
     }));
 
@@ -136,6 +140,8 @@ function serializeFlow(nodes, edges) {
       id: edge.id,
       source: edge.source,
       target: edge.target,
+      ...(edge.sourceHandle ? { sourceHandle: edge.sourceHandle } : {}),
+      ...(edge.targetHandle ? { targetHandle: edge.targetHandle } : {}),
     })),
   };
 }
@@ -169,6 +175,7 @@ function CampaignFlowCanvasInner({
   campaign,
   tasks,
   boards = [],
+  flowDataVersion = 0,
   onTaskClick,
   onKanbanClick,
   onSaveFlowData,
@@ -191,6 +198,20 @@ function CampaignFlowCanvasInner({
   const isDragging = useRef(false);
   const hasLocalFlowEdits = useRef(false);
   const saveInFlight = useRef(false);
+  const flowDataVersionRef = useRef(flowDataVersion);
+  flowDataVersionRef.current = flowDataVersion;
+
+  const syncSerializedFromCampaign = useCallback(() => {
+    const fresh = buildFlowGraph(campaign?.flow_data, tasks, boards, statusLabelFor);
+    lastSerialized.current = JSON.stringify(serializeFlow(fresh.nodes, fresh.edges));
+    hasLocalFlowEdits.current = false;
+    return fresh;
+  }, [campaign?.flow_data, tasks, boards, statusLabelFor]);
+
+  useEffect(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    syncSerializedFromCampaign();
+  }, [flowDataVersion, syncSerializedFromCampaign]);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -227,20 +248,26 @@ function CampaignFlowCanvasInner({
 
   const flushSave = useCallback(
     async (nextNodes, nextEdges) => {
+      const versionAtStart = flowDataVersionRef.current;
       const payload = serializeFlow(nextNodes, nextEdges);
       const key = JSON.stringify(payload);
       if (key === lastSerialized.current || saveInFlight.current) return;
+      if (versionAtStart !== flowDataVersionRef.current) return;
       lastSerialized.current = key;
       hasLocalFlowEdits.current = true;
       saveInFlight.current = true;
       try {
         await onSaveFlowData?.(payload);
+        if (flowDataVersionRef.current !== versionAtStart) {
+          const fresh = syncSerializedFromCampaign();
+          await onSaveFlowData?.(serializeFlow(fresh.nodes, fresh.edges));
+        }
       } finally {
         saveInFlight.current = false;
         hasLocalFlowEdits.current = false;
       }
     },
-    [onSaveFlowData]
+    [onSaveFlowData, syncSerializedFromCampaign]
   );
 
   const scheduleSave = useCallback(
@@ -250,7 +277,9 @@ function CampaignFlowCanvasInner({
       const key = JSON.stringify(payload);
       if (key === lastSerialized.current) return;
       if (saveTimer.current) clearTimeout(saveTimer.current);
+      const versionAtSchedule = flowDataVersionRef.current;
       saveTimer.current = setTimeout(() => {
+        if (flowDataVersionRef.current !== versionAtSchedule) return;
         flushSave(nextNodes, nextEdges);
       }, SAVE_DEBOUNCE_MS);
     },
@@ -293,6 +322,7 @@ function CampaignFlowCanvasInner({
 
     setNodes(fresh.nodes);
     setEdges(fresh.edges);
+    lastSerialized.current = JSON.stringify(serializeFlow(fresh.nodes, fresh.edges));
   }, [taskSyncKey, flowLayoutKey, campaign?.flow_data, tasks, boards, statusLabelFor, setNodes, setEdges]);
 
   const onConnect = useCallback(

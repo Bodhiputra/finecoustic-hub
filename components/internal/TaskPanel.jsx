@@ -127,76 +127,6 @@ function HubSinglePick({ legend, name, value, options, onChange, disabled = fals
   );
 }
 
-function SubtasksEditor({ subtasks = [], onChange, disabled, t }) {
-  const [draftTitle, setDraftTitle] = useState('');
-
-  function addSubtask() {
-    const title = draftTitle.trim();
-    if (!title) return;
-    onChange([
-      ...subtasks,
-      { id: crypto.randomUUID(), title, done: false },
-    ]);
-    setDraftTitle('');
-  }
-
-  function toggle(id) {
-    onChange(subtasks.map(s => (s.id === id ? { ...s, done: !s.done } : s)));
-  }
-
-  function remove(id) {
-    onChange(subtasks.filter(s => s.id !== id));
-  }
-
-  return (
-    <div className="internal-subtasks">
-      <span className="internal-subtasks-label">{t('hub.internal.taskPanel.subtasks')}</span>
-      <ul className="internal-subtasks-list">
-        {subtasks.map(s => (
-          <li key={s.id} className="internal-subtask-row">
-            <label className="internal-subtask-check">
-              <input
-                type="checkbox"
-                checked={Boolean(s.done)}
-                onChange={() => toggle(s.id)}
-                disabled={disabled}
-              />
-              <span className={s.done ? 'is-done' : ''}>{s.title}</span>
-            </label>
-            <button
-              type="button"
-              className="internal-subtask-remove"
-              onClick={() => remove(s.id)}
-              disabled={disabled}
-              aria-label={t('hub.internal.taskPanel.removeSubtask')}
-            >
-              <Icon name="x" size={14} />
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="internal-subtask-add">
-        <input
-          type="text"
-          value={draftTitle}
-          onChange={e => setDraftTitle(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addSubtask();
-            }
-          }}
-          placeholder={t('hub.internal.taskPanel.addSubtask')}
-          disabled={disabled}
-        />
-        <button type="button" className="btn-ghost" onClick={addSubtask} disabled={disabled || !draftTitle.trim()}>
-          {t('hub.internal.taskPanel.add')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 const WORKFLOW_ACTION_KEYS = {
   accept: 'hub.internal.workflow.accept',
   request_review: 'hub.internal.workflow.requestReview',
@@ -425,15 +355,6 @@ export default function TaskPanel({
               disabled={saving}
               canManageMedia
               uploadMediaFile={uploadMedia}
-            />
-          )}
-
-          {isTask && (
-            <SubtasksEditor
-              subtasks={draft.subtasks || []}
-              onChange={next => set('subtasks', next)}
-              disabled={saving}
-              t={t}
             />
           )}
 
@@ -677,16 +598,6 @@ export default function TaskPanel({
               </label>
             )
           )}
-
-          <div className="appdev-field">
-            <span>{t('hub.internal.taskPanel.link')}</span>
-            <input
-              value={draft.link_url || ''}
-              onChange={e => set('link_url', e.target.value)}
-              disabled={saving}
-              placeholder={t('hub.internal.taskPanel.linkPlaceholder')}
-            />
-          </div>
 
           {isTask && onPostComment && (
             isNew ? (

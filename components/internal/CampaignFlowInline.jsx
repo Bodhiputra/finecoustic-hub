@@ -9,7 +9,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useHubPermissions } from '@/hooks/useHubPermissions';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, internalTasksQuery, unwrapData } from '@/lib/api/routes';
-import { campaignBoardUrl } from '@/lib/campaign-urls';
+import { navigateToBoardOrigin } from '@/lib/client-board-nav';
 import { appendKanbanNodeToFlow, appendTaskNodeToFlow } from '@/lib/campaign-flow-utils';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
@@ -37,6 +37,7 @@ export default function CampaignFlowInline({
   const canEditBoard = permissions?.canEditBoardConfig ?? false;
   const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [flowDataVersion, setFlowDataVersion] = useState(0);
   const seeded = useMemo(
     () => initialCampaigns?.find(campaign => campaign.id === campaignId) || null,
     [initialCampaigns, campaignId]
@@ -61,23 +62,76 @@ export default function CampaignFlowInline({
 
   useEffect(() => {
     if (!campaignId) return undefined;
-    if (seeded) {
-      setCampaign(seeded);
-      setLoading(false);
-      return undefined;
-    }
 
     let cancelled = false;
-    setLoading(true);
+    if (!seeded) setLoading(true);
+
     refreshCampaign()
       .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, [campaignId, seeded, refreshCampaign]);
+
+  const patchFlowData = useCallback(async flowData => {
+    if (!campaign?.id) return false;
+    try {
+      const res = await fetch(API_V1.internalCampaign(campaign.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ flow_data: flowData }),
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return false;
+      }
+      const body = await res.json();
+      const data = unwrapData(body);
+      if (data?.campaign) {
+        setCampaign(data.campaign);
+      } else {
+        setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+      }
+      return true;
+    } catch {
+      toast.error(t('common.somethingWrong'));
+      return false;
+    }
+  }, [campaign?.id, t, toast]);
+
+  const saveFlowFromParent = useCallback(async flowData => {
+    setFlowDataVersion(version => version + 1);
+    setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+    const ok = await patchFlowData(flowData);
+    if (!ok) setFlowDataVersion(version => version + 1);
+    return ok;
+  }, [patchFlowData]);
+
+  const handleSaveFlowData = useCallback(async flowData => {
+    if (!campaign?.id) return false;
+    try {
+      const res = await fetch(API_V1.internalCampaign(campaign.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ flow_data: flowData }),
+      });
+      if (res.ok) {
+        setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+        return true;
+      }
+      toast.error(t('common.somethingWrong'));
+      return false;
+    } catch {
+      toast.error(t('common.somethingWrong'));
+      return false;
+    }
+  }, [campaign?.id, t, toast]);
 
   const refreshTasks = useCallback(async () => {
     if (!campaignId) return;
@@ -101,25 +155,6 @@ export default function CampaignFlowInline({
     refreshTasks();
   }, [campaignId, refreshTasks, tasksRefreshKey]);
 
-  const handleSaveFlowData = useCallback(async flowData => {
-    if (!campaign?.id) return;
-    try {
-      const res = await fetch(API_V1.internalCampaign(campaign.id), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ flow_data: flowData }),
-      });
-      if (res.ok) {
-        setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
-        return;
-      }
-      toast.error(t('common.somethingWrong'));
-    } catch {
-      toast.error(t('common.somethingWrong'));
-    }
-  }, [campaign?.id, t, toast]);
-
   useEffect(() => {
     if (!savedFlowTask?.id || !campaign?.id) return;
     let cancelled = false;
@@ -130,7 +165,7 @@ export default function CampaignFlowInline({
         onSavedFlowTaskHandled?.();
         return;
       }
-      await handleSaveFlowData(nextFlow);
+      await saveFlowFromParent(nextFlow);
       if (!cancelled) {
         await refreshTasks();
         onSavedFlowTaskHandled?.();
@@ -141,7 +176,7 @@ export default function CampaignFlowInline({
     return () => {
       cancelled = true;
     };
-  }, [savedFlowTask, campaign, handleSaveFlowData, refreshTasks, onSavedFlowTaskHandled]);
+  }, [savedFlowTask, campaign, saveFlowFromParent, refreshTasks, onSavedFlowTaskHandled]);
 
   const kanbanPickerDepartment = campaign?.department || 'marketing';
   const { boards: kanbansNotOnFlow, loading: kanbanPickerLoading } = useFlowKanbanPickerBoards({
@@ -153,17 +188,22 @@ export default function CampaignFlowInline({
 
   async function handleAddExistingKanban(board) {
     if (!board?.id || !campaign?.id) return;
+    const prevFlow = campaign.flow_data;
+    const nextFlow = appendKanbanNodeToFlow(prevFlow, board);
+    if (nextFlow === prevFlow) {
+      setKanbanCreateOpen(false);
+      return;
+    }
+    setKanbanCreateOpen(false);
     setBusy(true);
     try {
-      const nextFlow = appendKanbanNodeToFlow(campaign.flow_data, board);
-      if (nextFlow === campaign.flow_data) {
-        setKanbanCreateOpen(false);
-        return;
+      const ok = await saveFlowFromParent(nextFlow);
+      if (ok) {
+        toast.success(t('hub.internal.kanbanAddedToFlow'));
+      } else {
+        setCampaign(prev => (prev ? { ...prev, flow_data: prevFlow } : prev));
+        setFlowDataVersion(version => version + 1);
       }
-      await handleSaveFlowData(nextFlow);
-      setCampaign(prev => (prev ? { ...prev, flow_data: nextFlow } : prev));
-      setKanbanCreateOpen(false);
-      toast.success(t('hub.internal.kanbanAddedToFlow'));
     } finally {
       setBusy(false);
     }
@@ -189,11 +229,11 @@ export default function CampaignFlowInline({
       if (!board?.id) return;
       dispatchBoardsChanged();
       const nextFlow = appendKanbanNodeToFlow(campaign.flow_data, board, name);
-      await handleSaveFlowData(nextFlow);
+      const ok = await saveFlowFromParent(nextFlow);
+      if (!ok) return;
       setCampaign(prev => ({
         ...prev,
         boards: [...(prev?.boards || []), board],
-        flow_data: nextFlow,
       }));
       setKanbanCreateOpen(false);
       toast.success(t('hub.internal.boardCreated'));
@@ -289,8 +329,9 @@ export default function CampaignFlowInline({
           campaign={campaign}
           tasks={tasks}
           boards={campaign.boards || []}
+          flowDataVersion={flowDataVersion}
           onTaskClick={onTaskClick}
-          onKanbanClick={boardId => router.push(campaignBoardUrl(boardId))}
+          onKanbanClick={boardId => navigateToBoardOrigin(router, boardId, campaign.boards || [])}
           onSaveFlowData={handleSaveFlowData}
           statusLabelFor={flowStatusLabel}
         />

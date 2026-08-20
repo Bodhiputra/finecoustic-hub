@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import { HUB_NOTIFICATIONS_REFRESH_EVENT } from '@/lib/hub-notifications-ui';
 
 function formatNotificationDate(iso, locale) {
   if (!iso) return '';
@@ -33,6 +34,16 @@ function notificationText(item, t) {
       return t('hub.notifications.workflowDone').replace('{title}', title).replace('{actor}', actor);
     case 'reminder_due':
       return t('hub.notifications.reminderDue').replace('{title}', title);
+    case 'deadline_7d':
+      return t('hub.notifications.deadline7d').replace('{title}', title);
+    case 'deadline_3d':
+      return t('hub.notifications.deadline3d').replace('{title}', title);
+    case 'deadline_1d':
+      return t('hub.notifications.deadline1d').replace('{title}', title);
+    case 'meeting_3h':
+      return t('hub.notifications.meeting3h').replace('{title}', title);
+    case 'meeting_1h':
+      return t('hub.notifications.meeting1h').replace('{title}', title);
     case 'broadcast':
       return item.title || t('hub.notifications.broadcast');
     case 'kol_sync':
@@ -66,19 +77,45 @@ export default function HubNotifications() {
     }
   }, []);
 
+  const refreshQuietly = useCallback(async () => {
+    try {
+      const res = await fetch(API_V1.hubNotifications, { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const body = await res.json();
+      const data = unwrapData(body);
+      setItems(Array.isArray(data?.items) ? data.items : []);
+      setUnread(Number(data?.unread) || 0);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     let intervalId;
     const timeoutId = window.setTimeout(() => {
       load();
       intervalId = window.setInterval(() => {
-        if (document.visibilityState === 'visible') load();
+        if (document.visibilityState === 'visible') refreshQuietly();
       }, 60_000);
     }, 2500);
+
+    function onRefresh() {
+      if (document.visibilityState === 'visible') refreshQuietly();
+    }
+    function onVisible() {
+      if (document.visibilityState === 'visible') refreshQuietly();
+    }
+
+    window.addEventListener(HUB_NOTIFICATIONS_REFRESH_EVENT, onRefresh);
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       window.clearTimeout(timeoutId);
       if (intervalId) window.clearInterval(intervalId);
+      window.removeEventListener(HUB_NOTIFICATIONS_REFRESH_EVENT, onRefresh);
+      document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [load]);
+  }, [load, refreshQuietly]);
 
   useEffect(() => {
     if (!open) return undefined;

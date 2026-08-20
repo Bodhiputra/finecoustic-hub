@@ -2133,8 +2133,15 @@ button.internal-campaign-card {
   gap: var(--space-2);
 }
 
+.internal-home-layout .hub-main.internal-main > div:not([hidden]) {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
 .campaign-flow-canvas {
-  height: min(72vh, 720px);
   min-height: 420px;
   border: 1px solid var(--line, var(--border));
   border-radius: var(--radius-lg, 12px);
@@ -2142,11 +2149,23 @@ button.internal-campaign-card {
   background: var(--surface-1, var(--bg));
 }
 
+.internal-dept-main .campaign-flow-canvas {
+  height: calc(100dvh - 14rem);
+}
+
 .internal-campaign-flow-inline {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.internal-campaign-flow-inline .campaign-flow-canvas {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 420px;
 }
 
 .internal-campaign-flow-inline-head {
@@ -2218,7 +2237,47 @@ button.internal-campaign-card {
   font-size: 13px;
   line-height: 1.35;
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* Connection ports — small hollow rings outside the card; hidden until hover or connecting */
+.campaign-flow-canvas .react-flow__handle {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid #fff;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.campaign-flow-canvas .react-flow__handle-top {
+  top: -5px;
+  transform: translate(-50%, -50%) !important;
+}
+
+.campaign-flow-canvas .react-flow__handle-bottom {
+  bottom: -5px;
+  transform: translate(-50%, 50%) !important;
+}
+
+.campaign-flow-canvas .react-flow__handle-left {
+  left: -5px;
+  transform: translate(-50%, -50%) !important;
+}
+
+.campaign-flow-canvas .react-flow__handle-right {
+  right: -5px;
+  transform: translate(50%, -50%) !important;
+}
+
+.campaign-flow-canvas .react-flow__node:hover .react-flow__handle,
+.campaign-flow-canvas .react-flow__node.selected .react-flow__handle,
+.campaign-flow-canvas .react-flow.connecting .react-flow__handle,
+.campaign-flow-canvas .react-flow__handle.connecting,
+.campaign-flow-canvas .react-flow__handle.connectionindicator {
+  opacity: 1;
+  pointer-events: all;
 }
 
 /* Task — solid card, muted left rail */
@@ -3762,6 +3821,247 @@ button.internal-campaign-card {
   background: color-mix(in srgb, #f39c12 16%, transparent);
   color: #f39c12;
 }
+.kol-outreach-status.is-quality_control {
+  background: color-mix(in srgb, #9b59b6 14%, transparent);
+  color: #9b59b6;
+}
+.kol-outreach-status.is-shipping {
+  background: color-mix(in srgb, #3498db 14%, transparent);
+  color: #3498db;
+}
+.kol-outreach-status.is-arrived {
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+  color: var(--ok);
+}
+.kol-outreach-status.is-publish {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+.kol-outreach-status.is-not_started {
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+}
+
+/* KOL outreach kanban — 8-column pipeline */
+.kol-outreach-workspace .data-workspace-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.kol-outreach-kanban.internal-board {
+  min-height: min(62vh, 680px);
+}
+.kol-outreach-kanban .internal-board-cols {
+  min-height: min(62vh, 680px);
+}
+.kol-outreach-col.internal-board-col.is-not_started { border-top-color: var(--muted); }
+.kol-outreach-col.internal-board-col.is-waiting_response { border-top-color: #f39c12; }
+.kol-outreach-col.internal-board-col.is-deal { border-top-color: var(--accent); }
+.kol-outreach-col.internal-board-col.is-no_deal { border-top-color: #e74c3c; }
+.kol-outreach-col.internal-board-col.is-quality_control { border-top-color: #9b59b6; }
+.kol-outreach-col.internal-board-col.is-shipping { border-top-color: #3498db; }
+.kol-outreach-col.internal-board-col.is-arrived { border-top-color: var(--ok); }
+.kol-outreach-col.internal-board-col.is-publish { border-top-color: var(--fc-yellow); }
+
+.kol-outreach-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+.kol-outreach-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.kol-outreach-view-toggle button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.kol-outreach-view-toggle button.is-active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.kol-outreach-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.kol-outreach-filter select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 0.82rem;
+}
+.kol-outreach-filter-check {
+  cursor: pointer;
+  user-select: none;
+}
+.kol-outreach-initiative-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  margin-right: 0.25rem;
+}
+.kol-outreach-initiative-pick select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.kol-outreach-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: opacity 140ms ease, box-shadow 140ms ease;
+}
+.kol-outreach-card.is-no-deal {
+  opacity: 0.55;
+}
+.kol-outreach-card.is-dragging {
+  opacity: 0.65;
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.2));
+}
+.kol-outreach-card.is-drag-locked {
+  cursor: default;
+}
+.kol-outreach-card[draggable='true'] {
+  cursor: grab;
+}
+.kol-outreach-card[draggable='true']:active {
+  cursor: grabbing;
+}
+.kol-outreach-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.kol-outreach-card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+}
+.kol-outreach-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.kol-outreach-card-chips .internal-hint-chip.is-initiative {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.kol-outreach-card-chips .internal-hint-chip.is-category {
+  background: color-mix(in srgb, var(--fc-yellow) 16%, transparent);
+}
+.kol-outreach-card-chips .internal-hint-chip.is-deal-type {
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+.kol-outreach-card-chips .internal-hint-chip.is-days {
+  background: color-mix(in srgb, #f39c12 14%, transparent);
+}
+.kol-outreach-card-chips .internal-hint-chip.is-follow-up {
+  background: color-mix(in srgb, #e74c3c 12%, transparent);
+}
+.kol-outreach-card-chips .internal-hint-chip.is-publish {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.kol-outreach-card-assignee,
+.kol-outreach-card-unassigned {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.kol-outreach-card-info {
+  align-self: flex-start;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.72rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.kol-outreach-card-info:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.kol-outreach-card-hint {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.kol-outreach-platform-pick {
+  margin: 0 1rem 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.kol-outreach-platform-pick legend {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+.kol-outreach-platform-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.kol-outreach-product-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0 1rem 0.75rem;
+}
+.kol-outreach-product-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.kol-outreach-product-row input[type='text'],
+.kol-outreach-product-row input:not([type='number']) {
+  flex: 1;
+  min-width: 0;
+}
+.kol-outreach-product-row input[type='number'] {
+  width: 4rem;
+}
+.kol-outreach-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 1rem 0.75rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
 .kol-chip {
   display: inline-flex;
   align-items: center;
@@ -4088,18 +4388,7 @@ button.internal-campaign-card {
     color-mix(in srgb, var(--accent, #ffd300) 14%, var(--surface-2, var(--card))) 0%,
     var(--surface-2, var(--card)) 42%
   );
-  border-radius: 10px 10px 12px 12px;
-}
-
-.campaign-flow-node.is-kanban::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent, #ffd300);
-  opacity: 0.85;
+  border-radius: 10px;
 }
 
 .campaign-flow-node.is-kanban .campaign-flow-node-type-icon {

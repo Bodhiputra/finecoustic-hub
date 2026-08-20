@@ -18,6 +18,7 @@ import { useTaskDeepLink } from '@/hooks/useTaskDeepLink';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { boardUrlForContext, campaignBoardUrl, campaignFlowUrl, campaignListHomeUrl, campaignListUrl, departmentBoardUrl, marketingKolOutreachUrl, personalBoardUrl } from '@/lib/campaign-urls';
+import { navigateToBoardOrigin } from '@/lib/client-board-nav';
 import { KOL_OUTREACH_BOARD_ID } from '@/lib/kol-outreach-shared';
 import { marketingToolFromPathname, marketingToolPath } from '@/lib/marketing-routes';
 import { MarketingHubContent } from '@/components/MarketingHub';
@@ -61,6 +62,7 @@ import { countPersonalHubStats, countOpenAssignedTasks } from '@/lib/personal-hu
 import { taskOriginUrl } from '@/lib/task-origin-url';
 import { useHubSessionProfile } from '@/hooks/useHubSession';
 import { signalHubNavigationReady } from '@/lib/hub-site-loader';
+import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
 
 import InternalBoard from '@/components/internal/InternalBoard';
 const CampaignsWorkspace = dynamic(() => import('@/components/internal/CampaignsWorkspace'));
@@ -236,6 +238,7 @@ export default function InternalDepartment({
   const [activeCampaign, setActiveCampaign] = useState(initialCampaign);
   const [statusEditorOpen, setStatusEditorOpen] = useState(false);
   const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
+  const [flowDataVersion, setFlowDataVersion] = useState(0);
 
   useEffect(() => {
     signalHubNavigationReady();
@@ -353,8 +356,6 @@ export default function InternalDepartment({
     }
     if (seededCampaign) {
       setActiveCampaign(seededCampaign);
-      setFlowFetchSettled(true);
-      return undefined;
     }
 
     let cancelled = false;
@@ -603,6 +604,7 @@ export default function InternalDepartment({
           }
         }
         closeTaskPanel();
+        signalHubNotificationsRefresh();
       } else {
         toast.error(t('common.somethingWrong'));
       }
@@ -616,7 +618,7 @@ export default function InternalDepartment({
     const flowData = activeCampaign.flow_data || { nodes: [], edges: [] };
     if (flowData.nodes?.some(node => node.taskId === item.id)) return;
     const y = (flowData.nodes?.length || 0) * 96;
-    await handleSaveFlowData({
+    await saveFlowFromParent({
       nodes: [
         ...(flowData.nodes || []),
         {
@@ -765,6 +767,7 @@ export default function InternalDepartment({
       if (task?.id) {
         mergeTask(task);
         setPanelTask(task);
+        signalHubNotificationsRefresh();
       }
     } finally {
       setPostingComment(false);
@@ -796,17 +799,22 @@ export default function InternalDepartment({
 
   async function handleAddExistingKanban(board) {
     if (!board?.id || !activeCampaign?.id) return;
+    const prevFlow = activeCampaign.flow_data;
+    const nextFlow = appendKanbanNodeToFlow(prevFlow, board);
+    if (nextFlow === prevFlow) {
+      setKanbanCreateOpen(false);
+      return;
+    }
+    setKanbanCreateOpen(false);
     setSaving(true);
     try {
-      const nextFlow = appendKanbanNodeToFlow(activeCampaign.flow_data, board);
-      if (nextFlow === activeCampaign.flow_data) {
-        setKanbanCreateOpen(false);
-        return;
+      const ok = await saveFlowFromParent(nextFlow);
+      if (ok) {
+        toast.success(t('hub.internal.kanbanAddedToFlow'));
+      } else {
+        setActiveCampaign(prev => (prev ? { ...prev, flow_data: prevFlow } : prev));
+        setFlowDataVersion(version => version + 1);
       }
-      await handleSaveFlowData(nextFlow);
-      setActiveCampaign(prev => (prev ? { ...prev, flow_data: nextFlow } : prev));
-      setKanbanCreateOpen(false);
-      toast.success(t('hub.internal.kanbanAddedToFlow'));
     } finally {
       setSaving(false);
     }
@@ -832,11 +840,11 @@ export default function InternalDepartment({
       if (!board?.id) return;
       dispatchBoardsChanged();
       const nextFlow = appendKanbanNodeToFlow(activeCampaign.flow_data, board, name);
-      await handleSaveFlowData(nextFlow);
+      const ok = await saveFlowFromParent(nextFlow);
+      if (!ok) return;
       setActiveCampaign(prev => ({
         ...prev,
         boards: [...(prev?.boards || []), board],
-        flow_data: nextFlow,
       }));
       setKanbanCreateOpen(false);
       toast.success(t('hub.internal.boardCreated'));
@@ -845,8 +853,43 @@ export default function InternalDepartment({
     }
   }
 
+  const patchFlowData = useCallback(async flowData => {
+    if (!activeCampaign?.id) return false;
+    try {
+      const res = await fetch(API_V1.internalCampaign(activeCampaign.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ flow_data: flowData }),
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return false;
+      }
+      const body = await res.json();
+      const data = unwrapData(body);
+      if (data?.campaign) {
+        setActiveCampaign(data.campaign);
+      } else {
+        setActiveCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+      }
+      return true;
+    } catch {
+      toast.error(t('common.somethingWrong'));
+      return false;
+    }
+  }, [activeCampaign?.id, t, toast]);
+
+  const saveFlowFromParent = useCallback(async flowData => {
+    setFlowDataVersion(version => version + 1);
+    setActiveCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+    const ok = await patchFlowData(flowData);
+    if (!ok) setFlowDataVersion(version => version + 1);
+    return ok;
+  }, [patchFlowData]);
+
   const handleSaveFlowData = useCallback(async flowData => {
-    if (!activeCampaign?.id) return;
+    if (!activeCampaign?.id) return false;
     try {
       const res = await fetch(API_V1.internalCampaign(activeCampaign.id), {
         method: 'PATCH',
@@ -856,11 +899,13 @@ export default function InternalDepartment({
       });
       if (res.ok) {
         setActiveCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
-        return;
+        return true;
       }
       toast.error(t('common.somethingWrong'));
+      return false;
     } catch {
       toast.error(t('common.somethingWrong'));
+      return false;
     }
   }, [activeCampaign?.id, t, toast]);
 
@@ -1343,8 +1388,9 @@ export default function InternalDepartment({
             campaign={resolvedCampaign}
             tasks={workspaceItems}
             boards={resolvedCampaign?.boards || []}
+            flowDataVersion={flowDataVersion}
             onTaskClick={setPanelTask}
-            onKanbanClick={boardId => router.push(campaignBoardUrl(boardId))}
+            onKanbanClick={boardId => navigateToBoardOrigin(router, boardId, resolvedCampaign?.boards || [])}
             onSaveFlowData={handleSaveFlowData}
             statusLabelFor={flowStatusLabel}
           />
