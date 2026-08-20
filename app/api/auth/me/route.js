@@ -7,8 +7,34 @@ import {
 import { resolveAppdevActor } from '@/lib/appdev-actor';
 
 import { resolveHubActor } from '@/lib/hub-actor';
+import { hubPermissionsForClient } from '@/lib/hub-permissions';
 
-export async function GET() {
+function hubUserPayload(hubActor) {
+  if (!hubActor.ok) return null;
+  return {
+    id: hubActor.userId,
+    role: hubActor.role,
+    isManager: hubActor.isManager,
+    isAdmin: hubActor.isAdmin,
+    mustChangePassword: hubActor.mustChangePassword,
+    departmentAccess: hubPermissionsForClient(hubActor)?.departmentAccess
+      || hubActor.departmentAccess,
+    permissions: hubPermissionsForClient(hubActor),
+  };
+}
+
+export async function GET(request) {
+  const scope = new URL(request.url).searchParams.get('scope') || '';
+
+  if (scope === 'hub') {
+    const [hub, hubActor] = await Promise.all([isHubAuthenticated(), resolveHubActor()]);
+    return NextResponse.json({
+      hub,
+      displayName: hubActor.ok ? hubActor.displayName : '',
+      hubUser: hubUserPayload(hubActor),
+    });
+  }
+
   const [hub, appdev, admin, appdevActor, hubActor] = await Promise.all([
     isHubAuthenticated(),
     isAppdevAuthenticated(),
@@ -24,14 +50,7 @@ export async function GET() {
     appdev: appdev && appdevActor.ok,
     admin,
     displayName,
-    hubUser: hubActor.ok
-      ? {
-          id: hubActor.userId,
-          role: hubActor.role,
-          isManager: hubActor.isManager,
-          mustChangePassword: hubActor.mustChangePassword,
-        }
-      : null,
+    hubUser: hubUserPayload(hubActor),
     signOutReason: appdevActor.ok ? '' : appdevActor.reason || '',
   });
 }

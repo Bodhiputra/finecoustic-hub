@@ -1,5 +1,5 @@
-import DepartmentRouteLoading from '@/components/DepartmentRouteLoading';
+import DepartmentLoadingShell from '@/components/internal/DepartmentLoadingShell';
 
 export default function CreativesLoading() {
-  return <DepartmentRouteLoading departmentId="creatives" />;
+  return <DepartmentLoadingShell departmentId="creatives" />;
 }

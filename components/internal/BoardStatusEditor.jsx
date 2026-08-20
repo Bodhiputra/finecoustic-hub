@@ -2,29 +2,60 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
+import HubModal from '@/components/HubModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import BoardCustomFieldsManager from '@/components/internal/BoardCustomFieldsManager';
 import {
+  columnEditLabel,
   normalizeStatusColumn,
   statusColumnLabel,
 } from '@/lib/internal-campaigns';
+import { normalizeBoardProperties } from '@/lib/board-properties';
 
 function columnsEqual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+function propertiesEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function columnsForEditing(rawColumns, t) {
+  return (rawColumns || []).map(col => ({
+    ...col,
+    label: columnEditLabel(col, t),
+  }));
+}
+
+const BOARD_SAVE_ERROR_KEYS = {
+  status_columns_required: 'hub.internal.statusColumnMinOne',
+  status_columns_limit: 'hub.internal.statusColumnLimit',
+};
+
+function boardSaveErrorMessage(code, t) {
+  const key = BOARD_SAVE_ERROR_KEYS[code];
+  return key ? t(key) : t('hub.internal.statusColumnSaveFailed');
+}
+
 export default function BoardStatusEditor({ board, tasks = [], onSaved, onClose }) {
   const { t } = useLocale();
   const { toast, toastStack } = useToast();
-  const [columns, setColumns] = useState(() => board?.status_columns || []);
+  const [columns, setColumns] = useState(() => columnsForEditing(board?.status_columns, t));
+  const [customProperties, setCustomProperties] = useState(
+    () => normalizeBoardProperties(board?.custom_properties || [])
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [dragIndex, setDragIndex] = useState(null);
+  const [dropIndex, setDropIndex] = useState(null);
 
   useEffect(() => {
-    setColumns(board?.status_columns || []);
+    setColumns(columnsForEditing(board?.status_columns, t));
+    setCustomProperties(normalizeBoardProperties(board?.custom_properties || []));
     setError('');
-  }, [board]);
+  }, [board, t]);
 
   const taskCounts = useMemo(() => {
     const counts = new Map();
@@ -35,27 +66,51 @@ export default function BoardStatusEditor({ board, tasks = [], onSaved, onClose 
     return counts;
   }, [tasks]);
 
-  const dirty = !columnsEqual(columns, board?.status_columns || []);
+  const dirty =
+    !columnsEqual(columns, columnsForEditing(board?.status_columns, t))
+    || !propertiesEqual(customProperties, normalizeBoardProperties(board?.custom_properties || []));
 
   function updateLabel(index, label) {
     setColumns(prev => prev.map((col, i) => (i === index ? { ...col, label } : col)));
   }
 
-  function moveColumn(index, dir) {
+  function moveColumnTo(fromIndex, toIndex) {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
     setColumns(prev => {
       const next = [...prev];
-      const target = index + dir;
-      if (target < 0 || target >= next.length) return prev;
-      const tmp = next[index];
-      next[index] = next[target];
-      next[target] = tmp;
+      if (fromIndex >= next.length || toIndex >= next.length) return prev;
+      const [item] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, item);
       return next;
     });
   }
 
+  function handleDragStart(index) {
+    if (saving) return;
+    setDragIndex(index);
+    setDropIndex(index);
+  }
+
+  function handleDragOver(index, e) {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === index) return;
+    setDropIndex(index);
+  }
+
+  function handleDrop(index) {
+    if (dragIndex === null) return;
+    moveColumnTo(dragIndex, index);
+    setDragIndex(null);
+    setDropIndex(null);
+  }
+
+  function handleDragEnd() {
+    setDragIndex(null);
+    setDropIndex(null);
+  }
+
   function addColumn() {
-    const base = `status_${Date.now()}`;
-    setColumns(prev => [...prev, normalizeStatusColumn({ id: base, label: '' })]);
+    setColumns(prev => [...prev, normalizeStatusColumn({ id: `status_${Date.now()}`, label: '' })]);
     setError('');
   }
 
@@ -86,11 +141,14 @@ export default function BoardStatusEditor({ board, tasks = [], onSaved, onClose 
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ status_columns: columns }),
+        body: JSON.stringify({
+          status_columns: columns,
+          custom_properties: customProperties,
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        const msg = body?.error || t('hub.internal.statusColumnSaveFailed');
+        const msg = boardSaveErrorMessage(body?.error, t);
         setError(msg);
         toast.error(msg);
         return;
@@ -98,7 +156,7 @@ export default function BoardStatusEditor({ board, tasks = [], onSaved, onClose 
       const body = await res.json();
       const data = unwrapData(body);
       if (data?.board) onSaved?.(data.board);
-      toast.success(t('hub.internal.statusColumnsSaved'));
+      toast.success(t('hub.internal.boardFieldsSaved'));
       onClose?.();
     } finally {
       setSaving(false);
@@ -108,86 +166,86 @@ export default function BoardStatusEditor({ board, tasks = [], onSaved, onClose 
   if (!board) return null;
 
   return (
-    <section className="internal-status-editor" aria-label={t('hub.internal.editStatusColumns')}>
-      <header className="internal-status-editor-head">
-        <div>
-          <h3>{t('hub.internal.editStatusColumns')}</h3>
-          <p>{t('hub.internal.editStatusColumnsDesc')}</p>
-        </div>
-        <button type="button" className="appdev-panel-close" onClick={onClose} aria-label={t('hub.internal.close')}>
-          <Icon name="x" size={18} />
-        </button>
-      </header>
-
-      <ul className="internal-status-editor-list">
-        {columns.map((col, index) => (
-          <li key={col.id} className="internal-status-editor-row">
-            <div className="internal-status-editor-order">
-              <button
-                type="button"
-                className="appdev-btn-ghost internal-status-editor-move"
-                onClick={() => moveColumn(index, -1)}
-                disabled={index === 0 || saving}
-                aria-label={t('hub.internal.moveColumnUp')}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="appdev-btn-ghost internal-status-editor-move"
-                onClick={() => moveColumn(index, 1)}
-                disabled={index === columns.length - 1 || saving}
-                aria-label={t('hub.internal.moveColumnDown')}
-              >
-                ↓
-              </button>
+    <HubModal
+      open
+      onClose={onClose}
+      className="internal-board-fields-modal internal-status-editor"
+      labelledBy="board-fields-title"
+      disableBackdropClose={saving}
+    >
+          <header className="internal-status-editor-head">
+            <div>
+              <h3 id="board-fields-title">{t('hub.internal.editBoardFields')}</h3>
+              <p>{t('hub.internal.editBoardFieldsDesc')}</p>
             </div>
-            <label className="internal-status-editor-field">
-              <span className="internal-status-editor-id">{col.id}</span>
-              <input
-                type="text"
-                value={col.label}
-                onChange={e => updateLabel(index, e.target.value)}
-                disabled={saving}
-                maxLength={60}
-              />
-            </label>
-            <span className="internal-status-editor-count">
-              {taskCounts.get(col.id) || 0}
-            </span>
-            <button
-              type="button"
-              className="appdev-btn-ghost is-danger"
-              onClick={() => removeColumn(index)}
-              disabled={saving}
-              aria-label={t('hub.internal.removeStatusColumn')}
-            >
-              <Icon name="x" size={14} />
+            <button type="button" className="hub-icon-btn appdev-panel-close" onClick={onClose} aria-label={t('hub.internal.close')}>
+              <Icon name="x" size={18} />
             </button>
-          </li>
-        ))}
-      </ul>
+          </header>
 
-      <div className="internal-status-editor-actions">
-        <button type="button" className="appdev-btn-ghost" onClick={addColumn} disabled={saving || columns.length >= 12}>
-          <Icon name="plus" size={14} />
-          {t('hub.internal.addStatusColumn')}
-        </button>
-        <div className="internal-status-editor-save">
-          {error ? <p className="internal-status-editor-error">{error}</p> : null}
-          <button type="button" className="appdev-btn-ghost" onClick={onClose} disabled={saving}>
-            {t('common.cancel')}
-          </button>
-          <button type="button" className="appdev-btn-primary" onClick={save} disabled={saving || !dirty}>
-            {saving ? t('hub.internal.saving') : t('hub.internal.saveStatusColumns')}
-          </button>
-        </div>
-      </div>
+          <h4 className="internal-status-editor-subhead">{t('hub.internal.statusColumnsHeading')}</h4>
+          <p className="internal-status-editor-hint">{t('hub.internal.reorderColumnHint')}</p>
+          <ul className="internal-status-editor-list">
+            {columns.map((col, index) => (
+              <li
+                key={col.id}
+                className={`internal-status-editor-row${dragIndex === index ? ' is-dragging' : ''}${dropIndex === index && dragIndex !== null && dragIndex !== index ? ' is-drop-target' : ''}`}
+                draggable={!saving}
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={e => handleDragOver(index, e)}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={handleDragEnd}
+              >
+                <span className="internal-status-editor-grip" aria-hidden="true">
+                  <Icon name="gripVertical" size={16} />
+                </span>
+                <label className="internal-status-editor-field">
+                  <input
+                    type="text"
+                    value={col.label}
+                    onChange={e => updateLabel(index, e.target.value)}
+                    disabled={saving}
+                    maxLength={60}
+                    placeholder={statusColumnLabel(col, t)}
+                    aria-label={statusColumnLabel(col, t)}
+                  />
+                </label>
+                <span className="internal-status-editor-count">
+                  {taskCounts.get(col.id) || 0}
+                </span>
+                <button type="button" className="hub-icon-btn is-danger" onClick={() => removeColumn(index)} disabled={saving} aria-label={t('hub.internal.removeStatusColumn')}>
+                  <Icon name="x" size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
 
-      <p className="internal-status-editor-hint">
-        {columns.map(col => statusColumnLabel(col, t)).join(' → ')}
-      </p>
-      {toastStack}
-    </section>
+          <div className="internal-status-editor-actions">
+            <button type="button" className="appdev-btn-ghost" onClick={addColumn} disabled={saving || columns.length >= 12}>
+              <Icon name="plus" size={14} />
+              {t('hub.internal.addStatusColumn')}
+            </button>
+          </div>
+
+          <p className="internal-status-editor-hint internal-status-editor-preview">
+            {columns.map(col => col.label || statusColumnLabel(col, t)).join(' → ')}
+          </p>
+
+          <BoardCustomFieldsManager
+            embedded
+            properties={customProperties}
+            onPropertiesChange={setCustomProperties}
+            disabled={saving}
+          />
+
+          <footer className="internal-status-editor-save internal-board-fields-footer">
+            {error ? <p className="internal-status-editor-error">{error}</p> : null}
+            <button type="button" className="appdev-btn-ghost" onClick={onClose} disabled={saving}>{t('common.cancel')}</button>
+            <button type="button" className="appdev-btn-primary" onClick={save} disabled={saving || !dirty}>
+              {saving ? t('hub.internal.saving') : t('hub.internal.saveBoardFields')}
+            </button>
+          </footer>
+          {toastStack}
+    </HubModal>
   );
 }

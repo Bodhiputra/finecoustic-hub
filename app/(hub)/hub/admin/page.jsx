@@ -11,6 +11,6 @@ export default async function HubAdminPage() {
   const authed = await isHubAuthenticated();
   if (!authed) return <HubLogin />;
   const actor = await resolveHubActor();
-  if (!actor.ok || !actor.isManager) redirect('/me');
-  return <HubAdminUsers />;
+  if (!actor.ok || !actor.isAdmin) redirect('/');
+  return <HubAdminUsers initialDisplayName={actor.displayName || ''} />;
 }

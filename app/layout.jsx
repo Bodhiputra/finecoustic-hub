@@ -17,7 +17,7 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: 'Fine Hub',
+  title: 'Fine Teams',
   description: 'Internal workspace — operations, knowledge, and project tools',
   robots: { index: false, follow: false },
 };

@@ -1,9 +1,4 @@
-import InternalDepartmentLoader from '@/components/internal/InternalDepartmentLoader';
-
-export const dynamic = 'force-dynamic';
-
-export default function OpsPage({ searchParams }) {
-  return (
-    <InternalDepartmentLoader departmentId="operations" searchParams={searchParams} />
-  );
+/** Ops workspace UI lives in ops/layout.jsx. */
+export default function OpsPage() {
+  return null;
 }

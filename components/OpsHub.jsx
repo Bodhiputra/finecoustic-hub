@@ -256,13 +256,12 @@ export default function OpsHub({
     <HubLayout
       sidebarLabel="Operations"
       topNavTitle={title}
-      topNavSubtitle={subtitle}
       authEnabled={authEnabled}
       onLogout={handleLogout}
       sidebar={
         <>
           <div className="brand">
-            <Link href="/" className="brand-back" aria-label="Hub home">
+            <Link href="/" className="brand-back" aria-label="Teams home">
               <Icon name="arrowLeft" size={16} />
             </Link>
             <Image className="brand-logo" src="/FLogo.png" alt="Finecoustic" width={36} height={36} />

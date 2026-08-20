@@ -1,23 +1,38 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import Icon from '@/components/Icon';
+import CampaignFlowInline from '@/components/internal/CampaignFlowInline';
 import { useLocale } from '@/components/LocaleProvider';
 import { useConfirm } from '@/hooks/useConfirm';
+import { useHubPermissions } from '@/hooks/useHubPermissions';
 import { usePrompt } from '@/hooks/usePrompt';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { campaignBoardUrl, campaignFlowUrl, campaignKolUrl } from '@/lib/campaign-urls';
 
-export default function CampaignsWorkspace({ initialCampaigns = null }) {
+export default function CampaignsWorkspace({
+  initialProfile = null,
+  initialCampaigns = null,
+  activeFlowId = '',
+  onOpenFlow,
+  onCloseFlow,
+  onOpenNewTask,
+  onTaskClick,
+  savedFlowTask = null,
+  onSavedFlowTaskHandled,
+  tasksRefreshKey = 0,
+}) {
   const { t } = useLocale();
   const { requestConfirm, confirmDialog } = useConfirm();
   const { requestPrompt, promptDialog } = usePrompt();
   const { toast, toastStack } = useToast();
+  const { permissions, canDeleteCampaignFor } = useHubPermissions(initialProfile);
+  const canCreate = permissions?.canCreateCampaign ?? false;
+  const hasServerSeed = initialCampaigns != null;
   const [campaigns, setCampaigns] = useState(() => initialCampaigns ?? []);
-  const [loading, setLoading] = useState(initialCampaigns == null);
+  const [loading, setLoading] = useState(() => !hasServerSeed);
   const [busy, setBusy] = useState(false);
+  const [loadedOnce, setLoadedOnce] = useState(() => hasServerSeed);
 
   const refresh = useCallback(async () => {
     const res = await fetch(API_V1.internalCampaigns, {
@@ -27,14 +42,15 @@ export default function CampaignsWorkspace({ initialCampaigns = null }) {
     const body = await res.json();
     const data = unwrapData(body);
     setCampaigns(Array.isArray(data?.campaigns) ? data.campaigns : []);
+    setLoadedOnce(true);
     return true;
   }, []);
 
   useEffect(() => {
-    if (initialCampaigns != null) return;
+    if (loadedOnce) return;
     setLoading(true);
     refresh().finally(() => setLoading(false));
-  }, [initialCampaigns, refresh]);
+  }, [loadedOnce, refresh]);
 
   async function createCampaign() {
     const name = await requestPrompt({
@@ -50,59 +66,11 @@ export default function CampaignsWorkspace({ initialCampaigns = null }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ name, department: 'all' }),
+        body: JSON.stringify({ name, department: 'all', flow_enabled: true }),
       });
       if (res.ok) {
         await refresh();
         toast.success(t('hub.internal.campaignCreated'));
-      } else {
-        toast.error(t('common.somethingWrong'));
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function createBoard(campaignId) {
-    const name = await requestPrompt({
-      title: t('hub.internal.addBoard'),
-      label: t('hub.internal.boardNamePrompt'),
-      confirmLabel: t('common.confirm'),
-      cancelLabel: t('common.cancel'),
-    });
-    if (!name) return;
-    setBusy(true);
-    try {
-      const res = await fetch(API_V1.internalCampaignBoards(campaignId), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ name, department: 'all' }),
-      });
-      if (res.ok) {
-        await refresh();
-        toast.success(t('hub.internal.boardCreated'));
-      } else {
-        toast.error(t('common.somethingWrong'));
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function enableFlow(campaign) {
-    if (campaign.flow_enabled) return;
-    setBusy(true);
-    try {
-      const res = await fetch(API_V1.internalCampaign(campaign.id), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ flow_enabled: true }),
-      });
-      if (res.ok) {
-        await refresh();
-        toast.success(t('hub.internal.flowEnabled'));
       } else {
         toast.error(t('common.somethingWrong'));
       }
@@ -126,6 +94,7 @@ export default function CampaignsWorkspace({ initialCampaigns = null }) {
         credentials: 'same-origin',
       });
       if (res.ok) {
+        if (activeFlowId === campaign.id) onCloseFlow?.();
         await refresh();
         toast.success(t('hub.internal.campaignDeleted'));
       } else {
@@ -134,6 +103,27 @@ export default function CampaignsWorkspace({ initialCampaigns = null }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (activeFlowId) {
+    return (
+      <>
+        <CampaignFlowInline
+          campaignId={activeFlowId}
+          initialCampaigns={campaigns.length ? campaigns : initialCampaigns}
+          initialProfile={initialProfile}
+          onBack={onCloseFlow}
+          onTaskClick={onTaskClick}
+          onOpenNewTask={onOpenNewTask}
+          savedFlowTask={savedFlowTask}
+          onSavedFlowTaskHandled={onSavedFlowTaskHandled}
+          tasksRefreshKey={tasksRefreshKey}
+        />
+        {confirmDialog}
+        {promptDialog}
+        {toastStack}
+      </>
+    );
   }
 
   if (loading) {
@@ -145,139 +135,67 @@ export default function CampaignsWorkspace({ initialCampaigns = null }) {
       <header className="internal-campaigns-head">
         <div>
           <h2>{t('hub.internal.campaignList')}</h2>
-          <p className="internal-campaigns-desc">{t('hub.internal.campaignsDesc')}</p>
         </div>
-        <button
-          type="button"
-          className="appdev-btn-primary"
-          onClick={createCampaign}
-          disabled={busy}
-        >
-          <Icon name="plus" size={16} />
-          {t('hub.internal.addCampaign')}
-        </button>
+        {canCreate ? (
+          <button
+            type="button"
+            className="appdev-btn-primary"
+            onClick={createCampaign}
+            disabled={busy}
+          >
+            <Icon name="plus" size={16} />
+            {t('hub.internal.addCampaign')}
+          </button>
+        ) : null}
       </header>
 
       {campaigns.length === 0 ? (
         <div className="internal-campaigns-empty">
           <Icon name="megaphone" size={28} />
           <p>{t('hub.internal.noCampaigns')}</p>
+          {canCreate ? (
           <button type="button" className="appdev-btn-primary" onClick={createCampaign} disabled={busy}>
             <Icon name="plus" size={16} />
             {t('hub.internal.addCampaign')}
           </button>
+          ) : null}
         </div>
       ) : (
         <ul className="internal-campaigns-grid">
-          {campaigns.map(campaign => {
-            const boardCount = campaign.boards?.length || 0;
-            const hasFlow = Boolean(campaign.flow_enabled);
-            const hasWorkstreams = hasFlow || boardCount > 0;
-            return (
-              <li key={campaign.id}>
-                <article className="internal-campaign-card">
-                  <header className="internal-campaign-card-top">
-                    <div className="internal-campaign-card-icon" aria-hidden="true">
-                      <Icon name="megaphone" size={18} />
-                    </div>
-                    <div className="internal-campaign-card-title-wrap">
-                      <h3>{campaign.name}</h3>
-                      <p className="internal-campaign-card-meta">
-                        {[
-                          hasFlow ? t('hub.internal.flowCountOne') : '',
-                          boardCount === 1
-                            ? t('hub.internal.boardCountOne')
-                            : boardCount > 1
-                              ? t('hub.internal.boardCount').replace('{count}', String(boardCount))
-                              : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' · ') || t('hub.internal.noWorkstreams')}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="appdev-btn-ghost is-danger internal-campaign-card-delete"
-                      onClick={() => removeCampaign(campaign)}
-                      disabled={busy}
-                      aria-label={t('hub.internal.deleteCampaign')}
-                    >
-                      <Icon name="x" size={14} />
-                    </button>
-                  </header>
+          {campaigns.map(campaign => (
+            <li key={campaign.id} className="internal-campaign-card-item">
+              <button
+                type="button"
+                className="internal-campaign-card internal-campaign-card--clickable"
+                onClick={() => onOpenFlow?.(campaign.id)}
+              >
+                <header className="internal-campaign-card-top">
+                  <div className="internal-campaign-card-icon" aria-hidden="true">
+                    <Icon name="flow" size={18} />
+                  </div>
+                  <div className="internal-campaign-card-title-wrap">
+                    <h3>{campaign.name}</h3>
+                    <p className="internal-campaign-card-meta">{t('hub.internal.campaignFlowOnlyMeta')}</p>
+                  </div>
+                </header>
 
-                  {campaign.description ? (
-                    <p className="internal-campaign-card-desc">{campaign.description}</p>
-                  ) : null}
-
-                  <ul className="internal-campaign-card-boards">
-                    <li>
-                      <Link
-                        href={campaignKolUrl(campaign.id)}
-                        className="internal-campaign-board-chip internal-campaign-kol-chip"
-                      >
-                        <Icon name="users" size={14} />
-                        <span>{t('hub.campaignKol.chip')}</span>
-                      </Link>
-                    </li>
-                    {hasFlow ? (
-                      <li>
-                        <Link
-                          href={campaignFlowUrl(campaign.id)}
-                          className="internal-campaign-board-chip internal-campaign-flow-chip"
-                        >
-                          <Icon name="flow" size={14} />
-                          <span>
-                            {t('hub.internal.campaignFlowChip').replace('{name}', campaign.name)}
-                          </span>
-                        </Link>
-                      </li>
-                    ) : null}
-                    {campaign.boards?.map(board => (
-                      <li key={board.id}>
-                        <Link
-                          href={campaignBoardUrl(board.id)}
-                          className="internal-campaign-board-chip"
-                        >
-                          <Icon name="kanban" size={14} />
-                          <span>
-                            {t('hub.internal.boardWorkstreamChip').replace('{name}', board.name)}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {!hasWorkstreams ? (
-                    <p className="internal-campaign-card-empty">{t('hub.internal.noWorkstreams')}</p>
-                  ) : null}
-
-                  <footer className="internal-campaign-card-foot">
-                    {!hasFlow ? (
-                      <button
-                        type="button"
-                        className="appdev-btn-ghost"
-                        onClick={() => enableFlow(campaign)}
-                        disabled={busy}
-                      >
-                        <Icon name="flow" size={14} />
-                        {t('hub.internal.addFlow')}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="appdev-btn-ghost"
-                      onClick={() => createBoard(campaign.id)}
-                      disabled={busy}
-                    >
-                      <Icon name="plus" size={14} />
-                      {t('hub.internal.addBoard')}
-                    </button>
-                  </footer>
-                </article>
-              </li>
-            );
-          })}
+                {campaign.description ? (
+                  <p className="internal-campaign-card-desc">{campaign.description}</p>
+                ) : null}
+              </button>
+              {canDeleteCampaignFor(campaign) ? (
+                <button
+                  type="button"
+                  className="appdev-btn-ghost is-danger internal-campaign-card-delete"
+                  onClick={() => removeCampaign(campaign)}
+                  disabled={busy}
+                  aria-label={t('hub.internal.deleteCampaign')}
+                >
+                  <Icon name="x" size={14} />
+                </button>
+              ) : null}
+            </li>
+          ))}
         </ul>
       )}
 

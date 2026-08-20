@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import { isMilestoneComplete, isMilestonePast } from '@/lib/internal';
+import { formatTaskScheduleLabel, formatTaskScheduleRange } from '@/lib/task-datetime';
 import { holidayLabel } from '@/lib/holidays';
 
 const MAX_VISIBLE_DEFAULT = 5;
@@ -42,7 +43,7 @@ function monthMatrix(year, month) {
 }
 
 function eventRange(task) {
-  if (task?.kind !== 'event' && task?.kind !== 'milestone') return null;
+  if (task?.kind !== 'event' && task?.kind !== 'milestone' && task?.kind !== 'meeting') return null;
   const a = task.planned_for || task.deadline;
   const b = task.deadline || task.planned_for;
   if (!a && !b) return null;
@@ -61,6 +62,8 @@ function sortDayTasks(tasks) {
   return [...tasks].sort((a, b) => {
     if (a.kind === 'milestone' && b.kind !== 'milestone') return -1;
     if (b.kind === 'milestone' && a.kind !== 'milestone') return 1;
+    if (a.kind === 'meeting' && b.kind === 'task') return -1;
+    if (b.kind === 'meeting' && a.kind === 'task') return 1;
     const pa = priorityOrder[a.priority] ?? 4;
     const pb = priorityOrder[b.priority] ?? 4;
     if (pa !== pb) return pa - pb;
@@ -130,6 +133,7 @@ function weekSegments(week, spanEvents) {
 function CalendarEvent({ task, onSelect }) {
   const kind = task.kind || 'task';
   const isMilestone = kind === 'milestone';
+  const isMeeting = kind === 'meeting';
   const past = isMilestone && isMilestonePast(task);
   const complete = isMilestone && isMilestoneComplete(task);
   return (
@@ -138,6 +142,7 @@ function CalendarEvent({ task, onSelect }) {
       className={[
         `internal-cal-event is-kind-${kind} is-${task.status}`,
         isMilestone && 'is-milestone',
+        isMeeting && 'is-meeting',
         kind === 'event' && 'is-event',
         past && 'is-past',
         complete && 'is-complete',
@@ -435,11 +440,18 @@ export default function InternalCalendar({
             <p className="internal-empty">{t('hub.internal.noTasks')}</p>
           ) : focusTasks.length > 0 ? (
             <ul className="internal-cal-day-list">
-              {focusTasks.map(task => (
+              {focusTasks.map(task => {
+                const scheduleLabel = task.kind === 'task'
+                  ? formatTaskScheduleLabel(task.deadline, task.deadline_time, locale)
+                  : formatTaskScheduleRange(task, locale);
+                return (
                 <li key={task.id}>
                   <button type="button" className="internal-cal-day-row" onClick={() => onTaskClick(task)}>
                     <span className={`internal-cal-kind-glyph is-${task.kind || 'task'}`} aria-hidden="true" />
                     <span className="internal-cal-day-row-title">{task.title}</span>
+                    {scheduleLabel ? (
+                      <span className="internal-cal-day-row-time">{scheduleLabel}</span>
+                    ) : null}
                     {task.kind === 'event' || task.kind === 'milestone' ? (
                       <span className="internal-status-pill is-milestone">{t('hub.internal.kindMilestone')}</span>
                     ) : (
@@ -449,7 +461,7 @@ export default function InternalCalendar({
                     )}
                   </button>
                 </li>
-              ))}
+              );})}
             </ul>
           ) : null}
         </div>

@@ -15,17 +15,23 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   if (isPublicAsset(pathname)) return NextResponse.next();
 
+  const withPathname = response => {
+    const next = response ?? NextResponse.next();
+    next.headers.set('x-hub-pathname', pathname);
+    return next;
+  };
+
   // Large multipart uploads — auth is enforced in the route handler; skip middleware
   // so Next.js does not buffer/truncate the body (10MB default).
   if (pathname === '/api/appdev/upload' || pathname === '/api/v1/internal/upload') {
-    return NextResponse.next();
+    return withPathname(NextResponse.next());
   }
 
   if (
     process.env.NODE_ENV !== 'production' &&
     process.env.HUB_DEV_BYPASS_AUTH === '1'
   ) {
-    return NextResponse.next();
+    return withPathname(NextResponse.next());
   }
 
   const appdevPassword = (process.env.APPDEV_PASSWORD || '').trim();
@@ -43,11 +49,11 @@ export async function middleware(request) {
       pathname.startsWith('/api/auth/appdev/signup') ||
       pathname.startsWith('/api/auth/appdev/logout')
     ) {
-      return NextResponse.next();
+      return withPathname(NextResponse.next());
     }
 
-    if (!appdevPassword) return NextResponse.next();
-    if (access.hasAppdev) return NextResponse.next();
+    if (!appdevPassword) return withPathname(NextResponse.next());
+    if (access.hasAppdev) return withPathname(NextResponse.next());
 
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -67,15 +73,15 @@ export async function middleware(request) {
     pathname === '/api/public/preorder-register' ||
     pathname.startsWith('/api/shopify-proxy/')
   ) {
-    return NextResponse.next();
+    return withPathname(NextResponse.next());
   }
 
   if (pathname === '/' || pathname === '/login') {
-    return NextResponse.next();
+    return withPathname(NextResponse.next());
   }
 
-  if (!isHubAuthEnabled()) return NextResponse.next();
-  if (access.hasHub) return NextResponse.next();
+  if (!isHubAuthEnabled()) return withPathname(NextResponse.next());
+  if (access.hasHub) return withPathname(NextResponse.next());
 
   if (pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

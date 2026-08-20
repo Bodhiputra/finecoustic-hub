@@ -1,22 +1,25 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import DatePicker from '@/components/appdev/DatePicker';
 import MediaUrlFields from '@/components/appdev/MediaUrlFields';
 import IssueChat from '@/components/appdev/IssueChat';
 import Icon from '@/components/Icon';
+import TaskCustomFields from '@/components/internal/TaskCustomFields';
+import TaskDateTimeField from '@/components/internal/TaskDateTimeField';
 import {
   ALL_DEPARTMENTS_ID,
   DEFAULT_SUBTYPES,
   DEPARTMENTS,
   TASK_PRIORITIES,
   TASK_STATUSES,
-  VISIBILITY,
   deptText,
 } from '@/lib/internal';
 import { statusColumnLabel } from '@/lib/internal-campaigns';
 import { getWorkflowActions } from '@/lib/task-workflow';
+import { TASK_RECURRENCES } from '@/lib/task-recurrence';
 import { useLocale } from '@/components/LocaleProvider';
+import { API_V1 } from '@/lib/api/routes';
+import { useToast } from '@/hooks/useToast';
 import { uploadInternalMediaFile } from '@/lib/hub-upload-client';
 
 function normalizeDraftForPanel(task) {
@@ -31,10 +34,15 @@ function normalizeDraftForPanel(task) {
       deadline: end,
     };
   }
-  if (task.kind === 'milestone') {
+  if (task.kind === 'milestone' || task.kind === 'meeting') {
     const start = task.planned_for || task.deadline || null;
     const end = task.deadline || task.planned_for || null;
-    return { ...task, planned_for: start, deadline: end };
+    return {
+      ...task,
+      kind: task.kind,
+      planned_for: start,
+      deadline: end,
+    };
   }
   return {
     ...task,
@@ -43,7 +51,7 @@ function normalizeDraftForPanel(task) {
   };
 }
 
-function prepareSave(draft, lockDepartmentId, lockBoard = null, isNew = false) {
+function prepareSave(draft, lockDepartmentId, lockBoard = null, isNew = false, { lockAssigneeToSelf = false, displayName = '' } = {}) {
   const kind = draft.kind === 'event' ? 'milestone' : (draft.kind || 'task');
   let next = { ...draft };
   if (lockDepartmentId && lockDepartmentId !== ALL_DEPARTMENTS_ID) {
@@ -51,7 +59,10 @@ function prepareSave(draft, lockDepartmentId, lockBoard = null, isNew = false) {
   }
   if (lockBoard?.board_id) next.board_id = lockBoard.board_id;
   if (lockBoard?.campaign_id) next.campaign_id = lockBoard.campaign_id;
-  if (kind === 'milestone') {
+  if (lockAssigneeToSelf && displayName) {
+    next.assignee = displayName;
+  }
+  if (kind === 'milestone' || kind === 'meeting') {
     let start = draft.planned_for || draft.deadline || null;
     let end = draft.deadline || draft.planned_for || null;
     if (start && end && start > end) {
@@ -61,10 +72,10 @@ function prepareSave(draft, lockDepartmentId, lockBoard = null, isNew = false) {
     }
     if (start && !end) end = start;
     if (end && !start) start = end;
-    return { ...next, kind: 'milestone', planned_for: start, deadline: end };
+    return { ...next, kind, planned_for: start, deadline: end };
   }
   if (kind === 'task') {
-    if (isNew) next.status = 'todo';
+    if (isNew) next.status = draft.status || 'todo';
     else delete next.status;
   }
   return { ...next, kind: 'task', planned_for: null };
@@ -78,9 +89,9 @@ const PRIORITY_KEYS = {
   low: 'hub.internal.priorityLow',
 };
 
-const VISIBILITY_KEYS = {
-  team: 'hub.internal.visibilityTeam',
-  private: 'hub.internal.visibilityPrivate',
+const RECURRENCE_KEYS = {
+  none: 'hub.internal.recurrenceNone',
+  daily: 'hub.internal.recurrenceDaily',
 };
 
 const MILESTONE_STATUS_VALUES = [
@@ -254,13 +265,21 @@ export default function TaskPanel({
   lockDepartmentId = null,
   lockBoard = null,
   statusColumns = null,
+  boardCustomProperties = [],
+  onManageBoardFields,
   teamMembers = [],
+  lockAssigneeToSelf = false,
 }) {
   const { locale, t } = useLocale();
+  const { toast } = useToast();
   const [draft, setDraft] = useState(task);
+  const [reminderDue, setReminderDue] = useState('');
+  const [reminderBusy, setReminderBusy] = useState(false);
   const isNew = Boolean(task?._draft || !task?.id);
+  const isMeeting = draft.kind === 'meeting';
   const isMilestone = draft.kind === 'milestone';
-  const isTask = !isMilestone;
+  const isTask = draft.kind === 'task';
+  const isCalendarItem = isMilestone || isMeeting;
   const hideDepartment = Boolean(lockDepartmentId && lockDepartmentId !== ALL_DEPARTMENTS_ID);
   const uploadMedia = useCallback((file, kind) => uploadInternalMediaFile(file, kind), []);
 
@@ -274,15 +293,25 @@ export default function TaskPanel({
   );
 
   const statusOptions = useMemo(() => {
-    if (statusColumns?.length) return statusColumns;
-    return TASK_STATUSES.filter(s => s !== 'archived').map(id => ({ id, label: id }));
-  }, [statusColumns]);
+    if (statusColumns?.length) {
+      return statusColumns.map(col =>
+        typeof col === 'string'
+          ? { id: col, label: statusColumnLabel({ id: col }, t) }
+          : { ...col, label: statusColumnLabel(col, t) }
+      );
+    }
+    return TASK_STATUSES.filter(s => s !== 'archived').map(id => ({
+      id,
+      label: statusColumnLabel({ id }, t),
+    }));
+  }, [statusColumns, t]);
 
   const assigneeOptions = useMemo(() => {
+    if (lockAssigneeToSelf && displayName) return [displayName];
     const names = new Set(teamMembers.filter(Boolean));
     if (draft?.assignee) names.add(draft.assignee);
     return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [teamMembers, draft?.assignee]);
+  }, [teamMembers, draft?.assignee, lockAssigneeToSelf, displayName]);
 
   const priorityPickOptions = useMemo(
     () => TASK_PRIORITIES.map(p => ({
@@ -292,10 +321,10 @@ export default function TaskPanel({
     [t]
   );
 
-  const visibilityPickOptions = useMemo(
-    () => VISIBILITY.map(v => ({
-      value: v,
-      label: t(VISIBILITY_KEYS[v] || v),
+  const recurrencePickOptions = useMemo(
+    () => TASK_RECURRENCES.map(value => ({
+      value,
+      label: t(RECURRENCE_KEYS[value] || value),
     })),
     [t]
   );
@@ -313,12 +342,42 @@ export default function TaskPanel({
   const set = (key, value) => setDraft(prev => ({ ...prev, [key]: value }));
 
   const panelTitle = isNew
-    ? isMilestone
-      ? t('hub.internal.taskPanel.newMilestone')
-      : t('hub.internal.taskPanel.newTask')
-    : isMilestone
-      ? t('hub.internal.taskPanel.milestone')
-      : t('hub.internal.taskPanel.task');
+    ? isMeeting
+      ? t('hub.internal.taskPanel.newMeeting')
+      : isMilestone
+        ? t('hub.internal.taskPanel.newMilestone')
+        : t('hub.internal.taskPanel.newTask')
+    : isMeeting
+      ? t('hub.internal.taskPanel.meeting')
+      : isMilestone
+        ? t('hub.internal.taskPanel.milestone')
+        : t('hub.internal.taskPanel.task');
+
+  async function setReminder() {
+    if (!draft?.id || !reminderDue) return;
+    setReminderBusy(true);
+    try {
+      const res = await fetch(API_V1.hubReminders, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          title: draft.title,
+          due_at: reminderDue,
+          entity_type: 'task',
+          entity_id: draft.id,
+        }),
+      });
+      if (res.ok) {
+        toast.success(t('hub.internal.reminderSet'));
+        setReminderDue('');
+      } else {
+        toast.error(t('common.somethingWrong'));
+      }
+    } finally {
+      setReminderBusy(false);
+    }
+  }
 
   const canSave = Boolean(draft.title?.trim());
 
@@ -423,6 +482,18 @@ export default function TaskPanel({
                 disabled={saving}
               />
 
+              <HubSinglePick
+                legend={t('hub.internal.taskPanel.recurrence')}
+                name="task-recurrence"
+                value={draft.recurrence || 'none'}
+                options={recurrencePickOptions}
+                onChange={v => set('recurrence', v)}
+                disabled={saving}
+              />
+              {draft.recurrence === 'daily' ? (
+                <p className="appdev-field-hint">{t('hub.internal.recurrenceDailyHint')}</p>
+              ) : null}
+
               {!isNew ? (
                 <TaskWorkflowSection
                   task={draft}
@@ -435,82 +506,176 @@ export default function TaskPanel({
               ) : (
                 <p className="appdev-field-hint">{t('hub.internal.workflow.newTaskHint')}</p>
               )}
-
-              <HubSinglePick
-                legend={t('hub.internal.taskPanel.visibility')}
-                name="task-visibility"
-                value={draft.visibility || 'team'}
-                options={visibilityPickOptions}
-                onChange={v => set('visibility', v)}
-                disabled={saving}
-              />
             </>
           ) : null}
 
-          {isMilestone && (
-            <>
-              <div className="appdev-field-row">
-                <label className="appdev-field">
-                  <span>{t('hub.internal.taskPanel.eventStart')}</span>
-                  <DatePicker
-                    value={draft.planned_for}
-                    onChange={v => set('planned_for', v)}
-                    disabled={saving}
-                    locale={locale}
-                    placeholder={t('hub.internal.taskPanel.pickDate')}
-                  />
-                </label>
-                <label className="appdev-field">
-                  <span>{t('hub.internal.taskPanel.eventEnd')}</span>
-                  <DatePicker
-                    value={draft.deadline}
-                    onChange={v => set('deadline', v)}
-                    disabled={saving}
-                    locale={locale}
-                    placeholder={t('hub.internal.taskPanel.pickDate')}
-                  />
-                </label>
+          {isTask && (boardCustomProperties.length > 0 || onManageBoardFields) ? (
+            <TaskCustomFields
+              properties={boardCustomProperties}
+              values={draft.custom_values || {}}
+              onChange={values => set('custom_values', values)}
+              onManageFields={onManageBoardFields}
+              disabled={saving}
+              teamMembers={assigneeOptions}
+              locale={locale}
+            />
+          ) : null}
+
+          {isTask && !isNew && (
+            <div className="appdev-field task-reminder-field">
+              <span>{t('hub.internal.setReminder')}</span>
+              <div className="task-reminder-row">
+                <input
+                  type="datetime-local"
+                  value={reminderDue}
+                  onChange={e => setReminderDue(e.target.value)}
+                  disabled={saving || reminderBusy}
+                />
+                <button type="button" className="appdev-btn-ghost" onClick={setReminder} disabled={!reminderDue || reminderBusy}>
+                  {t('hub.internal.addReminder')}
+                </button>
               </div>
+              <span className="appdev-field-hint">{t('hub.internal.reminderHint')}</span>
+            </div>
+          )}
+
+          {isMeeting && (
+            <>
               <HubSinglePick
-                legend={t('hub.internal.taskPanel.milestoneStatus')}
-                name="milestone-status"
-                value={draft.status === 'done' ? 'done' : draft.status === 'cancelled' ? 'cancelled' : 'todo'}
-                options={milestoneStatusPickOptions}
-                onChange={v => set('status', v)}
+                legend={t('hub.internal.meetingScope')}
+                name="meeting-scope"
+                value={draft.meeting_scope || 'all'}
+                options={[
+                  { value: 'all', label: t('hub.internal.meetingScopeAll') },
+                  { value: 'department', label: t('hub.internal.meetingScopeDepartment') },
+                  { value: 'individual', label: t('hub.internal.meetingScopeIndividual') },
+                ]}
+                onChange={v => set('meeting_scope', v)}
                 disabled={saving}
               />
-              <p className="appdev-field-hint">{t('hub.internal.taskPanel.milestoneHint')}</p>
+              {draft.meeting_scope === 'department' ? (
+                <label className="appdev-field">
+                  <span>{t('hub.internal.taskPanel.department')}</span>
+                  <select
+                    value={draft.meeting_department || draft.department || 'operations'}
+                    onChange={e => set('meeting_department', e.target.value)}
+                    disabled={saving}
+                  >
+                    {DEPARTMENTS.map(d => (
+                      <option key={d.id} value={d.id}>{deptText(d, t, 'label')}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {draft.meeting_scope === 'individual' ? (
+                <label className="appdev-field">
+                  <span>{t('hub.internal.meetingAttendees')}</span>
+                  <select
+                    multiple
+                    value={draft.meeting_attendees || []}
+                    onChange={e =>
+                      set(
+                        'meeting_attendees',
+                        [...e.target.selectedOptions].map(o => o.value)
+                      )
+                    }
+                    disabled={saving}
+                  >
+                    {assigneeOptions.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                  <span className="appdev-field-hint">{t('hub.internal.meetingAttendeesHint')}</span>
+                </label>
+              ) : null}
+            </>
+          )}
+
+          {isCalendarItem && (
+            <>
+              <div className="appdev-field-row task-datetime-row-pair">
+                <TaskDateTimeField
+                  dateLabel={t('hub.internal.taskPanel.eventStart')}
+                  timeLabel={t('hub.internal.taskPanel.startTime')}
+                  dateValue={draft.planned_for}
+                  timeValue={draft.planned_for_time}
+                  onDateChange={v => set('planned_for', v)}
+                  onTimeChange={v => set('planned_for_time', v)}
+                  disabled={saving}
+                  locale={locale}
+                  datePlaceholder={t('hub.internal.taskPanel.pickDate')}
+                  timePlaceholder={t('hub.internal.taskPanel.pickTime')}
+                />
+                <TaskDateTimeField
+                  dateLabel={t('hub.internal.taskPanel.eventEnd')}
+                  timeLabel={t('hub.internal.taskPanel.endTime')}
+                  dateValue={draft.deadline}
+                  timeValue={draft.deadline_time}
+                  onDateChange={v => set('deadline', v)}
+                  onTimeChange={v => set('deadline_time', v)}
+                  disabled={saving}
+                  locale={locale}
+                  datePlaceholder={t('hub.internal.taskPanel.pickDate')}
+                  timePlaceholder={t('hub.internal.taskPanel.pickTime')}
+                />
+              </div>
+              {isMilestone ? (
+                <>
+                  <HubSinglePick
+                    legend={t('hub.internal.taskPanel.milestoneStatus')}
+                    name="milestone-status"
+                    value={draft.status === 'done' ? 'done' : draft.status === 'cancelled' ? 'cancelled' : 'todo'}
+                    options={milestoneStatusPickOptions}
+                    onChange={v => set('status', v)}
+                    disabled={saving}
+                  />
+                  <p className="appdev-field-hint">{t('hub.internal.taskPanel.milestoneHint')}</p>
+                </>
+              ) : (
+                <p className="appdev-field-hint">{t('hub.internal.meetingHint')}</p>
+              )}
             </>
           )}
 
           {isTask && (
-            <div className="appdev-field">
-              <span>{t('hub.internal.taskPanel.deadline')}</span>
-              <DatePicker
-                value={draft.deadline}
-                onChange={v => set('deadline', v)}
+            <>
+              <TaskDateTimeField
+                dateLabel={t('hub.internal.taskPanel.deadline')}
+                timeLabel={t('hub.internal.taskPanel.dueTime')}
+                dateValue={draft.deadline}
+                timeValue={draft.deadline_time}
+                onDateChange={v => set('deadline', v)}
+                onTimeChange={v => set('deadline_time', v)}
                 disabled={saving}
                 locale={locale}
-                placeholder={t('hub.internal.taskPanel.pickDate')}
+                datePlaceholder={t('hub.internal.taskPanel.pickDate')}
+                timePlaceholder={t('hub.internal.taskPanel.pickTime')}
               />
-              <span className="appdev-field-hint">{t('hub.internal.taskPanel.dueDateHint')}</span>
-            </div>
+              <p className="appdev-field-hint">{t('hub.internal.taskPanel.dueDateHint')}</p>
+            </>
           )}
 
           {isTask && (
-            <label className="appdev-field">
-              <span>{t('hub.internal.taskPanel.assignee')}</span>
-              <select
-                value={draft.assignee || ''}
-                onChange={e => set('assignee', e.target.value)}
-                disabled={saving}
-              >
-                <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
-                {assigneeOptions.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-            </label>
+            lockAssigneeToSelf ? (
+              <div className="appdev-field">
+                <span>{t('hub.internal.taskPanel.assignee')}</span>
+                <input value={displayName} readOnly disabled aria-readonly="true" />
+              </div>
+            ) : (
+              <label className="appdev-field">
+                <span>{t('hub.internal.taskPanel.assignee')}</span>
+                <select
+                  value={draft.assignee || ''}
+                  onChange={e => set('assignee', e.target.value)}
+                  disabled={saving}
+                >
+                  <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
+                  {assigneeOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </label>
+            )
           )}
 
           <div className="appdev-field">
@@ -558,7 +723,14 @@ export default function TaskPanel({
             <button
               type="button"
               className="appdev-btn-primary"
-              onClick={() => onSave(prepareSave(draft, lockDepartmentId, lockBoard, isNew))}
+              onClick={() =>
+                onSave(
+                  prepareSave(draft, lockDepartmentId, lockBoard, isNew, {
+                    lockAssigneeToSelf,
+                    displayName,
+                  })
+                )
+              }
               disabled={saving || !canSave}
             >
               {saving ? t('hub.internal.taskPanel.saving') : isNew ? t('hub.internal.taskPanel.create') : t('hub.internal.taskPanel.save')}

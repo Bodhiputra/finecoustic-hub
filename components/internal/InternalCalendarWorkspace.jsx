@@ -84,6 +84,7 @@ export default function InternalCalendarWorkspace({
   const LEGEND_META = {
     tasks: { className: 'is-task', labelKey: 'hub.internal.legendTask' },
     milestones: { className: 'is-milestone', labelKey: 'hub.internal.legendMilestone' },
+    meetings: { className: 'is-meeting', labelKey: 'hub.internal.legendMeeting' },
     events: { className: 'is-event', labelKey: 'hub.internal.legendEvent' },
   };
 

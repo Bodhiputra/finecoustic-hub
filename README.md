@@ -1,4 +1,4 @@
-# Fine Hub
+# Fine Teams
 
 **Repo:** [github.com/Bodhiputra/finecoustic-hub](https://github.com/Bodhiputra/finecoustic-hub)
 
@@ -15,7 +15,7 @@ Internal workspace with isolated access realms. Code is public; brand data is no
 
 ### Main hub accounts
 
-- **No public sign-up.** Managers create accounts at `/hub/admin` (name + individual password).
+- **No public sign-up.** Master admin creates accounts at `/hub/admin` (name + individual password).
 - **Admin (you):** sign in as `FCS-建宏` with `HUB_MASTER_PASSWORD` — full hub + appdev access.
 - **`/appdev` is unchanged** — partners still sign up / sign in with the shared `APPDEV_PASSWORD`.
 - Realms share the site origin but use **separate signed cookies** (see below).

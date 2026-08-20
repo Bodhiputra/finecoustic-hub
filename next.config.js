@@ -10,7 +10,8 @@ const nextConfig = {
     return [
       { source: '/api/v1/warzone/:path*', destination: '/api/v1/internal/:path*', permanent: true },
       { source: '/api/warzone/:path*', destination: '/api/internal/:path*', permanent: true },
-      { source: '/warzone', destination: '/tasks', permanent: true },
+      { source: '/about', destination: '/?wiki=1', permanent: false },
+      { source: '/branding', destination: '/?wiki=1', permanent: false },
       { source: '/warzone/:department', destination: '/:department', permanent: true },
     ];
   },

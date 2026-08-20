@@ -1302,7 +1302,7 @@
   transition: color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out);
 }
 
-.appdev-panel-close:hover { color: var(--text); background: var(--accent-soft); }
+.appdev-panel-close:hover { color: var(--text); }
 .appdev-panel-close:active { transform: scale(0.95); }
 
 .appdev-panel-body {

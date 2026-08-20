@@ -10,8 +10,18 @@ export default function SidebarSection({
   className = '',
   actionLabel = '',
   onAction,
+  onOpenChange,
 }) {
   const [open, setOpen] = useState(defaultOpen);
+
+  function toggleOpen() {
+    let nextOpen = open;
+    setOpen(prev => {
+      nextOpen = !prev;
+      return nextOpen;
+    });
+    onOpenChange?.(nextOpen);
+  }
 
   return (
     <div className={`internal-sidebar-section${open ? ' is-open' : ''}${className ? ` ${className}` : ''}`}>
@@ -20,7 +30,7 @@ export default function SidebarSection({
           type="button"
           className="internal-sidebar-section-toggle"
           aria-expanded={open}
-          onClick={() => setOpen(prev => !prev)}
+          onClick={toggleOpen}
         >
           <span className="internal-sidebar-section-label">{title}</span>
           <Icon name="chevronDown" size={14} className="internal-sidebar-chevron" />

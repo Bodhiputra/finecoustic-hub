@@ -1,5 +1,5 @@
-import DepartmentRouteLoading from '@/components/DepartmentRouteLoading';
+import DepartmentLoadingShell from '@/components/internal/DepartmentLoadingShell';
 
 export default function OpsLoading() {
-  return <DepartmentRouteLoading departmentId="operations" />;
+  return <DepartmentLoadingShell departmentId="operations" />;
 }

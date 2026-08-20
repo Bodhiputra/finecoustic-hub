@@ -8,7 +8,7 @@ import {
   setHubUserBlocked,
   updateHubUserDepartmentAccess,
 } from '@/lib/hub-users';
-import { HUB_DEPARTMENT_IDS } from '@/lib/hub-departments';
+import { HUB_ASSIGNABLE_DEPARTMENT_IDS, normalizeDepartmentAccess } from '@/lib/hub-departments';
 
 export async function GET() {
   let actor;
@@ -17,7 +17,7 @@ export async function GET() {
   } catch (e) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: e.status || 401 });
   }
-  if (!actor.isManager) {
+  if (!actor.isAdmin) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
   const users = await listHubUsers();
@@ -31,20 +31,28 @@ export async function POST(request) {
   } catch (e) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: e.status || 401 });
   }
-  if (!actor.isManager) {
+  if (!actor.isAdmin) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
   const body = await request.json().catch(() => ({}));
   const displayName = String(body.displayName ?? '').trim();
   const password = String(body.password ?? '');
-  const role = String(body.role ?? 'member');
+  const role = String(body.role ?? 'associate');
+  const department_access = normalizeDepartmentAccess(
+    body.department_access || body.departmentAccess,
+    role
+  );
 
   if (!displayName || !password.trim()) {
     return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
   }
 
-  const result = await createHubUserByAdmin(displayName, password, { role });
+  if (!HUB_ASSIGNABLE_DEPARTMENT_IDS.some(id => department_access[id])) {
+    return NextResponse.json({ error: 'department_required' }, { status: 400 });
+  }
+
+  const result = await createHubUserByAdmin(displayName, password, { role, department_access });
   if (!result.ok) {
     if (result.reason === 'name_taken') {
       return NextResponse.json({ error: 'name_taken' }, { status: 409 });
@@ -68,7 +76,7 @@ export async function PATCH(request) {
   } catch (e) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: e.status || 401 });
   }
-  if (!actor.isManager) {
+  if (!actor.isAdmin) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
@@ -110,4 +118,4 @@ export async function PATCH(request) {
   return NextResponse.json({ error: 'invalid_action' }, { status: 400 });
 }
 
-export { ROLES, HUB_DEPARTMENT_IDS };
+export { ROLES, HUB_DEPARTMENT_IDS, HUB_ASSIGNABLE_DEPARTMENT_IDS };

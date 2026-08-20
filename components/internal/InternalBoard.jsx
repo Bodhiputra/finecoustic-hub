@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import { BOARD_STATUSES } from '@/lib/internal';
-import { boardStatusColumns, sortTasksByFlowOrder, statusColumnLabel } from '@/lib/internal-campaigns';
+import { boardStatusColumns, normalizeStatusColumn, sortTasksByFlowOrder, statusColumnLabel } from '@/lib/internal-campaigns';
 import InternalTaskCard from '@/components/internal/InternalTaskCard';
 
 export default function InternalBoard({
@@ -33,10 +33,10 @@ export default function InternalBoard({
 
   const columns = useMemo(() => {
     if (statusColumns?.length) {
-      return statusColumns.map(col => (typeof col === 'string' ? { id: col, label: col } : col));
+      return statusColumns.map(col => normalizeStatusColumn(col)).filter(Boolean);
     }
     if (board) return boardStatusColumns(board);
-    return BOARD_STATUSES.map(id => ({ id, label: id }));
+    return BOARD_STATUSES.map(id => normalizeStatusColumn(id));
   }, [statusColumns, board]);
 
   const columnIds = useMemo(() => new Set(columns.map(c => c.id)), [columns]);

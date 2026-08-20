@@ -1,20 +1,10 @@
-import RouteLoading from '@/components/RouteLoading';
-
-const LABELS = {
-  operations: 'Loading operations…',
-  marketing: 'Loading marketing…',
-  products: 'Loading products…',
-  finecoustic: 'Loading All About Finecoustic…',
-  creatives: 'Loading creatives…',
-  all: 'Loading tasks…',
-  campaigns: 'Loading campaigns…',
-};
+import { HubLoaderSplash } from '@/components/hub/HubSiteLoader';
+import { hubLoaderTaglineForDepartment } from '@/lib/hub-site-loader';
 
 export default function DepartmentRouteLoading({ departmentId = 'all' }) {
-  return (
-    <RouteLoading
-      variant="hub"
-      label={LABELS[departmentId] || 'Loading department…'}
-    />
-  );
+  const tagline = departmentId === 'all'
+    ? 'fine team.'
+    : hubLoaderTaglineForDepartment(departmentId);
+
+  return <HubLoaderSplash tagline={tagline} />;
 }

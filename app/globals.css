@@ -1,5 +1,33 @@
 /* Global tokens, reset, shared layout — realm CSS loads in nested layouts. */
 @import './styles/base.css';
 @import './styles/hub-buttons.css';
+@import './styles/hub-error.css';
 @import './styles/layout.css';
 @import './styles/responsive.css';
+
+@import 'tailwindcss';
+
+@theme {
+  --color-hub-bg: var(--bg);
+  --color-hub-surface: var(--surface);
+  --color-hub-text: var(--text);
+  --color-hub-muted: var(--muted);
+  --color-hub-line: var(--line);
+  --color-hub-accent: var(--accent);
+  --color-hub-err: var(--err);
+  --color-hub-warn: var(--warn);
+  --radius-hub-sm: var(--radius-sm);
+  --radius-hub: var(--radius);
+  --radius-hub-lg: var(--radius-lg);
+}
+
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a:visited {
+    color: inherit;
+  }
+}

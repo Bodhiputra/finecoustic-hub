@@ -103,6 +103,10 @@ export function useInternalTasks({
     const filterChanged = prevFilterKey.current !== filterKey;
     prevFilterKey.current = filterKey;
 
+    if (filterChanged && serverSeedFilterKey.current !== filterKey) {
+      setTasks([]);
+    }
+
     if (serverSeedFilterKey.current === filterKey) {
       setLoading(false);
       return;
@@ -117,5 +121,23 @@ export function useInternalTasks({
     refresh().finally(() => setLoading(false));
   }, [filterKey, enabled, initialTasksFilterKey, refresh]);
 
-  return { tasks, setTasks, refresh, loading };
+  const mergeTask = useCallback(updated => {
+    if (!updated?.id) return;
+    setTasks(prev => {
+      const idx = prev.findIndex(t => t.id === updated.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = updated;
+        return next;
+      }
+      return [...prev, updated];
+    });
+  }, []);
+
+  const removeTask = useCallback(taskId => {
+    if (!taskId) return;
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+  }, []);
+
+  return { tasks, setTasks, refresh, mergeTask, removeTask, loading };
 }

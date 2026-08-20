@@ -1,7 +1,4 @@
-import InternalDepartmentLoader from '@/components/internal/InternalDepartmentLoader';
-
-export const dynamic = 'force-dynamic';
-
-export default function AllTasksPage({ searchParams }) {
-  return <InternalDepartmentLoader departmentId="all" searchParams={searchParams} />;
+/** All tasks workspace UI lives in tasks/layout.jsx. */
+export default function AllTasksPage() {
+  return null;
 }

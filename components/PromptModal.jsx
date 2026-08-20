@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef } from 'react';
+import HubModal from '@/components/HubModal';
 
 export default function PromptModal({
   open,
@@ -24,7 +25,7 @@ export default function PromptModal({
 
   useEffect(() => {
     if (!open) return;
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     }, 0);
@@ -33,12 +34,10 @@ export default function PromptModal({
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      window.clearTimeout(t);
+      window.clearTimeout(timer);
       window.removeEventListener('keydown', onKey);
     };
   }, [open, busy]);
-
-  if (!open) return null;
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -46,19 +45,14 @@ export default function PromptModal({
   }
 
   return (
-    <div
-      className="appdev-modal-backdrop appdev-confirm-backdrop"
-      role="presentation"
-      onClick={busy ? undefined : onCancel}
+    <HubModal
+      open={open}
+      onClose={onCancel}
+      className="appdev-confirm-modal appdev-prompt-modal"
+      labelledBy={title ? 'prompt-modal-title' : undefined}
+      disableBackdropClose={busy}
     >
-      <form
-        className="appdev-modal appdev-confirm-modal appdev-prompt-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? 'prompt-modal-title' : undefined}
-        onClick={e => e.stopPropagation()}
-        onSubmit={handleSubmit}
-      >
+      <form onSubmit={handleSubmit}>
         {title ? (
           <h2 id="prompt-modal-title" className="appdev-confirm-title">
             {title}
@@ -89,6 +83,6 @@ export default function PromptModal({
           </button>
         </footer>
       </form>
-    </div>
+    </HubModal>
   );
 }

@@ -59,11 +59,33 @@
   color: var(--muted);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out);
+  transition: color 160ms var(--ease-out), transform 160ms var(--ease-out);
 }
 
-.appdev-panel-close:hover { color: var(--text); background: var(--accent-soft); }
+.appdev-panel-close:hover { color: var(--text); }
 .appdev-panel-close:active { transform: scale(0.95); }
+
+/* Plain icon button — no border/background (remove rows, inline dismiss, etc.) */
+.hub-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.hub-icon-btn:hover:not(:disabled) { color: var(--text); }
+.hub-icon-btn.is-danger:hover:not(:disabled) { color: var(--err); }
+.hub-icon-btn:active:not(:disabled) { transform: scale(0.95); }
+.hub-icon-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .appdev-panel-body {
   flex: 1;
@@ -348,7 +370,7 @@
 }
 
 .appdev-confirm-backdrop {
-  z-index: 70;
+  z-index: 200;
 }
 
 .appdev-confirm-modal {
@@ -407,6 +429,53 @@
 .appdev-prompt-input:focus {
   outline: 2px solid var(--accent, #c9a227);
   outline-offset: 1px;
+}
+
+.appdev-prompt-select {
+  cursor: pointer;
+}
+
+.kanban-create-loading {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--muted, #888);
+}
+
+.kanban-create-existing {
+  margin-bottom: 0.75rem;
+}
+
+.kanban-create-list {
+  margin: 0.35rem 0 0.75rem;
+  max-height: 200px;
+}
+
+.kanban-create-row {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.kanban-create-row:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kanban-create-dept {
+  font-size: 0.75rem;
+  color: var(--muted, #888);
+}
+
+.kanban-create-divider-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #888);
 }
 
 .hub-toast-stack {

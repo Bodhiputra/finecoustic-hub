@@ -6,6 +6,7 @@ import { CALENDAR_KIND_FILTERS, DEPARTMENTS, deptText } from '@/lib/internal';
 const TYPE_META = {
   tasks: { labelKey: 'hub.internal.legendTask', chipClass: 'is-task' },
   milestones: { labelKey: 'hub.internal.legendMilestone', chipClass: 'is-milestone' },
+  meetings: { labelKey: 'hub.internal.legendMeeting', chipClass: 'is-meeting' },
 };
 
 export default function InternalScheduleFilters({
@@ -15,8 +16,12 @@ export default function InternalScheduleFilters({
   activeDepartments = null,
   onToggleDepartment = null,
   showDepartments = false,
+  departmentIds = null,
 }) {
   const { t } = useLocale();
+  const visibleDepartments = departmentIds
+    ? DEPARTMENTS.filter(dept => departmentIds.includes(dept.id))
+    : DEPARTMENTS;
 
   return (
     <div className="internal-cal-filters internal-schedule-filters" aria-label={t('hub.internal.scheduleFilters')}>
@@ -46,7 +51,7 @@ export default function InternalScheduleFilters({
         <div className="internal-schedule-filter-group">
           <span className="internal-cal-filters-label">{t('hub.internal.departments')}</span>
           <div className="internal-cal-filters-row" role="group" aria-label={t('hub.internal.departments')}>
-            {DEPARTMENTS.map(dept => {
+            {visibleDepartments.map(dept => {
               const active = activeDepartments.has(dept.id);
               return (
                 <button

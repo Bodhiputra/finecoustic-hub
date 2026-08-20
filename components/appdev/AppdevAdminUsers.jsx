@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import ConfirmModal from '@/components/ConfirmModal';
+import HubModal from '@/components/HubModal';
 import Icon from '@/components/Icon';
 
 export default function AppdevAdminUsers({ t }) {
@@ -80,14 +81,12 @@ export default function AppdevAdminUsers({ t }) {
         {t('appdev.admin.title')}
       </button>
 
-      {open && (
-        <div className="appdev-modal-backdrop" role="presentation" onClick={() => setOpen(false)}>
-          <div
-            className="appdev-modal appdev-admin-modal"
-            role="dialog"
-            aria-labelledby="appdev-admin-title"
-            onClick={e => e.stopPropagation()}
-          >
+      <HubModal
+        open={open}
+        onClose={() => setOpen(false)}
+        className="appdev-admin-modal"
+        labelledBy="appdev-admin-title"
+      >
             <header className="appdev-modal-header">
               <h2 id="appdev-admin-title">{t('appdev.admin.title')}</h2>
               <button type="button" className="appdev-modal-close" onClick={() => setOpen(false)}>
@@ -136,9 +135,7 @@ export default function AppdevAdminUsers({ t }) {
                 ))}
               </ul>
             )}
-          </div>
-        </div>
-      )}
+      </HubModal>
 
       <ConfirmModal
         open={deleteTarget != null}

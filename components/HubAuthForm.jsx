@@ -208,8 +208,6 @@ function HubAuthFormInner({
         <button type="submit" className={`btn-login${loading ? ' is-loading' : ''}`} disabled={!canSubmit || loading}>
           {loading ? <span className="btn-login-spinner" aria-hidden="true" /> : t('common.signIn')}
         </button>
-
-        <p className="login-subtitle login-admin-hint">{t('hub.auth.adminProvisionedHint')}</p>
       </form>
     </div>
   );

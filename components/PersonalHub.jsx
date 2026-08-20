@@ -45,11 +45,11 @@ export default function PersonalHub({
     <div className="hub-page personal-hub">
       <header className="hub-header">
         <div className="hub-brand">
-          <Link href="/">
+          <Link href="/" className="brand-logo-link" aria-label="Home">
             <Image className="brand-logo" src="/FLogo.png" alt="" width={36} height={36} />
           </Link>
           <div>
-            <strong>Personal hub</strong>
+            <strong>Personal space</strong>
             <small>{profile.displayName}</small>
           </div>
         </div>
@@ -70,11 +70,11 @@ export default function PersonalHub({
         <section className="personal-hub-card">
           <h2>Sign-in</h2>
           <p className="personal-hub-hint">
-            Fine Hub uses one shared team password for every employee. Personal passwords are not used.
+            Fine Teams uses one shared team password for every employee. Personal passwords are not used.
           </p>
         </section>
 
-        {profile.hubUser?.isManager && (
+        {profile.hubUser?.permissions?.canManageUsers && (
           <section className="personal-hub-card">
             <h2>Admin</h2>
             <p className="personal-hub-hint">View, block, or remove team members.</p>

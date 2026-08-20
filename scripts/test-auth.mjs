@@ -239,7 +239,7 @@ if (serverUp) {
         'Content-Type': 'application/json',
         Cookie: cookieHeader(masterLogin.cookies),
       },
-      body: JSON.stringify({ displayName: hubUserName, password: hubUserPw, role: 'member' }),
+      body: JSON.stringify({ displayName: hubUserName, password: hubUserPw, role: 'associate' }),
     });
     assert(createRes.ok, 'admin can create hub user', String(createRes.status));
 

@@ -67,12 +67,24 @@ export default function HubNotifications() {
   }, []);
 
   useEffect(() => {
-    load();
-    const id = window.setInterval(() => {
-      if (document.visibilityState === 'visible') load();
-    }, 60_000);
-    return () => window.clearInterval(id);
+    let intervalId;
+    const timeoutId = window.setTimeout(() => {
+      load();
+      intervalId = window.setInterval(() => {
+        if (document.visibilityState === 'visible') load();
+      }, 60_000);
+    }, 2500);
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (intervalId) window.clearInterval(intervalId);
+    };
   }, [load]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    if (items.length === 0 && !loading) load();
+    return undefined;
+  }, [open, items.length, loading, load]);
 
   useEffect(() => {
     if (!open) return undefined;

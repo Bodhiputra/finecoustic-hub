@@ -2,19 +2,24 @@
 
 import InternalTaskCard from '@/components/internal/InternalTaskCard';
 import { useLocale } from '@/components/LocaleProvider';
-import { sortTasksByFlowOrder } from '@/lib/internal-campaigns';
+import { sortTasksByFlowOrder, statusColumnLabel } from '@/lib/internal-campaigns';
+import { taskOriginSummary } from '@/lib/task-origin-url';
 import { useMemo } from 'react';
 
-const STATUS_KEYS = {
-  todo: 'hub.internal.statusTodo',
-  in_progress: 'hub.internal.statusInProgress',
-  in_review: 'hub.internal.statusInReview',
-  done: 'hub.internal.statusDone',
-  cancelled: 'hub.internal.statusCancelled',
-};
-
-export default function InternalListView({ tasks, onTaskClick, flowData = null }) {
+export default function InternalListView({
+  tasks,
+  onTaskClick,
+  flowData = null,
+  statusColumns = null,
+  showTaskOrigin = false,
+}) {
   const { t } = useLocale();
+
+  function statusLabel(statusId) {
+    const col = statusColumns?.find(c => (typeof c === 'string' ? c : c.id) === statusId);
+    if (col) return statusColumnLabel(col, t);
+    return statusColumnLabel({ id: statusId }, t);
+  }
 
   const items = useMemo(
     () => (flowData ? sortTasksByFlowOrder(tasks, flowData) : tasks),
@@ -34,13 +39,18 @@ export default function InternalListView({ tasks, onTaskClick, flowData = null }
               {task.kind === 'milestone' ? '◇' : '□'}
             </span>
             <span className={`internal-list-view-status is-${task.status}`}>
-              {t(STATUS_KEYS[task.status] || 'hub.internal.statusTodo')}
+              {statusLabel(task.status)}
             </span>
-            <InternalTaskCard
-              task={task}
-              onClick={() => onTaskClick(task)}
-              className="internal-task-card--list"
-            />
+            <div className="internal-list-view-main">
+              <InternalTaskCard
+                task={task}
+                onClick={() => onTaskClick(task)}
+                className="internal-task-card--list"
+              />
+              {showTaskOrigin ? (
+                <span className="internal-list-view-origin">{taskOriginSummary(task, t)}</span>
+              ) : null}
+            </div>
           </li>
         ))}
       </ul>

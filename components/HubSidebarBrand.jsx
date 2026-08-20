@@ -2,22 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import Icon from '@/components/Icon';
 
 export default function HubSidebarBrand({
   title,
-  backHref = null,
-  backLabel = 'Back',
+  homeHref = '/',
+  homeLabel = 'Home',
 }) {
   return (
     <div className="hub-sidebar-brand">
       <div className="brand">
-        {backHref ? (
-          <Link href={backHref} className="brand-back" aria-label={backLabel}>
-            <Icon name="arrowLeft" size={16} />
-          </Link>
-        ) : null}
-        <Image className="brand-logo" src="/FLogo.png" alt="" width={36} height={36} />
+        <Link href={homeHref} className="brand-logo-link" aria-label={homeLabel}>
+          <Image className="brand-logo" src="/FLogo.png" alt="" width={36} height={36} />
+        </Link>
         <div className="hub-sidebar-brand-text">
           <strong>{title}</strong>
         </div>

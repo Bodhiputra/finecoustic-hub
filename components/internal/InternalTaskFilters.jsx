@@ -13,10 +13,13 @@ export default function InternalTaskFilters({
   activeView = '',
   taskView = 'board',
   activePeople = new Set(),
+  activeSubtype = '',
   people = [],
+  subtypes = [],
   currentUserName = '',
   getTaskUrl = null,
   peopleOnly = false,
+  hidePeople = false,
 }) {
   const { t } = useLocale();
   const meKey = currentUserName ? personKey(currentUserName) : '';
@@ -30,16 +33,26 @@ export default function InternalTaskFilters({
 
   const bucketActive = FILTER_IDS.includes(activeView);
   const peopleActive = activePeople.size > 0;
+  const subtypeActive = Boolean(activeSubtype);
   const currentView = bucketActive ? activeView : taskView;
 
-  function hrefFor({ view, peopleKeys = activePeople }) {
-    if (getTaskUrl) return getTaskUrl({ view, people: peopleKeys });
-    return internalTasksUrl(deptBase, { view, people: peopleKeys });
+  function hrefFor({ view, peopleKeys = activePeople, subtype = activeSubtype }) {
+    if (getTaskUrl) return getTaskUrl({ view, people: peopleKeys, subtype });
+    return internalTasksUrl(deptBase, { view, people: peopleKeys, subtype });
   }
 
   function personHref(key) {
     return hrefFor({ view: currentView, peopleKeys: togglePeopleKey(activePeople, key) });
   }
+
+  function subtypeHref(id) {
+    const next = activeSubtype === id ? '' : id;
+    return hrefFor({ view: currentView, subtype: next });
+  }
+
+  const showClear = peopleOnly
+    ? (peopleActive && !hidePeople) || subtypeActive
+    : bucketActive || (peopleActive && !hidePeople) || subtypeActive;
 
   return (
     <div className="internal-task-filters">
@@ -61,7 +74,25 @@ export default function InternalTaskFilters({
       </div>
       )}
 
-      {(meKey || people.length > 0) && (
+      {subtypes.length > 0 ? (
+        <div className="internal-task-filters-group">
+          <span className="internal-task-filters-label">{t('hub.internal.filterSubtype')}</span>
+          <div className="internal-task-filters-row h-scroll h-scroll--bleed" role="toolbar" aria-label={t('hub.internal.filterSubtype')}>
+            {subtypes.map(({ id, label }) => (
+              <Link
+                key={id}
+                href={subtypeHref(id)}
+                className={`internal-task-filter internal-task-filter-subtype${activeSubtype === id ? ' is-active' : ''}`}
+                aria-pressed={activeSubtype === id}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {!hidePeople && (meKey || people.length > 0) && (
         <div className="internal-task-filters-group">
           <span className="internal-task-filters-label">{t('hub.internal.filterPeople')}</span>
           <div className="internal-task-filters-row h-scroll h-scroll--bleed" role="toolbar" aria-label={t('hub.internal.filterPeople')}>
@@ -95,13 +126,13 @@ export default function InternalTaskFilters({
         </div>
       )}
 
-      {(peopleOnly ? peopleActive : bucketActive || peopleActive) && (
+      {showClear ? (
         <div className="internal-task-filters-clear">
-          <Link href={hrefFor({ view: taskView, peopleKeys: new Set() })} className="internal-task-filter is-clear">
+          <Link href={hrefFor({ view: taskView, peopleKeys: new Set(), subtype: '' })} className="internal-task-filter is-clear">
             {t('hub.internal.clearFilters')}
           </Link>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

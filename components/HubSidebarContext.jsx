@@ -6,7 +6,6 @@ import Icon from '@/components/Icon';
 import HubTopNav from '@/components/HubTopNav';
 import { useLocale } from '@/components/LocaleProvider';
 
-const STORAGE_KEY = 'hub-sidebar-open';
 const MOBILE_MQ = '(max-width: 768px)';
 
 const HubSidebarContext = createContext(null);
@@ -19,7 +18,6 @@ function useSidebarViewport() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
     const mq = window.matchMedia(MOBILE_MQ);
     const update = () => setIsMobile(mq.matches);
     update();
@@ -28,62 +26,6 @@ function useSidebarViewport() {
   }, []);
 
   return isMobile;
-}
-
-function HubSidebarCollapseRail() {
-  const ctx = useHubSidebar();
-  const { t } = useLocale();
-  if (!ctx?.open) return null;
-
-  const label = t('hub.internal.minimizeSidebar');
-
-  return (
-    <button
-      type="button"
-      className="hub-sidebar-rail"
-      onClick={ctx.close}
-      aria-label={label}
-      title={label}
-    >
-      <Icon name="chevronLeft" size={16} />
-    </button>
-  );
-}
-
-function HubSidebarExpandTab() {
-  const ctx = useHubSidebar();
-  const { t } = useLocale();
-  if (!ctx || ctx.open) return null;
-
-  const label = t('hub.internal.expandSidebar');
-
-  return (
-    <button
-      type="button"
-      className="hub-sidebar-expand-tab"
-      onClick={ctx.toggle}
-      aria-label={label}
-      title={label}
-    >
-      <Icon name="chevronRight" size={16} />
-      <span className="hub-sidebar-expand-tab-label">{label}</span>
-    </button>
-  );
-}
-
-function HubSidebarMobileDone() {
-  const ctx = useHubSidebar();
-  const { t } = useLocale();
-  if (!ctx?.open) return null;
-
-  const label = t('hub.internal.backToContent');
-
-  return (
-    <button type="button" className="hub-sidebar-mobile-done" onClick={ctx.close}>
-      <Icon name="chevronLeft" size={18} />
-      <span>{label}</span>
-    </button>
-  );
 }
 
 export function HubLayout({
@@ -98,71 +40,47 @@ export function HubLayout({
   onLogout,
   children,
 }) {
-  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [layoutReady, setLayoutReady] = useState(false);
   const sidebarId = useId();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isMobile = useSidebarViewport();
+  const open = layoutReady && (isMobile ? mobileOpen : true);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mobile = window.matchMedia('(max-width: 768px)').matches; /* --bp-md */
-    if (mobile) {
-      setOpen(false);
-      return;
-    }
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored !== null) setOpen(stored === '1');
-      else setOpen(true);
-    } catch {
-      setOpen(true);
-    }
+    setLayoutReady(true);
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(max-width: 768px)').matches) {
-      setOpen(false);
-    }
-  }, [pathname, searchParams]);
+    if (!isMobile) return;
+    setMobileOpen(false);
+  }, [pathname, searchParams, isMobile]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || !isMobile) return undefined;
     if (typeof window === 'undefined') return undefined;
-    if (!window.matchMedia('(max-width: 768px)').matches) return undefined;
 
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = event => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') setMobileOpen(false);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [open]);
+  }, [open, isMobile]);
 
   const toggle = () => {
-    setOpen(prev => {
-      const next = !prev;
-      try {
-        window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
+    if (!isMobile) return;
+    setMobileOpen(prev => !prev);
   };
 
   const close = () => {
-    setOpen(false);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, '0');
-    } catch {
-      /* ignore */
-    }
+    if (!isMobile) return;
+    setMobileOpen(false);
   };
 
   const value = useMemo(
@@ -171,8 +89,9 @@ export function HubLayout({
       sidebarId,
       toggle,
       close,
+      isMobile,
     }),
-    [open, sidebarId]
+    [open, sidebarId, isMobile]
   );
 
   return (
@@ -201,16 +120,12 @@ export function HubLayout({
           aria-label={sidebarLabel}
         >
           <div className="hub-sidebar-inner">{sidebar}</div>
-          {!isMobile && open ? <HubSidebarCollapseRail /> : null}
-          {isMobile ? <HubSidebarMobileDone /> : null}
         </aside>
-        {!isMobile && !open ? <HubSidebarExpandTab /> : null}
         <div className="hub-main-shell">
           <HubTopNav
             title={topNavTitle}
             subtitle={topNavSubtitle}
             authEnabled={authEnabled}
-            displayName={displayName}
             onLogout={onLogout}
           />
           {children}

@@ -30,7 +30,7 @@ export default function ProductsWorkspace({
   productSku = '',
   activeTab = 'overview',
   displayName = '',
-  isManager = false,
+  canCreateProduct = false,
 }) {
   const { t } = useLocale();
   const { requestConfirm, confirmDialog } = useConfirm();
@@ -287,7 +287,7 @@ export default function ProductsWorkspace({
             <h1 className="products-catalog-title">{t('hub.products.catalogTitle')}</h1>
             <p className="products-catalog-desc">{t('hub.products.catalogDesc')}</p>
           </div>
-          {isManager ? (
+          {canCreateProduct ? (
             <button type="button" className="appdev-btn-primary" onClick={addProduct} disabled={busy}>
               <Icon name="plus" size={16} />
               {t('hub.products.addProduct')}
@@ -378,7 +378,7 @@ export default function ProductsWorkspace({
           draft={overviewDraft}
           editing={overviewEditing}
           saving={savingOverview}
-          canEdit={isManager}
+          canEdit={canCreateProduct}
           onEdit={() => {
             setOverviewDraft({ ...detail.product });
             setOverviewEditing(true);

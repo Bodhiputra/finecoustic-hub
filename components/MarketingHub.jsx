@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Icon from '@/components/Icon';
 import PreorderSurveyDashboard from '@/components/PreorderSurveyDashboard';
 import KolPoolWorkspace from '@/components/marketing/KolPoolWorkspace';
+import KolOutreachWorkspace from '@/components/marketing/KolOutreachWorkspace';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 
@@ -12,6 +13,10 @@ export const MARKETING_VIEW_META = {
   'kol-pool': {
     titleKey: 'hub.kol.title',
     descKey: 'hub.kol.subtitle',
+  },
+  'kol-outreach': {
+    titleKey: 'hub.campaignKol.title',
+    descKey: 'hub.campaignKol.subtitle',
   },
   'preorder-survey': {
     titleKey: 'hub.internal.fbsPreorderSurvey',
@@ -24,23 +29,42 @@ export function getMarketingViewMeta(view) {
 }
 
 const NAV_ITEMS = [
-  { id: 'preorder-survey', href: '/marketing?tool=preorder-survey', labelKey: 'hub.internal.fbsPreorderSurvey' },
+  { id: 'preorder-survey', href: '/marketing/preorder-survey', labelKey: 'hub.internal.fbsPreorderSurvey' },
 ];
 
-export function MarketingHubContent({ view = 'preorder-survey', initialRows = [], initialKolPool = null }) {
+export function MarketingHubContent({
+  view = 'preorder-survey',
+  initialRows = [],
+  initialKolPool = null,
+  outreachTasks = [],
+  onOutreachTasksChanged,
+  canCreate = true,
+  displayName = '',
+  teamMembers = [],
+}) {
   return (
     <>
-      {view === 'kol-pool' && (
+      <div hidden={view !== 'kol-pool'} aria-hidden={view !== 'kol-pool'}>
         <KolPoolWorkspace
           initialRecords={initialKolPool?.records || []}
           initialMeta={initialKolPool?.meta}
           initialCounts={initialKolPool?.counts}
           initialConfigured={Boolean(initialKolPool?.configured)}
         />
-      )}
-      {view === 'preorder-survey' && (
+      </div>
+      <div hidden={view !== 'kol-outreach'} aria-hidden={view !== 'kol-outreach'}>
+        <KolOutreachWorkspace
+          tasks={outreachTasks}
+          onTasksChanged={onOutreachTasksChanged}
+          initialPoolRecords={initialKolPool?.records || []}
+          canCreate={canCreate}
+          displayName={displayName}
+          teamMembers={teamMembers}
+        />
+      </div>
+      <div hidden={view !== 'preorder-survey'} aria-hidden={view !== 'preorder-survey'}>
         <PreorderSurveyDashboard initialRows={initialRows} />
-      )}
+      </div>
     </>
   );
 }
@@ -59,7 +83,6 @@ export default function MarketingHub({
 
   const meta = getMarketingViewMeta(view) || getMarketingViewMeta('preorder-survey');
   const title = meta?.titleKey ? t(meta.titleKey) : '';
-  const subtitle = meta?.descKey ? t(meta.descKey) : '';
   const content = <MarketingHubContent view={view} initialRows={initialRows} />;
 
   if (embedded) return content;
@@ -68,13 +91,12 @@ export default function MarketingHub({
     <HubLayout
       sidebarLabel="Marketing"
       topNavTitle={title}
-      topNavSubtitle={subtitle}
       authEnabled={authEnabled}
       onLogout={handleLogout}
       sidebar={
         <>
           <div className="brand">
-            <Link href="/" className="brand-back" aria-label="Hub home">
+            <Link href="/" className="brand-back" aria-label="Teams home">
               <Icon name="arrowLeft" size={16} />
             </Link>
             <Image className="brand-logo" src="/FLogo.png" alt="Finecoustic" width={36} height={36} />

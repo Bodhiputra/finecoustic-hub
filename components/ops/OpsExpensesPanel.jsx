@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import Icon from '@/components/Icon';
+import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
@@ -90,14 +91,20 @@ export default function OpsExpensesPanel({ initialExpenses = [] }) {
             <Icon name="upload" size={16} />
             <span>{t('hub.expenses.exportCsv')}</span>
           </a>
-          <button type="button" className="hub-btn hub-btn--primary" onClick={() => setFormOpen(o => !o)}>
+          <button type="button" className="hub-btn hub-btn--primary" onClick={() => setFormOpen(true)}>
             <Icon name="plus" size={16} />
             <span>{t('hub.expenses.add')}</span>
           </button>
         </div>
       </header>
 
-      {formOpen ? (
+      <KolModal open={formOpen} wide onClose={() => setFormOpen(false)} labelledBy="ops-expense-form-title">
+        <header className="kol-modal-head">
+          <h3 id="ops-expense-form-title">{t('hub.expenses.add')}</h3>
+          <button type="button" className="appdev-btn-ghost" onClick={() => setFormOpen(false)} aria-label={t('common.cancel')}>
+            <Icon name="x" size={16} />
+          </button>
+        </header>
         <form className="ops-expense-form kol-edit-form" onSubmit={createExpense}>
           <label>
             {t('hub.expenses.date')}
@@ -124,7 +131,7 @@ export default function OpsExpensesPanel({ initialExpenses = [] }) {
             <button type="submit" className="appdev-btn-primary" disabled={busy}>{t('hub.internal.taskPanel.save')}</button>
           </footer>
         </form>
-      ) : null}
+      </KolModal>
 
       <p className="ops-expense-total">{t('hub.expenses.total').replace('{amount}', total.toFixed(2))}</p>
 

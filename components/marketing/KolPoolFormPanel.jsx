@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Icon from '@/components/Icon';
+import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
@@ -23,7 +24,6 @@ function formPayload(fd) {
     country: fd.get('country'),
     kol_category: fd.get('kol_category'),
     tags: fd.get('tags'),
-    outreach_status: fd.get('outreach_status'),
     shipping_line1: fd.get('shipping_line1'),
     shipping_line2: fd.get('shipping_line2'),
     shipping_city: fd.get('shipping_city'),
@@ -93,11 +93,10 @@ export default function KolPoolFormPanel({
   }
 
   return (
-    <div className="kol-modal-backdrop" role="presentation" onClick={onClose}>
-      <div className="kol-modal kol-modal--wide" role="dialog" onClick={e => e.stopPropagation()}>
-        <header className="kol-modal-head">
-          <div>
-            <h3>{isCreate ? t('hub.kol.addKol') : data.channel_name}</h3>
+    <KolModal open wide onClose={onClose} labelledBy="kol-pool-form-title">
+      <header className="kol-modal-head">
+        <div>
+          <h3 id="kol-pool-form-title">{isCreate ? t('hub.kol.addKol') : data.channel_name}</h3>
             <p className="kol-modal-sub">
               {isCreate
                 ? t('hub.kol.addKolHint')
@@ -150,12 +149,6 @@ export default function KolPoolFormPanel({
                 placeholder={t('hub.kol.tagsPlaceholder')}
               />
             </label>
-            {!compact ? (
-              <label>
-                {t('hub.kol.colStatus')}
-                <input name="outreach_status" defaultValue={data.outreach_status || ''} />
-              </label>
-            ) : null}
             <label className="kol-edit-form-full">
               {t('hub.kol.colDescription')}
               <textarea
@@ -250,7 +243,6 @@ export default function KolPoolFormPanel({
             </button>
           </footer>
         </form>
-      </div>
-    </div>
+    </KolModal>
   );
 }

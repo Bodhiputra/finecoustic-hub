@@ -1,55 +1,74 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Icon from '@/components/Icon';
-import TaskPanel from '@/components/internal/TaskPanel';
-import InternalBoard from '@/components/internal/InternalBoard';
 import InternalListView from '@/components/internal/InternalListView';
 import InternalTaskFilters from '@/components/internal/InternalTaskFilters';
 import InternalSidebar from '@/components/internal/InternalSidebar';
-import CampaignsWorkspace from '@/components/internal/CampaignsWorkspace';
-import CampaignKolWorkspace from '@/components/marketing/CampaignKolWorkspace';
-import CampaignFlowCanvas from '@/components/internal/CampaignFlowCanvas';
 import BoardStatusEditor from '@/components/internal/BoardStatusEditor';
+import KanbanCreateModal from '@/components/internal/KanbanCreateModal';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useInternalTasks } from '@/hooks/useInternalTasks';
+import { useTaskDeepLink } from '@/hooks/useTaskDeepLink';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { campaignBoardUrl, campaignFlowUrl, campaignKolUrl, campaignListUrl } from '@/lib/campaign-urls';
-import { boardStatusColumns, flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
-import {
-  collectPeopleFromTasks,
-  dataLinkLabel,
-  departmentTasksEnabled,
-  deptText,
-  getDepartment,
-  getDepartmentPath,
-  CAMPAIGNS_ID,
-  CAMPAIGNS_PATH,
-  newTaskDraft,
-  serializePeopleParam,
-  parsePeopleParam,
-  taskMatchesPeopleFilter,
-  taskBelongsToDepartment,
-  internalTasksUrl,
-} from '@/lib/internal';
+import { boardUrlForContext, campaignBoardUrl, campaignFlowUrl, campaignListHomeUrl, campaignListUrl, departmentBoardUrl, marketingKolOutreachUrl, personalBoardUrl } from '@/lib/campaign-urls';
+import { KOL_OUTREACH_BOARD_ID } from '@/lib/kol-outreach-shared';
+import { marketingToolFromPathname, marketingToolPath } from '@/lib/marketing-routes';
 import { MarketingHubContent } from '@/components/MarketingHub';
 import { OpsHubContent } from '@/components/OpsHub';
 import OpsStockPanel from '@/components/ops/OpsStockPanel';
 import OpsExpensesPanel from '@/components/ops/OpsExpensesPanel';
-import ProductsWorkspace from '@/components/products/ProductsWorkspace';
-import KnowledgeBank from '@/components/knowledge/KnowledgeBank';
-import FinecousticWiki from '@/components/wiki/FinecousticWiki';
+import { PERSONAL_JOT_DOWN_TOOL } from '@/lib/personal-jots-shared';
+import { dispatchBoardsChanged } from '@/lib/internal-boards';
+import { appendKanbanNodeToFlow } from '@/lib/campaign-flow-utils';
+import { boardStatusColumns, flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
+import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import {
-  finecousticWikiUrl,
-  isFinecousticWikiDepartment,
-  isKnowledgeBankTool,
-  knowledgeBankUrl,
+  collectPeopleFromTasks,
+  collectSubtypesFromTasks,
+  dataLinkLabel,
+  departmentKanbansEnabled,
+  deptText,
+  getDepartment,
+  getDepartmentPath,
+  CAMPAIGNS_ID,
+  PERSONAL_DEPARTMENT_ID,
+  PERSONAL_HUB_PATH,
+  newTaskDraft,
+  serializePeopleParam,
+  parsePeopleParam,
+  parseSubtypeParam,
+  taskMatchesPeopleFilter,
+  taskMatchesSubtypeFilter,
+  taskBelongsToDepartment,
+  internalTasksUrl,
+} from '@/lib/internal';
+import {
+  departmentJotDownUrl,
+  isJotDownTool,
+  KNOWLEDGE_BANK_TOOL,
 } from '@/lib/knowledge';
+import { canCreateTaskInDepartment, canDeleteTask, canDeleteBoard, canDeleteCampaign, hubActorFromClient } from '@/lib/hub-permissions';
+import { filterTasksByBucket } from '@/lib/internal-buckets';
+import { personKey } from '@/lib/appdev';
+import { countPersonalHubStats, countOpenAssignedTasks } from '@/lib/personal-hub-stats';
+import { taskOriginUrl } from '@/lib/task-origin-url';
+import { useHubSessionProfile } from '@/hooks/useHubSession';
+import { signalHubNavigationReady } from '@/lib/hub-site-loader';
+
+import InternalBoard from '@/components/internal/InternalBoard';
+const CampaignsWorkspace = dynamic(() => import('@/components/internal/CampaignsWorkspace'));
+const TaskPanel = dynamic(() => import('@/components/internal/TaskPanel'), { ssr: false });
+const CampaignFlowCanvas = dynamic(() => import('@/components/internal/CampaignFlowCanvas'), { ssr: false });
+const PersonalJotDownWorkspace = dynamic(() => import('@/components/personal/PersonalJotDownWorkspace'), { ssr: false });
+const DepartmentJotDownWorkspace = dynamic(() => import('@/components/jot/DepartmentJotDownWorkspace'), { ssr: false });
+const ProductsWorkspace = dynamic(() => import('@/components/products/ProductsWorkspace'), { ssr: false });
 
 const BUCKET_VIEWS = ['today', 'overdue', 'in_progress', 'bank', 'milestones'];
 const TASK_VIEWS = ['list', 'board'];
@@ -62,6 +81,7 @@ export default function InternalDepartment({
   initialTool = '',
   initialTasks = null,
   initialTasksFilterKey = null,
+  initialTasksLoadError = null,
   opsData = null,
   shopifyConfigured = false,
   shopifySnapshot = null,
@@ -72,31 +92,67 @@ export default function InternalDepartment({
   initialProducts = null,
   initialProductDetail = null,
   initialKolPool = null,
-  initialCampaignKol = null,
+  initialPersonalJots = [],
+  initialDepartmentJots = [],
   initialExpenses = [],
   initialMe = null,
+  initialDeptBoards = null,
+  initialPersonalBoards = null,
+  initialTeamMembers = null,
+  initialTeamMembersReady = false,
 }) {
   const dept = getDepartment(departmentId);
   const { t } = useLocale();
   const { requestConfirm, confirmDialog } = useConfirm();
   const { toast, toastStack } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const pathTool = marketingToolFromPathname(pathname);
+  const clientDeptTools =
+    (departmentId === 'marketing' && pathname.startsWith('/marketing'))
+    || (departmentId === 'operations' && pathname === '/ops');
+  const toolFromUrl = useMemo(() => {
+    if (departmentId === 'marketing') {
+      return pathTool || searchParams.get('tool') || initialTool || 'kol-pool';
+    }
+    if (departmentId === 'operations' && pathname === '/ops') {
+      return searchParams.get('tool') || initialTool || 'dashboard';
+    }
+    return searchParams.get('tool') || initialTool || '';
+  }, [departmentId, pathTool, pathname, searchParams, initialTool]);
+  const [deptToolClient, setDeptToolClient] = useState('');
+  const toolParam = clientDeptTools ? (deptToolClient || toolFromUrl) : toolFromUrl;
   const viewParam = searchParams.get('view') || initialBucket || '';
-  const toolParam = searchParams.get('tool') || initialTool || '';
   const boardParam = searchParams.get('board') || '';
   const flowParam = searchParams.get('flow') || '';
-  const kolParam = searchParams.get('kol') || '';
-  const kviewParam = searchParams.get('kview') || 'board';
   const cviewParam = searchParams.get('cview') || '';
   const pageParam = searchParams.get('page') || '';
+  const jotParam = searchParams.get('jot') || searchParams.get('page') || '';
   const productParam = searchParams.get('product') || '';
   const tabParam = searchParams.get('tab') || 'overview';
   const productsMode = departmentId === 'products';
+  const personalMode = departmentId === PERSONAL_DEPARTMENT_ID;
   const campaignsMode = departmentId === CAMPAIGNS_ID;
-  const tasksEnabled = departmentId === 'all' || departmentTasksEnabled(dept);
-  const campaignListOnly = campaignsMode && !boardParam && !flowParam && !kolParam;
-  const shouldLoadTasks = Boolean(boardParam || flowParam || (tasksEnabled && !campaignListOnly && !kolParam));
+  const deptBasePath = (personalMode ? PERSONAL_HUB_PATH : getDepartmentPath(departmentId)).split('?')[0];
+  const clientDeptBoardNav = departmentKanbansEnabled(departmentId)
+    && pathname === deptBasePath
+    && !campaignsMode;
+  const [boardClient, setBoardClient] = useState('');
+  const effectiveBoardParam = clientDeptBoardNav && boardClient ? boardClient : boardParam;
+  const campaignListOnly = campaignsMode && !boardParam && !flowParam;
+  const deptBase = personalMode
+    ? PERSONAL_HUB_PATH
+    : departmentId === CAMPAIGNS_ID
+      ? campaignListHomeUrl()
+      : getDepartmentPath(departmentId);
+  const shouldLoadTasks = Boolean(
+    effectiveBoardParam ||
+    flowParam ||
+    (departmentId === 'all' && !campaignListOnly) ||
+    (personalMode && toolParam !== PERSONAL_JOT_DOWN_TOOL) ||
+    (departmentId === 'marketing' && toolParam === 'kol-outreach')
+  );
 
   const view = BUCKET_VIEWS.includes(viewParam)
     ? 'list'
@@ -105,11 +161,19 @@ export default function InternalDepartment({
     () => parsePeopleParam(searchParams.get('people')),
     [searchParams]
   );
+  const activeSubtype = useMemo(
+    () => parseSubtypeParam(searchParams.get('subtype')),
+    [searchParams]
+  );
 
-  const { tasks, refresh } = useInternalTasks({
+  const personalAssignedHome = personalMode && !effectiveBoardParam && !flowParam && toolParam !== PERSONAL_JOT_DOWN_TOOL;
+  const clientSideBucketViews = personalAssignedHome || departmentId === 'all';
+  const tasksQueryViewParam = clientSideBucketViews ? '' : viewParam;
+
+  const { tasks, refresh, mergeTask, removeTask } = useInternalTasks({
     departmentId,
-    viewParam,
-    boardId: boardParam,
+    viewParam: tasksQueryViewParam,
+    boardId: effectiveBoardParam || (toolParam === 'kol-outreach' ? KOL_OUTREACH_BOARD_ID : ''),
     campaignId: flowParam,
     flowOnly: Boolean(flowParam),
     initialTasks: shouldLoadTasks ? initialTasks : null,
@@ -117,43 +181,253 @@ export default function InternalDepartment({
     enabled: shouldLoadTasks,
   });
 
+  const outreachToolView = departmentId === 'marketing' && toolParam === 'kol-outreach';
+
+  const setDeptTool = useCallback((toolId) => {
+    setDeptToolClient(toolId);
+    if (typeof window === 'undefined') return;
+    const url = departmentId === 'marketing'
+      ? marketingToolPath(toolId)
+      : `/ops?tool=${encodeURIComponent(toolId)}`;
+    window.history.replaceState(window.history.state, '', url);
+  }, [departmentId]);
+
+  useEffect(() => {
+    if (!clientDeptTools) return;
+    setDeptToolClient('');
+  }, [pathname, searchParams.toString(), clientDeptTools]);
+
+  useEffect(() => {
+    if (!clientDeptTools) return;
+    const onPopState = () => {
+      if (departmentId === 'marketing') {
+        setDeptToolClient(marketingToolFromPathname(window.location.pathname) || 'kol-pool');
+        return;
+      }
+      setDeptToolClient(new URLSearchParams(window.location.search).get('tool') || 'dashboard');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [clientDeptTools, departmentId]);
+
   const [panelTask, setPanelTask] = useState(null);
+  const { closePanel: closeTaskPanel } = useTaskDeepLink({
+    tasks,
+    panelTask,
+    setPanelTask,
+    enabled: !outreachToolView,
+  });
   const [saving, setSaving] = useState(false);
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [me, setMe] = useState(() => initialMe ?? { displayName: '' });
+  const [teamMembers, setTeamMembers] = useState(() => initialTeamMembers || []);
+  const sessionProfile = useHubSessionProfile();
+  const seededMe = initialMe ?? (sessionProfile
+    ? { displayName: sessionProfile.displayName || '', hubUser: sessionProfile.hubUser }
+    : null);
+  const [me, setMe] = useState(() => seededMe ?? { displayName: '' });
+  const actor = useMemo(() => hubActorFromClient(me), [me]);
+  const permissions = me.hubUser?.permissions;
+  const canEditBoard = permissions?.canEditBoardConfig ?? false;
+  const canCreateProduct = permissions?.canCreateProduct ?? false;
   const [activeBoard, setActiveBoard] = useState(initialBoard);
+  const [boardFetchSettled, setBoardFetchSettled] = useState(() => Boolean(initialBoard));
+  const [flowFetchSettled, setFlowFetchSettled] = useState(() => Boolean(initialCampaign));
   const [activeCampaign, setActiveCampaign] = useState(initialCampaign);
   const [statusEditorOpen, setStatusEditorOpen] = useState(false);
+  const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
+
+  useEffect(() => {
+    signalHubNavigationReady();
+  }, [departmentId]);
 
   useEffect(() => {
     setActiveBoard(initialBoard);
+    setBoardFetchSettled(Boolean(initialBoard));
     setStatusEditorOpen(false);
   }, [initialBoard]);
+
+  const setDeptBoard = useCallback((boardId) => {
+    setBoardClient(boardId);
+    if (typeof window === 'undefined') return;
+    const url = personalMode
+      ? personalBoardUrl(boardId)
+      : departmentBoardUrl(deptBasePath, boardId);
+    window.history.replaceState(window.history.state, '', url);
+  }, [personalMode, deptBasePath]);
+
+  useEffect(() => {
+    if (!clientDeptBoardNav) return;
+    setBoardClient('');
+  }, [boardParam, clientDeptBoardNav]);
+
+  useEffect(() => {
+    if (!clientDeptBoardNav) return;
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setBoardClient(params.get('board') || '');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [clientDeptBoardNav]);
+
+  const seededBoard = useMemo(() => {
+    if (!effectiveBoardParam) return null;
+    if (initialBoard?.id === effectiveBoardParam) return initialBoard;
+    const fromPersonal = initialPersonalBoards?.find(board => board.id === effectiveBoardParam);
+    if (fromPersonal) return fromPersonal;
+    const fromDept = initialDeptBoards?.find(board => board.id === effectiveBoardParam);
+    if (fromDept) return fromDept;
+    if (campaignsMode && initialCampaigns?.length) {
+      for (const campaign of initialCampaigns) {
+        const board = campaign.boards?.find(item => item.id === effectiveBoardParam);
+        if (board) return { ...board, campaign };
+      }
+    }
+    return null;
+  }, [effectiveBoardParam, initialBoard, initialPersonalBoards, initialDeptBoards, campaignsMode, initialCampaigns]);
+
+  const resolvedBoard = useMemo(() => {
+    if (!effectiveBoardParam) return null;
+    if (activeBoard?.id === effectiveBoardParam) return activeBoard;
+    return seededBoard;
+  }, [effectiveBoardParam, activeBoard, seededBoard]);
+
+  useEffect(() => {
+    if (!effectiveBoardParam) {
+      if (!initialBoard) setActiveBoard(null);
+      setBoardFetchSettled(false);
+      return undefined;
+    }
+    if (seededBoard) {
+      setActiveBoard(seededBoard);
+      setBoardFetchSettled(true);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setBoardFetchSettled(false);
+    fetch(API_V1.internalBoard(effectiveBoardParam), { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(body => {
+        if (cancelled) return;
+        const data = unwrapData(body);
+        if (data?.board) setActiveBoard(data.board);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setBoardFetchSettled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveBoardParam, initialBoard, seededBoard]);
+
+  const seededCampaign = useMemo(() => {
+    if (!flowParam) return null;
+    if (initialCampaign?.id === flowParam) return initialCampaign;
+    return initialCampaigns?.find(campaign => campaign.id === flowParam) || null;
+  }, [flowParam, initialCampaign, initialCampaigns]);
+
+  const resolvedCampaign = useMemo(() => {
+    if (!flowParam) return null;
+    if (activeCampaign?.id === flowParam) return activeCampaign;
+    return seededCampaign;
+  }, [flowParam, activeCampaign, seededCampaign]);
+
+  const kanbanPickerDepartment =
+    activeCampaign?.department
+    || (departmentId !== 'all' && departmentId !== CAMPAIGNS_ID ? departmentId : 'marketing');
+  const { boards: kanbansNotOnFlow, loading: kanbanPickerLoading } = useFlowKanbanPickerBoards({
+    open: kanbanCreateOpen,
+    department: kanbanPickerDepartment,
+    campaignBoards: activeCampaign?.boards,
+    flowData: activeCampaign?.flow_data,
+  });
+
+  useEffect(() => {
+    if (!flowParam) {
+      if (!initialCampaign) setActiveCampaign(null);
+      setFlowFetchSettled(false);
+      return undefined;
+    }
+    if (seededCampaign) {
+      setActiveCampaign(seededCampaign);
+      setFlowFetchSettled(true);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setFlowFetchSettled(false);
+    fetch(API_V1.internalCampaign(flowParam), { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(body => {
+        if (cancelled) return;
+        const data = unwrapData(body);
+        if (data?.campaign) setActiveCampaign(data.campaign);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setFlowFetchSettled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [flowParam, initialCampaign, seededCampaign]);
 
   useEffect(() => {
     setActiveCampaign(initialCampaign);
   }, [initialCampaign]);
 
-  const boardView = Boolean(boardParam && activeBoard);
-  const flowView = Boolean(flowParam && activeCampaign?.flow_enabled);
-  const kolView = Boolean(kolParam && activeCampaign && activeCampaign.id === kolParam);
-  const kolKview = kviewParam === 'list' ? 'list' : 'board';
+  useEffect(() => {
+    if (initialTasksLoadError) {
+      toast.error(t('hub.internal.tasksLoadError'));
+    }
+  }, [initialTasksLoadError, t, toast]);
+
+  const boardView = Boolean(effectiveBoardParam && resolvedBoard);
+  const flowView = Boolean(flowParam && resolvedCampaign);
+  const createScopeDepartment = useMemo(() => {
+    if (personalMode) return PERSONAL_DEPARTMENT_ID;
+    if (boardView && resolvedBoard?.department) return resolvedBoard.department;
+    if (flowView && resolvedCampaign?.department) return resolvedCampaign.department;
+    if (departmentId === 'all' || departmentId === CAMPAIGNS_ID) return null;
+    return departmentId;
+  }, [
+    personalMode,
+    boardView,
+    resolvedBoard?.department,
+    flowView,
+    resolvedCampaign?.department,
+    departmentId,
+  ]);
+  const canCreate = useMemo(
+    () => Boolean(createScopeDepartment && actor && canCreateTaskInDepartment(actor, createScopeDepartment)),
+    [actor, createScopeDepartment]
+  );
   const flowCview = FLOW_CVIEW.includes(cviewParam) ? cviewParam : 'flow';
   const boardCview = cviewParam === 'list' ? 'list' : 'board';
 
   useEffect(() => {
-    if (initialMe?.displayName) return;
-    fetch('/api/auth/me', { credentials: 'same-origin' })
+    if (seededMe?.hubUser?.permissions) {
+      setMe(seededMe);
+      return undefined;
+    }
+    let cancelled = false;
+    fetch('/api/auth/me?scope=hub', { credentials: 'same-origin' })
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
-        if (data?.displayName) setMe({ displayName: data.displayName, hubUser: data.hubUser });
+        if (cancelled || !data?.displayName) return;
+        setMe({ displayName: data.displayName, hubUser: data.hubUser });
       })
       .catch(() => {});
-  }, [initialMe]);
+    return () => {
+      cancelled = true;
+    };
+  }, [seededMe?.displayName, seededMe?.hubUser?.id, seededMe?.hubUser?.permissions]);
 
   useEffect(() => {
+    if (initialTeamMembersReady) return;
     fetch(API_V1.hubTeamMembers, { credentials: 'same-origin' })
       .then(r => (r.ok ? r.json() : null))
       .then(body => {
@@ -162,38 +436,42 @@ export default function InternalDepartment({
         if (members.length) setTeamMembers(members);
       })
       .catch(() => {});
-  }, []);
+  }, [initialTeamMembersReady]);
 
   useEffect(() => {
+    if (personalMode) return;
     if (departmentId === 'products') return;
-    if (departmentId === 'finecoustic' && toolParam === 'knowledge-bank') {
-      router.replace(finecousticWikiUrl(getDepartmentPath(departmentId), { pageId: pageParam || undefined }));
+    if (departmentId === 'marketing' && boardParam === KOL_OUTREACH_BOARD_ID) {
+      router.replace(marketingKolOutreachUrl());
       return;
     }
-    if (departmentId === 'marketing' && !toolParam && !boardParam && !flowParam && !kolParam && !initialTool) {
-      router.replace(dept?.dataLinks?.[0]?.href || '/marketing?tool=kol-pool');
+    if (toolParam === KNOWLEDGE_BANK_TOOL) {
+      router.replace(departmentJotDownUrl(deptBase, { jotId: jotParam }));
       return;
     }
-    if (departmentId === 'finecoustic') return;
-    if (tasksEnabled || toolParam || boardParam || flowParam || kolParam) return;
-    if (dept?.dataLinks?.length) {
+    if (departmentId === 'marketing' && !toolParam && !boardParam && !flowParam && !initialTool) {
+      router.replace(marketingToolPath('kol-pool'));
+      return;
+    }
+    if (boardParam || toolParam || flowParam || initialTool) return;
+    if (dept?.dataLinks?.length && !departmentKanbansEnabled(departmentId)) {
       router.replace(dept.dataLinks[0].href);
       return;
     }
-    router.replace(knowledgeBankUrl(getDepartmentPath(departmentId)));
-  }, [tasksEnabled, toolParam, boardParam, flowParam, kolParam, dept, router, departmentId, initialTool, pageParam]);
+    router.replace(departmentJotDownUrl(getDepartmentPath(departmentId)));
+  }, [toolParam, boardParam, flowParam, dept, router, departmentId, initialTool, personalMode, jotParam, deptBase]);
 
-  const lockBoard = boardView && activeBoard
-    ? { board_id: activeBoard.id, campaign_id: activeBoard.campaign_id || activeBoard.campaign?.id || null }
+  const lockBoard = boardView && resolvedBoard
+    ? { board_id: resolvedBoard.id, campaign_id: resolvedBoard.campaign_id || resolvedBoard.campaign?.id || null }
     : null;
 
-  const lockFlow = flowView && activeCampaign
-    ? { board_id: null, campaign_id: activeCampaign.id }
+  const lockFlow = flowView && resolvedCampaign
+    ? { board_id: null, campaign_id: resolvedCampaign.id }
     : null;
 
   const boardStatusCols = useMemo(
-    () => (boardView && activeBoard ? boardStatusColumns(activeBoard) : null),
-    [boardView, activeBoard]
+    () => (boardView && resolvedBoard ? boardStatusColumns(resolvedBoard) : null),
+    [boardView, resolvedBoard]
   );
 
   const flowStatusCols = useMemo(
@@ -203,18 +481,34 @@ export default function InternalDepartment({
 
   const filtered = useMemo(() => {
     if (departmentId === 'all') return tasks;
+    if (boardView && resolvedBoard?.id) {
+      return tasks.filter(task => task.board_id === resolvedBoard.id);
+    }
+    if (personalMode && !boardView && !flowView) return tasks;
+    if (boardView || flowView) return tasks;
     return tasks.filter(task => taskBelongsToDepartment(task, departmentId));
-  }, [tasks, departmentId]);
+  }, [tasks, departmentId, personalMode, boardView, flowView, resolvedBoard?.id]);
 
   const baseTaskItems = useMemo(
     () => filtered.filter(task => task.kind === 'task' && task.status !== 'archived'),
     [filtered]
   );
 
-  const taskItems = useMemo(
-    () => baseTaskItems.filter(task => taskMatchesPeopleFilter(task, activePeople)),
-    [baseTaskItems, activePeople]
-  );
+  const taskItems = useMemo(() => {
+    let items = personalAssignedHome
+      ? baseTaskItems
+      : baseTaskItems.filter(task => taskMatchesPeopleFilter(task, activePeople));
+    if (activeSubtype) {
+      items = items.filter(task => taskMatchesSubtypeFilter(task, activeSubtype));
+    }
+    return items;
+  }, [baseTaskItems, activePeople, activeSubtype, personalAssignedHome]);
+
+  const activeBucket = BUCKET_VIEWS.includes(viewParam) ? viewParam : '';
+  const listTaskItems = useMemo(() => {
+    if (!clientSideBucketViews || !activeBucket) return taskItems;
+    return filterTasksByBucket(taskItems, activeBucket);
+  }, [clientSideBucketViews, activeBucket, taskItems]);
 
   const flowItems = useMemo(
     () => filtered.filter(
@@ -234,20 +528,59 @@ export default function InternalDepartment({
     [filtered]
   );
 
-  const campaignPeopleQuery = useMemo(
-    () => serializePeopleParam(activePeople),
-    [activePeople]
+  const subtypeOptions = useMemo(
+    () => collectSubtypesFromTasks(baseTaskItems),
+    [baseTaskItems]
+  );
+
+  const boardFilterParams = useMemo(
+    () => ({
+      people: serializePeopleParam(activePeople),
+      subtype: activeSubtype,
+    }),
+    [activePeople, activeSubtype]
   );
 
   const flowTaskFilterUrl = useCallback(
-    ({ people }) => campaignFlowUrl(activeCampaign?.id, flowCview, { people }),
-    [activeCampaign?.id, flowCview]
+    ({ people, subtype }) => campaignFlowUrl(resolvedCampaign?.id, flowCview, {
+      people,
+      subtype: subtype ?? activeSubtype,
+    }),
+    [resolvedCampaign?.id, flowCview, activeSubtype]
   );
 
   const boardTaskFilterUrl = useCallback(
-    ({ people }) => campaignBoardUrl(activeBoard?.id, boardCview, { people }),
-    [activeBoard?.id, boardCview]
+    ({ people, subtype }) => boardUrlForContext({
+      campaignsMode,
+      deptPath: deptBase,
+      boardId: resolvedBoard?.id,
+      cview: boardCview,
+      people,
+      subtype: subtype ?? activeSubtype,
+      personalMode,
+    }),
+    [resolvedBoard?.id, boardCview, campaignsMode, deptBase, personalMode, activeSubtype]
   );
+
+  const flowStatusLabel = useCallback(
+    statusId => {
+      const col = flowStatusCols?.find(c => c.id === statusId);
+      return col ? statusColumnLabel(col, t) : statusId;
+    },
+    [flowStatusCols, t]
+  );
+
+  function boardViewHref(viewId) {
+    return boardUrlForContext({
+      campaignsMode,
+      deptPath: deptBase,
+      boardId: resolvedBoard?.id,
+      cview: viewId,
+      people: boardFilterParams.people,
+      subtype: boardFilterParams.subtype,
+      personalMode,
+    });
+  }
 
   async function handleSave(draft) {
     setSaving(true);
@@ -260,14 +593,18 @@ export default function InternalDepartment({
         body: JSON.stringify({ ...draft, _draft: undefined, subtasks: (draft.subtasks || []).filter(s => s.title?.trim()) }),
       });
       if (res.ok) {
-        if (flowView && activeCampaign && isNew) {
-          const body = await res.json();
-          const data = unwrapData(body, 'task');
-          const saved = data?.task || data;
-          if (saved?.id) await appendFlowNode(saved);
+        const body = await res.json();
+        const data = unwrapData(body, 'task');
+        const saved = data?.task || data;
+        if (saved?.id) {
+          mergeTask(saved);
+          if (flowView && activeCampaign && isNew) {
+            await appendFlowNode(saved);
+          }
         }
-        setPanelTask(null);
-        await refresh();
+        closeTaskPanel();
+      } else {
+        toast.error(t('common.somethingWrong'));
       }
     } finally {
       setSaving(false);
@@ -307,7 +644,7 @@ export default function InternalDepartment({
     const body = await res.json();
     const data = unwrapData(body, 'task');
     const updated = data?.task || data;
-    await refresh();
+    if (updated?.id) mergeTask(updated);
     if (panelTask?.id === task.id && updated?.id) setPanelTask(updated);
   }
 
@@ -327,8 +664,10 @@ export default function InternalDepartment({
       const body = await res.json();
       const data = unwrapData(body, 'task');
       const updated = data?.task || data;
-      if (updated?.id) setPanelTask(updated);
-      await refresh();
+      if (updated?.id) {
+        mergeTask(updated);
+        setPanelTask(updated);
+      }
     } finally {
       setWorkflowBusy(false);
     }
@@ -342,9 +681,72 @@ export default function InternalDepartment({
       cancelLabel: t('common.cancel'),
     });
     if (!ok) return;
-    await fetch(API_V1.internalTask(id), { method: 'DELETE', credentials: 'same-origin' });
-    setPanelTask(null);
-    await refresh();
+    const res = await fetch(API_V1.internalTask(id), { method: 'DELETE', credentials: 'same-origin' });
+    if (!res.ok) {
+      toast.error(t('common.somethingWrong'));
+      return;
+    }
+    closeTaskPanel();
+    removeTask(id);
+  }
+
+  async function handleDeleteBoard() {
+    if (!resolvedBoard?.id) return;
+    const ok = await requestConfirm({
+      title: t('hub.internal.deleteBoard'),
+      message: t('hub.internal.deleteBoardConfirm').replace('{name}', resolvedBoard.name),
+      confirmLabel: t('hub.internal.taskPanel.delete'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API_V1.internalBoard(resolvedBoard.id), {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      dispatchBoardsChanged();
+      toast.success(t('hub.internal.boardDeleted'));
+      if (personalMode) {
+        router.push('/me');
+      } else if (campaignsMode || resolvedBoard.campaign_id) {
+        router.push(campaignListHomeUrl());
+      } else {
+        router.push(deptBase);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteCampaign() {
+    if (!activeCampaign?.id) return;
+    const ok = await requestConfirm({
+      title: t('hub.internal.deleteCampaign'),
+      message: t('hub.internal.deleteCampaignConfirm').replace('{name}', activeCampaign.name),
+      confirmLabel: t('hub.internal.taskPanel.delete'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API_V1.internalCampaign(activeCampaign.id), {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      toast.success(t('hub.internal.campaignDeleted'));
+      router.push(campaignListHomeUrl());
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function postComment(taskId, payload) {
@@ -360,8 +762,10 @@ export default function InternalDepartment({
       const body = await res.json();
       const data = unwrapData(body, 'task');
       const task = data?.task || data;
-      if (task?.id) setPanelTask(task);
-      await refresh();
+      if (task?.id) {
+        mergeTask(task);
+        setPanelTask(task);
+      }
     } finally {
       setPostingComment(false);
     }
@@ -370,17 +774,78 @@ export default function InternalDepartment({
   function openNew(kind = 'task') {
     const defaultStatus = boardStatusCols?.[0]?.id || flowStatusCols?.[0]?.id || 'todo';
     const lock = lockBoard || lockFlow;
+    const onPersonalBoard = personalMode && Boolean(lock?.board_id);
     setPanelTask(newTaskDraft({
-      department: departmentId === 'all' || campaignsMode ? 'operations' : departmentId,
-      visibility: 'team',
+      department: personalMode
+        ? PERSONAL_DEPARTMENT_ID
+        : (departmentId === 'all' || campaignsMode ? 'operations' : departmentId),
+      visibility: onPersonalBoard ? 'private' : 'team',
+      owner: onPersonalBoard ? me.displayName : '',
       status: defaultStatus,
       kind,
+      assignee: personalMode ? me.displayName : '',
       board_id: lock?.board_id || null,
       campaign_id: lock?.campaign_id || null,
     }));
   }
 
-  async function handleSaveFlowData(flowData) {
+  async function handleAddKanbanNode() {
+    if (!activeCampaign?.id) return;
+    setKanbanCreateOpen(true);
+  }
+
+  async function handleAddExistingKanban(board) {
+    if (!board?.id || !activeCampaign?.id) return;
+    setSaving(true);
+    try {
+      const nextFlow = appendKanbanNodeToFlow(activeCampaign.flow_data, board);
+      if (nextFlow === activeCampaign.flow_data) {
+        setKanbanCreateOpen(false);
+        return;
+      }
+      await handleSaveFlowData(nextFlow);
+      setActiveCampaign(prev => (prev ? { ...prev, flow_data: nextFlow } : prev));
+      setKanbanCreateOpen(false);
+      toast.success(t('hub.internal.kanbanAddedToFlow'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmCampaignKanban({ name, department }) {
+    if (!name || !activeCampaign?.id) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API_V1.internalCampaignBoards(activeCampaign.id), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name, department }),
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body);
+      const board = data?.board;
+      if (!board?.id) return;
+      dispatchBoardsChanged();
+      const nextFlow = appendKanbanNodeToFlow(activeCampaign.flow_data, board, name);
+      await handleSaveFlowData(nextFlow);
+      setActiveCampaign(prev => ({
+        ...prev,
+        boards: [...(prev?.boards || []), board],
+        flow_data: nextFlow,
+      }));
+      setKanbanCreateOpen(false);
+      toast.success(t('hub.internal.boardCreated'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const handleSaveFlowData = useCallback(async flowData => {
     if (!activeCampaign?.id) return;
     try {
       const res = await fetch(API_V1.internalCampaign(activeCampaign.id), {
@@ -390,56 +855,89 @@ export default function InternalDepartment({
         body: JSON.stringify({ flow_data: flowData }),
       });
       if (res.ok) {
-        const body = await res.json();
-        const data = unwrapData(body);
-        if (data?.campaign) {
-          setActiveCampaign(prev => ({
-            ...prev,
-            ...data.campaign,
-            flow_data: flowData,
-          }));
-        }
+        setActiveCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
         return;
       }
       toast.error(t('common.somethingWrong'));
     } catch {
       toast.error(t('common.somethingWrong'));
     }
-  }
+  }, [activeCampaign?.id, t, toast]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/';
   };
 
-  if (!dept && departmentId !== 'all' && departmentId !== CAMPAIGNS_ID) {
-    return <p>Department not found.</p>;
-  }
-
-  const deptBase = departmentId === CAMPAIGNS_ID ? CAMPAIGNS_PATH : getDepartmentPath(departmentId);
-  const sidebarMode = departmentId === 'all'
-    ? 'all-tasks'
-    : departmentId === CAMPAIGNS_ID
-      ? 'campaigns'
-      : 'department';
+  const sidebarMode = personalMode
+    ? 'personal'
+    : departmentId === 'all'
+      ? 'all-tasks'
+      : departmentId === CAMPAIGNS_ID
+        ? 'campaigns'
+        : 'department';
 
   function viewHref(viewId) {
     return internalTasksUrl(deptBase, { view: viewId, people: activePeople });
   }
 
+  const personalHomeSection = personalMode && !boardView && !toolParam;
+  const jotDownView = personalMode && toolParam === PERSONAL_JOT_DOWN_TOOL && !boardView;
+  const deptJotDownView = !personalMode && isJotDownTool(toolParam) && !boardView;
+
+  useEffect(() => {
+    if (!personalHomeSection || boardParam || view !== 'board') return;
+    router.replace(internalTasksUrl(PERSONAL_HUB_PATH, { view: 'list', people: activePeople }));
+  }, [personalHomeSection, boardParam, view, router, activePeople]);
+
+  function handleAssignedTaskClick(task) {
+    router.push(taskOriginUrl(task));
+  }
+
   function isTaskViewActive(viewId) {
     if (toolParam) return false;
     if (BUCKET_VIEWS.includes(viewId)) return viewParam === viewId;
-    return viewParam === viewId || (!viewParam && viewId === 'board');
+    const defaultView = personalHomeSection ? 'list' : 'board';
+    return viewParam === viewId || (!viewParam && viewId === defaultView);
   }
 
   function isToolActive(toolId) {
     return toolParam === toolId;
   }
 
-  const deptTaskSection = tasksEnabled && !toolParam && !campaignsMode;
+  const deptTaskSection = (departmentId === 'all' || personalHomeSection) && !toolParam && !campaignsMode && !boardView;
   const boardTaskSection = boardView;
   const flowTaskSection = flowView;
+  const personalStats = useMemo(
+    () => (personalHomeSection ? countPersonalHubStats(baseTaskItems) : null),
+    [personalHomeSection, baseTaskItems]
+  );
+
+  const personalAssignedCount = useMemo(
+    () => (personalMode ? countOpenAssignedTasks(tasks, actor) : 0),
+    [personalMode, tasks, actor]
+  );
+  const ownsActiveBoard = boardView
+    && resolvedBoard
+    && personKey(resolvedBoard.owner_key || resolvedBoard.created_by) === personKey(me.displayName);
+  const canEditBoardFields = canEditBoard || ownsActiveBoard;
+
+  const canCreateOnBoard = useMemo(() => {
+    if (boardView && ownsActiveBoard && me.displayName && !me.hubUser?.mustChangePassword) {
+      return true;
+    }
+    return canCreate;
+  }, [boardView, ownsActiveBoard, me.displayName, me.hubUser?.mustChangePassword, canCreate]);
+
+  const canDeleteActiveBoard = useMemo(
+    () => Boolean(boardView && resolvedBoard && actor && canDeleteBoard(actor, resolvedBoard)),
+    [boardView, resolvedBoard, actor]
+  );
+
+  const canDeleteActiveCampaign = useMemo(
+    () => Boolean(flowView && resolvedCampaign && actor && canDeleteCampaign(actor, resolvedCampaign)),
+    [flowView, resolvedCampaign, actor]
+  );
 
   const flowViews = [
     { id: 'flow', label: t('hub.internal.viewFlow'), icon: 'flow' },
@@ -452,46 +950,39 @@ export default function InternalDepartment({
     { id: 'list', label: t('hub.internal.viewList'), icon: 'layout' },
   ];
 
-  const flowStatusLabel = useCallback(
-    statusId => {
-      const col = flowStatusCols?.find(c => c.id === statusId);
-      return col ? statusColumnLabel(col, t) : statusId;
-    },
-    [flowStatusCols, t]
-  );
-
   const topNavTitle = boardView
-    ? activeBoard.name
-    : kolView
-      ? `${activeCampaign.name} · ${t('hub.campaignKol.title')}`
+    ? resolvedBoard.name
     : flowView
-      ? `${activeCampaign.name} · ${t('hub.internal.viewFlow')}`
+      ? `${resolvedCampaign.name} · ${t('hub.internal.viewFlow')}`
     : campaignListOnly
       ? t('hub.internal.campaignList')
+      : personalHomeSection
+        ? t('hub.personal.assignedTitle')
+      : jotDownView
+        ? t('hub.jotDown.title')
+      : deptJotDownView
+        ? t('hub.jotDown.title')
+      : toolParam && dept?.dataLinks?.find(link => link.id === toolParam)
+        ? dataLinkLabel(dept.dataLinks.find(link => link.id === toolParam), t)
       : departmentId === 'all'
       ? t('hub.internal.allTasks')
       : (dept ? deptText(dept, t, 'label') : '');
-  const activeToolLink = toolParam && dept?.dataLinks?.find(link => link.id === toolParam);
-  const topNavSubtitle = boardView
-    ? (activeBoard.campaign?.name || t('hub.internal.campaignList'))
-    : flowView
-      ? t('hub.internal.campaignList')
-    : isFinecousticWikiDepartment(departmentId)
-      ? t('hub.wiki.subtitle')
-    : isKnowledgeBankTool(toolParam)
-      ? t('hub.knowledge.title')
-      : (activeToolLink ? dataLinkLabel(activeToolLink, t) : '');
+
+  if (!dept && departmentId !== 'all' && departmentId !== CAMPAIGNS_ID && !personalMode) {
+    return <p>Department not found.</p>;
+  }
 
   return (
     <HubLayout
       className="internal-dept-layout"
       topNavTitle={topNavTitle}
-      topNavSubtitle={topNavSubtitle}
       authEnabled={authEnabled}
       displayName={me.displayName}
       onLogout={handleLogout}
       sidebarClassName="internal-dept-sidebar"
-      sidebarLabel={departmentId === 'all'
+      sidebarLabel={personalMode
+        ? t('hub.personal.title')
+        : departmentId === 'all'
         ? t('hub.internal.allTasks')
         : campaignsMode
           ? t('hub.internal.campaignList')
@@ -503,33 +994,65 @@ export default function InternalDepartment({
           isToolActive={isToolActive}
           toolParam={toolParam}
           pageParam={pageParam}
+          boardParam={effectiveBoardParam}
+          clientDeptBoardNav={clientDeptBoardNav}
+          onDeptBoardChange={clientDeptBoardNav ? setDeptBoard : null}
+          flowParam={flowParam}
+          personalAssignedCount={personalAssignedCount}
+          initialDeptBoards={initialDeptBoards}
+          initialPersonalBoards={initialPersonalBoards}
+          initialHubUser={me.hubUser ?? seededMe?.hubUser}
+          clientDeptTools={clientDeptTools}
+          onDeptToolChange={clientDeptTools ? setDeptTool : null}
         />
       }
     >
       <main className="main internal-dept-main">
-        {boardView && (
-          <div className="internal-board-toolbar">
-            <Link href={campaignListUrl()} className="internal-board-back">
-              <Icon name="arrowLeft" size={14} />
-              {t('hub.internal.backToCampaigns')}
-            </Link>
-            {activeBoard.campaign?.name ? (
-              <span className="internal-board-context">{activeBoard.campaign.name}</span>
-            ) : null}
+        {initialTasksLoadError ? (
+          <div className="personal-hub-alert" role="alert">
+            {t('hub.internal.tasksLoadError')}
           </div>
-        )}
-
-        {flowView && (
+        ) : null}
+        {personalHomeSection && personalStats ? (
+          <>
+            <section className="internal-kpi-row personal-kpis">
+              <Link href={internalTasksUrl(PERSONAL_HUB_PATH, { view: 'list' })} className="internal-kpi internal-kpi-total">
+                <span className="internal-kpi-val">{personalStats.assigned}</span>
+                <span>{t('hub.personal.kpiAssigned')}</span>
+              </Link>
+              <Link href={internalTasksUrl(PERSONAL_HUB_PATH, { view: 'today' })} className="internal-kpi">
+                <span className="internal-kpi-val">{personalStats.today}</span>
+                <span>{t('hub.personal.kpiToday')}</span>
+              </Link>
+              <Link href={internalTasksUrl(PERSONAL_HUB_PATH, { view: 'overdue' })} className="internal-kpi is-warn">
+                <span className="internal-kpi-val">{personalStats.overdue}</span>
+                <span>{t('hub.personal.kpiOverdue')}</span>
+              </Link>
+              <Link href={internalTasksUrl(PERSONAL_HUB_PATH, { view: 'in_progress' })} className="internal-kpi">
+                <span className="internal-kpi-val">{personalStats.inProgress}</span>
+                <span>{t('hub.personal.kpiInProgress')}</span>
+              </Link>
+              <Link href={internalTasksUrl(PERSONAL_HUB_PATH, { view: 'bank' })} className="internal-kpi">
+                <span className="internal-kpi-val">{personalStats.bank}</span>
+                <span>{t('hub.personal.kpiBank')}</span>
+              </Link>
+            </section>
+            <p className="personal-hub-assigned-hint">{t('hub.personal.assignedHint')}</p>
+          </>
+        ) : null}
+        {boardView && resolvedBoard?.campaign?.name ? (
           <div className="internal-board-toolbar">
-            <Link href={campaignListUrl()} className="internal-board-back">
-              <Icon name="arrowLeft" size={14} />
-              {t('hub.internal.backToCampaigns')}
-            </Link>
+            <span className="internal-board-context">{resolvedBoard.campaign.name}</span>
+          </div>
+        ) : null}
+
+        {flowView && resolvedCampaign?.name ? (
+          <div className="internal-board-toolbar">
             <span className="internal-board-context">
-              {t('hub.internal.campaignFlowChip').replace('{name}', activeCampaign.name)}
+              {t('hub.internal.campaignFlowChip').replace('{name}', resolvedCampaign.name)}
             </span>
           </div>
-        )}
+        ) : null}
 
         {flowTaskSection && (
           <div className="internal-dept-toolbar internal-dept-toolbar--board">
@@ -537,7 +1060,7 @@ export default function InternalDepartment({
               {flowViews.map(({ id, label, icon }) => (
                 <Link
                   key={id}
-                  href={campaignFlowUrl(activeCampaign.id, id, { people: campaignPeopleQuery })}
+                  href={campaignFlowUrl(resolvedCampaign.id, id, boardFilterParams)}
                   className={`internal-dept-view-tab${flowCview === id ? ' is-active' : ''}`}
                   aria-current={flowCview === id ? 'page' : undefined}
                 >
@@ -546,6 +1069,19 @@ export default function InternalDepartment({
                 </Link>
               ))}
             </div>
+            {canEditBoard ? (
+            <button
+              type="button"
+              className="appdev-btn-ghost"
+              onClick={handleAddKanbanNode}
+              disabled={saving}
+            >
+              <Icon name="kanban" size={16} />
+              {t('hub.internal.addKanbanNode')}
+            </button>
+            ) : null}
+            {canCreate ? (
+            <>
             <button
               type="button"
               className="appdev-btn-ghost"
@@ -564,6 +1100,19 @@ export default function InternalDepartment({
               <Icon name="plus" size={16} />
               {t('hub.internal.addTaskIssue')}
             </button>
+            </>
+            ) : null}
+            {canDeleteActiveCampaign ? (
+            <button
+              type="button"
+              className="appdev-btn-ghost is-danger"
+              onClick={handleDeleteCampaign}
+              disabled={saving}
+            >
+              <Icon name="x" size={16} />
+              {t('hub.internal.deleteCampaign')}
+            </button>
+            ) : null}
           </div>
         )}
 
@@ -573,7 +1122,7 @@ export default function InternalDepartment({
               {taskViews.map(({ id, label, icon }) => (
                 <Link
                   key={id}
-                  href={campaignBoardUrl(activeBoard.id, id, { people: campaignPeopleQuery })}
+                  href={boardViewHref(id)}
                   className={`internal-dept-view-tab${boardCview === id ? ' is-active' : ''}`}
                   aria-current={boardCview === id ? 'page' : undefined}
                 >
@@ -582,13 +1131,27 @@ export default function InternalDepartment({
                 </Link>
               ))}
             </div>
+            {canEditBoardFields ? (
             <button
               type="button"
               className="appdev-btn-ghost"
               onClick={() => setStatusEditorOpen(open => !open)}
             >
-              {t('hub.internal.editStatusColumns')}
+              {t('hub.internal.editBoardFields')}
             </button>
+            ) : null}
+            {canDeleteActiveBoard ? (
+            <button
+              type="button"
+              className="appdev-btn-ghost is-danger"
+              onClick={handleDeleteBoard}
+              disabled={saving}
+            >
+              <Icon name="x" size={16} />
+              {t('hub.internal.deleteBoard')}
+            </button>
+            ) : null}
+            {canCreateOnBoard ? (
             <button
               type="button"
               className="appdev-btn-primary internal-add-btn"
@@ -598,19 +1161,20 @@ export default function InternalDepartment({
               <Icon name="plus" size={16} />
               {t('hub.internal.addTaskIssue')}
             </button>
+            ) : null}
           </div>
         )}
 
-        {statusEditorOpen && activeBoard && (
+        {statusEditorOpen && resolvedBoard && (
           <BoardStatusEditor
-            board={activeBoard}
+            board={resolvedBoard}
             tasks={taskItems}
             onSaved={setActiveBoard}
             onClose={() => setStatusEditorOpen(false)}
           />
         )}
 
-        {deptTaskSection && (
+        {deptTaskSection && !personalHomeSection && (
           <div className="internal-dept-toolbar">
             <div className="internal-dept-view-tabs" role="toolbar" aria-label={t('hub.internal.sectionTasks')}>
               {taskViews.map(({ id, label, icon }) => (
@@ -625,7 +1189,7 @@ export default function InternalDepartment({
                 </Link>
               ))}
             </div>
-            {departmentId !== 'all' && (
+            {departmentId !== 'all' && !personalHomeSection && canCreate ? (
               <button
                 type="button"
                 className="appdev-btn-primary internal-add-btn"
@@ -635,7 +1199,7 @@ export default function InternalDepartment({
                 <Icon name="plus" size={16} />
                 {t('hub.internal.addTaskIssue')}
               </button>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -643,7 +1207,9 @@ export default function InternalDepartment({
           <InternalTaskFilters
             deptBase={deptBase}
             activePeople={activePeople}
+            activeSubtype={activeSubtype}
             people={peopleOptions}
+            subtypes={subtypeOptions}
             currentUserName={me.displayName}
             getTaskUrl={flowTaskSection ? flowTaskFilterUrl : boardTaskFilterUrl}
             peopleOnly
@@ -656,16 +1222,19 @@ export default function InternalDepartment({
             activeView={BUCKET_VIEWS.includes(viewParam) ? viewParam : ''}
             taskView={view}
             activePeople={activePeople}
+            activeSubtype={activeSubtype}
             people={peopleOptions}
+            subtypes={subtypeOptions}
             currentUserName={me.displayName}
+            hidePeople={personalHomeSection}
           />
         )}
 
-        {boardParam && !activeBoard && (
+        {effectiveBoardParam && boardFetchSettled && !resolvedBoard && (
           <p className="internal-empty">{t('hub.internal.boardNotFound')}</p>
         )}
 
-        {flowParam && !flowView && (
+        {flowParam && flowFetchSettled && !resolvedCampaign && (
           <p className="internal-empty">{t('hub.internal.flowNotFound')}</p>
         )}
 
@@ -673,61 +1242,65 @@ export default function InternalDepartment({
           <CampaignsWorkspace initialCampaigns={initialCampaigns} />
         )}
 
-        {kolView && activeCampaign && (
-          <CampaignKolWorkspace
-            campaign={activeCampaign}
-            initialEntries={initialCampaignKol?.entries || []}
-            initialPoolRecords={initialCampaignKol?.poolRecords || []}
-            kview={kolKview}
-          />
-        )}
-
-        {kolParam && !kolView && (
-          <p className="internal-empty">{t('hub.internal.flowNotFound')}</p>
-        )}
-
-        {toolParam && departmentId === 'marketing' && (
+        {departmentId === 'marketing' && !boardView && (
           <MarketingHubContent
             view={toolParam}
             initialRows={marketingRows}
             initialKolPool={initialKolPool}
+            outreachTasks={tasks}
+            onOutreachTasksChanged={refresh}
+            canCreate={canCreate}
+            displayName={me.displayName}
+            teamMembers={teamMembers}
           />
         )}
 
-        {toolParam && departmentId === 'operations' && opsData && !isKnowledgeBankTool(toolParam) && (
-          toolParam === 'stock' ? (
-            <OpsStockPanel
-              initialOps={opsData}
-              shopifyConfigured={shopifyConfigured}
-              shopifySnapshot={shopifySnapshot}
-            />
-          ) : toolParam === 'expenses' ? (
-            <OpsExpensesPanel initialExpenses={initialExpenses} />
-          ) : (
-            <OpsHubContent initialData={opsData} view={toolParam} />
-          )
+        {departmentId === 'operations' && !isJotDownTool(toolParam) && !boardView && (
+          <>
+            <div hidden={toolParam !== 'stock'} aria-hidden={toolParam !== 'stock'}>
+              {opsData ? (
+                <OpsStockPanel
+                  initialOps={opsData}
+                  shopifyConfigured={shopifyConfigured}
+                  shopifySnapshot={shopifySnapshot}
+                />
+              ) : null}
+            </div>
+            <div hidden={toolParam !== 'expenses'} aria-hidden={toolParam !== 'expenses'}>
+              <OpsExpensesPanel initialExpenses={initialExpenses} />
+            </div>
+            <div hidden={toolParam === 'stock' || toolParam === 'expenses'} aria-hidden={toolParam === 'stock' || toolParam === 'expenses'}>
+              {opsData ? (
+                <OpsHubContent initialData={opsData} view={toolParam} />
+              ) : null}
+            </div>
+          </>
         )}
 
-        {isFinecousticWikiDepartment(departmentId) && (
-          <FinecousticWiki deptBase={deptBase} pageId={pageParam} />
-        )}
-
-        {isKnowledgeBankTool(toolParam) && departmentId !== 'all' && !isFinecousticWikiDepartment(departmentId) && (
-          <KnowledgeBank
+        {deptJotDownView && (
+          <DepartmentJotDownWorkspace
             departmentId={departmentId}
             deptBase={deptBase}
-            pageId={pageParam}
+            initialJots={initialDepartmentJots}
+            activeJotId={jotParam}
           />
         )}
 
-        {productsMode && (
+        {jotDownView && (
+          <PersonalJotDownWorkspace
+            initialJots={initialPersonalJots}
+            activeJotId={jotParam}
+          />
+        )}
+
+        {productsMode && !boardView && (
           <ProductsWorkspace
             initialProducts={initialProducts}
             initialDetail={initialProductDetail}
             productSku={productParam}
             activeTab={tabParam}
             displayName={me.displayName}
-            isManager={Boolean(me.hubUser?.isManager)}
+            canCreateProduct={canCreateProduct}
           />
         )}
 
@@ -736,10 +1309,14 @@ export default function InternalDepartment({
         )}
 
         {deptTaskSection && view === 'list' && (
-          <InternalListView tasks={taskItems} onTaskClick={setPanelTask} />
+          <InternalListView
+            tasks={listTaskItems}
+            onTaskClick={personalHomeSection ? handleAssignedTaskClick : setPanelTask}
+            showTaskOrigin={personalHomeSection}
+          />
         )}
 
-        {deptTaskSection && view === 'board' && (
+        {deptTaskSection && !personalHomeSection && view === 'board' && (
           <InternalBoard
             tasks={taskItems}
             onTaskClick={setPanelTask}
@@ -747,25 +1324,27 @@ export default function InternalDepartment({
           />
         )}
 
-        {boardTaskSection && !statusEditorOpen && boardCview === 'board' && (
+        {boardTaskSection && boardCview === 'board' && (
           <InternalBoard
             tasks={taskItems}
             onTaskClick={setPanelTask}
             onStatusChange={handleStatusChange}
             statusColumns={boardStatusCols}
-            board={activeBoard}
+            board={resolvedBoard}
           />
         )}
 
         {boardTaskSection && boardCview === 'list' && (
-          <InternalListView tasks={taskItems} onTaskClick={setPanelTask} />
+          <InternalListView tasks={taskItems} onTaskClick={setPanelTask} statusColumns={boardStatusCols} />
         )}
 
         {flowTaskSection && flowCview === 'flow' && (
           <CampaignFlowCanvas
-            campaign={activeCampaign}
+            campaign={resolvedCampaign}
             tasks={workspaceItems}
+            boards={resolvedCampaign?.boards || []}
             onTaskClick={setPanelTask}
+            onKanbanClick={boardId => router.push(campaignBoardUrl(boardId))}
             onSaveFlowData={handleSaveFlowData}
             statusLabelFor={flowStatusLabel}
           />
@@ -777,7 +1356,7 @@ export default function InternalDepartment({
             onTaskClick={setPanelTask}
             onStatusChange={handleStatusChange}
             statusColumns={flowStatusCols}
-            flowData={activeCampaign?.flow_data}
+            flowData={resolvedCampaign?.flow_data}
           />
         )}
 
@@ -785,17 +1364,21 @@ export default function InternalDepartment({
           <InternalListView
             tasks={workspaceItems}
             onTaskClick={setPanelTask}
-            flowData={activeCampaign?.flow_data}
+            flowData={resolvedCampaign?.flow_data}
           />
         )}
       </main>
 
-      {panelTask && (
+      {panelTask && !outreachToolView && (
         <TaskPanel
           task={panelTask}
-          onClose={() => setPanelTask(null)}
+          onClose={closeTaskPanel}
           onSave={handleSave}
-          onDelete={handleDelete}
+          onDelete={
+            panelTask && actor && canDeleteTask(actor, panelTask)
+              ? handleDelete
+              : undefined
+          }
           onPostComment={postComment}
           onWorkflowAction={handleWorkflowAction}
           postingComment={postingComment}
@@ -804,12 +1387,33 @@ export default function InternalDepartment({
           lockDepartmentId={departmentId !== 'all' && !campaignsMode ? departmentId : null}
           lockBoard={lockBoard || lockFlow}
           statusColumns={boardStatusCols || flowStatusCols}
+          boardCustomProperties={resolvedBoard?.custom_properties || []}
+          onManageBoardFields={
+            canEditBoardFields && resolvedBoard?.id
+              ? () => setStatusEditorOpen(true)
+              : undefined
+          }
           teamMembers={teamMembers}
+          lockAssigneeToSelf={personalMode}
           saving={saving}
         />
       )}
 
       {confirmDialog}
+      <KanbanCreateModal
+        open={kanbanCreateOpen}
+        title={t('hub.internal.addKanbanNode')}
+        showDepartmentPicker
+        defaultDepartment={departmentId !== 'all' && departmentId !== CAMPAIGNS_ID ? departmentId : 'marketing'}
+        busy={saving}
+        existingBoards={kanbansNotOnFlow}
+        loadingExisting={kanbanPickerLoading}
+        confirmLabel={t('common.confirm')}
+        cancelLabel={t('common.cancel')}
+        onCancel={() => setKanbanCreateOpen(false)}
+        onSubmit={handleConfirmCampaignKanban}
+        onSelectExisting={handleAddExistingKanban}
+      />
       {toastStack}
     </HubLayout>
   );

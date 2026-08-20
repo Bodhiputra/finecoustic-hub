@@ -1,16 +1,16 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 import { useLocale } from '@/components/LocaleProvider';
-import { useToast } from '@/hooks/useToast';
-import { API_V1, unwrapData } from '@/lib/api/routes';
 import {
   KOL_POOL_SECTIONS,
   filterKolBySection,
+  hasKolShippingAddress,
   isHubNativeKol,
+  kolLinkAriaLabel,
+  kolLinkIconName,
   kolShippingSummary,
   platformChipClass,
 } from '@/lib/kol-pool';
@@ -40,7 +40,6 @@ export default function KolPoolWorkspace({
   initialSection = 'masterlist',
 }) {
   const { t, locale } = useLocale();
-  const { toast } = useToast();
   const [section, setSection] = useState(initialSection);
   const [records, setRecords] = useState(initialRecords);
   const [meta, setMeta] = useState(
@@ -48,7 +47,6 @@ export default function KolPoolWorkspace({
   );
   const [counts, setCounts] = useState(initialCounts || {});
   const [configured] = useState(initialConfigured);
-  const [syncing, setSyncing] = useState(false);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -64,7 +62,6 @@ export default function KolPoolWorkspace({
         r.main_platform,
         r.kol_category,
         r.tags,
-        r.outreach_status,
         r.description,
         (r.collaboration_products || []).join(' '),
         kolShippingSummary(r),
@@ -74,33 +71,6 @@ export default function KolPoolWorkspace({
       return hay.includes(q);
     });
   }, [records, section, query]);
-
-  const syncFromNotion = useCallback(async () => {
-    setSyncing(true);
-    try {
-      const res = await fetch(API_V1.marketingKolPoolSync, {
-        method: 'POST',
-        credentials: 'same-origin',
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const code = body?.error || 'sync_failed';
-        const msgKey = `hub.kol.errors.${code}`;
-        const msg = t(msgKey);
-        toast.error(msg === msgKey ? t('hub.kol.errors.sync_failed') : msg);
-        return;
-      }
-      const data = unwrapData(body);
-      setRecords(Array.isArray(data?.records) ? data.records : []);
-      setMeta(data?.meta || meta);
-      setCounts(data?.counts || {});
-      toast.success(t('hub.kol.syncSuccess').replace('{count}', String(data?.total ?? 0)));
-    } catch {
-      toast.error(t('hub.kol.errors.sync_failed'));
-    } finally {
-      setSyncing(false);
-    }
-  }, [meta, t, toast]);
 
   function handleSaved(record) {
     if (!record) return;
@@ -137,16 +107,6 @@ export default function KolPoolWorkspace({
           >
             <Icon name="plus" size={16} />
             <span>{t('hub.kol.addKol')}</span>
-          </button>
-          <button
-            type="button"
-            className="hub-btn hub-btn--primary"
-            onClick={syncFromNotion}
-            disabled={syncing || !configured}
-            title={configured ? t('hub.kol.syncButton') : t('hub.kol.notConfigured')}
-          >
-            <Icon name="refresh" size={16} />
-            <span>{syncing ? t('hub.kol.syncing') : t('hub.kol.syncButton')}</span>
           </button>
         </div>
       </header>
@@ -204,9 +164,8 @@ export default function KolPoolWorkspace({
                 <th>{t('hub.kol.colCountry')}</th>
                 <th>{t('hub.kol.colTier')}</th>
                 <th>{t('hub.kol.colTags')}</th>
-                <th>{t('hub.kol.colStatus')}</th>
                 <th>{t('hub.kol.colCollabProducts')}</th>
-                <th>{t('hub.kol.colShipping')}</th>
+                <th>{t('hub.kol.shippingAddress')}</th>
                 <th>{t('hub.kol.colLinks')}</th>
                 <th aria-hidden="true" />
               </tr>
@@ -248,24 +207,27 @@ export default function KolPoolWorkspace({
                   <td>
                     {row.tags ? <KolChip className="kol-chip-tag">{row.tags}</KolChip> : '—'}
                   </td>
-                  <td>
-                    {row.outreach_status ? (
-                      <KolChip className="kol-chip-status">{row.outreach_status}</KolChip>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
                   <td className="kol-pool-collab">
                     {(row.collaboration_products || []).length
                       ? row.collaboration_products.join(', ')
                       : '—'}
                   </td>
-                  <td className="kol-pool-shipping">{kolShippingSummary(row) || '—'}</td>
+                  <td className="kol-pool-shipping" title={kolShippingSummary(row) || undefined}>
+                    {hasKolShippingAddress(row) ? kolShippingSummary(row) : '—'}
+                  </td>
                   <td className="kol-pool-links">
                     {row.links ? (
-                      <Link href={row.links} target="_blank" rel="noopener noreferrer">
-                        {t('hub.kol.openLink')}
-                      </Link>
+                      <a
+                        href={row.links}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`kol-pool-link-icon is-${kolLinkIconName(row)}`}
+                        aria-label={kolLinkAriaLabel(row, t)}
+                        title={kolLinkAriaLabel(row, t)}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <Icon name={kolLinkIconName(row)} size={16} />
+                      </a>
                     ) : (
                       '—'
                     )}

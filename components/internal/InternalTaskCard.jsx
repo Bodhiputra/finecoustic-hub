@@ -4,6 +4,7 @@ import Icon from '@/components/Icon';
 import UserAvatar from '@/components/internal/UserAvatar';
 import { useLocale } from '@/components/LocaleProvider';
 import { isMilestonePast, isTaskOverdue, milestoneEndDate, taskDueDate } from '@/lib/internal';
+import { formatTaskScheduleLabel, formatTaskScheduleRange } from '@/lib/task-datetime';
 
 const PRIORITY_KEYS = {
   urgent: 'hub.internal.priorityUrgent',
@@ -29,16 +30,21 @@ export default function InternalTaskCard({
   isDragging = false,
   className = '',
 }) {
-  const { t } = useLocale();
-  const due = task.kind === 'milestone' ? milestoneEndDate(task) : taskDueDate(task);
+  const { t, locale } = useLocale();
+  const isMilestone = task.kind === 'milestone';
+  const isMeeting = task.kind === 'meeting';
+  const dueLabel = isMilestone || isMeeting
+    ? formatTaskScheduleRange(task, locale)
+    : formatTaskScheduleLabel(task.deadline || taskDueDate(task), task.deadline_time, locale);
+  const due = dueLabel || null;
   const overdue = isTaskOverdue(task);
   const pastMilestone = task.kind === 'milestone' && isMilestonePast(task);
   const assignee = task.assignee || task.owner || task.created_by;
   const subtaskTotal = task.subtasks?.length || 0;
   const subtaskDone = task.subtasks?.filter(s => s.done).length || 0;
   const priority = task.priority && task.priority !== 'none' ? task.priority : null;
-  const isMilestone = task.kind === 'milestone';
-  const hasChips = priority || task.subtype || due || subtaskTotal > 0 || assignee;
+  const isDaily = task.recurrence === 'daily';
+  const hasChips = priority || task.subtype || isDaily || due || subtaskTotal > 0 || assignee;
 
   return (
     <button
@@ -75,6 +81,11 @@ export default function InternalTaskCard({
           {task.subtype && (
             <HintChip className="is-subtype" title={task.subtype}>
               {task.subtype}
+            </HintChip>
+          )}
+          {isDaily && (
+            <HintChip className="is-recurrence" title={t('hub.internal.recurrenceDaily')}>
+              {t('hub.internal.recurrenceDaily')}
             </HintChip>
           )}
           {due && (
