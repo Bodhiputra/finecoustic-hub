@@ -11,6 +11,11 @@ import {
   IMAGE_MAX_BYTES,
   VIDEO_MAX_BYTES,
 } from '@/lib/appdev-media';
+import {
+  validateAttachmentFile,
+  validateAttachmentBuffer,
+  FILE_MAX_BYTES,
+} from '@/lib/appdev-files';
 import { storeHubMedia } from '@/lib/hub-upload-store';
 import { requireHubActor } from '@/lib/hub-actor';
 
@@ -18,12 +23,15 @@ export const runtime = 'nodejs';
 export const maxDuration = 120;
 
 function uploadError(check, kind) {
-  if (check.error === 'imageSize' || check.error === 'videoSize') {
-    const max = kind === 'image' ? IMAGE_MAX_BYTES : VIDEO_MAX_BYTES;
-    return `${kind === 'image' ? 'Image' : 'Video'} is ${formatBytes(check.size)} — max ${formatMaxLabel(max)}`;
+  if (check.error === 'imageSize' || check.error === 'videoSize' || check.error === 'fileSize') {
+    const max =
+      kind === 'image' ? IMAGE_MAX_BYTES : kind === 'video' ? VIDEO_MAX_BYTES : FILE_MAX_BYTES;
+    const label = kind === 'image' ? 'Image' : kind === 'video' ? 'Video' : 'File';
+    return `${label} is ${formatBytes(check.size)} — max ${formatMaxLabel(max)}`;
   }
   if (check.error === 'imageType') return 'Only JPEG, JPG, and PNG images are allowed';
   if (check.error === 'videoType') return 'Only MP4 and MOV videos are allowed';
+  if (check.error === 'fileType') return 'File type not allowed';
   if (check.error === 'sizeMismatch') return 'File size mismatch — upload rejected';
   return 'Invalid file';
 }
@@ -63,14 +71,22 @@ export async function POST(request) {
     if (!precheck.ok) {
       return NextResponse.json({ error: uploadError(precheck, 'video') }, { status: 400 });
     }
+  } else if (kind === 'file') {
+    const precheck = validateAttachmentFile(file);
+    if (!precheck.ok) {
+      return NextResponse.json({ error: uploadError(precheck, 'file') }, { status: 400 });
+    }
   } else {
     return NextResponse.json({ error: 'Invalid kind' }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const postcheck = kind === 'image'
-    ? validateImageBuffer(buffer, file.size)
-    : validateVideoBuffer(buffer, file.size);
+  const postcheck =
+    kind === 'image'
+      ? validateImageBuffer(buffer, file.size)
+      : kind === 'video'
+        ? validateVideoBuffer(buffer, file.size)
+        : validateAttachmentBuffer(buffer, file.size, file.name);
 
   if (!postcheck.ok) {
     return NextResponse.json({ error: uploadError(postcheck, kind) }, { status: 400 });

@@ -5,17 +5,29 @@ import { useHubSession } from '@/components/hub/HubSessionProvider';
 
 const SESSION_CHECK_MS = 45_000;
 
+function isLoginPath() {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname;
+  return path === '/' || path === '/login';
+}
+
 /** Poll hub session — sign out locally when the same account logs in elsewhere. */
 export default function HubSessionGuard() {
   const session = useHubSession();
   const authEnabled = session?.authEnabled !== false;
+  const hasActiveSession = Boolean(session?.initialProfile?.displayName);
 
   useEffect(() => {
-    if (!authEnabled) return undefined;
+    // Login page has no server profile — do not poll or redirect (fixes mobile login refresh loop).
+    if (!authEnabled || !hasActiveSession) return undefined;
 
     let cancelled = false;
 
     async function redirectForSignOut(reason = 'session_revoked') {
+      if (reason === 'unauthorized' && isLoginPath()) return;
+      const params = new URLSearchParams(window.location.search);
+      if (isLoginPath() && params.get('reason') === reason) return;
+
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
       window.location.replace(`/?reason=${encodeURIComponent(reason)}`);
     }
@@ -31,7 +43,9 @@ export default function HubSessionGuard() {
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!data.hub) {
-          await redirectForSignOut(data.signOutReason || 'session_revoked');
+          const reason = data.signOutReason || 'session_revoked';
+          if (reason === 'unauthorized') return;
+          await redirectForSignOut(reason);
         }
       } catch {
         /* ignore transient network errors */
@@ -53,7 +67,7 @@ export default function HubSessionGuard() {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [authEnabled]);
+  }, [authEnabled, hasActiveSession]);
 
   return null;
 }

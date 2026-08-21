@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import MediaUrlFields from '@/components/appdev/MediaUrlFields';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import IssueChat from '@/components/appdev/IssueChat';
 import Icon from '@/components/Icon';
+import TaskAttachmentFields from '@/components/internal/TaskAttachmentFields';
 import TaskCustomFields from '@/components/internal/TaskCustomFields';
 import TaskDateTimeField from '@/components/internal/TaskDateTimeField';
 import {
@@ -251,6 +251,50 @@ export default function TaskPanel({
   const isCalendarItem = isMilestone || isMeeting;
   const hideDepartment = Boolean(lockDepartmentId && lockDepartmentId !== ALL_DEPARTMENTS_ID);
   const uploadMedia = useCallback((file, kind) => uploadInternalMediaFile(file, kind), []);
+  const attachmentRef = useRef(null);
+  const panelDragCounter = useRef(0);
+  const [panelDragging, setPanelDragging] = useState(false);
+
+  const hasFilePayload = useCallback(e => {
+    const types = e.dataTransfer?.types;
+    if (!types) return false;
+    return typeof types.includes === 'function'
+      ? types.includes('Files')
+      : Array.from(types).includes('Files');
+  }, []);
+
+  const onPanelDragEnter = useCallback(e => {
+    if (!isTask || saving || !hasFilePayload(e)) return;
+    e.preventDefault();
+    panelDragCounter.current += 1;
+    setPanelDragging(true);
+  }, [hasFilePayload, isTask, saving]);
+
+  const onPanelDragLeave = useCallback(e => {
+    if (!isTask || saving) return;
+    e.preventDefault();
+    panelDragCounter.current -= 1;
+    if (panelDragCounter.current <= 0) {
+      panelDragCounter.current = 0;
+      setPanelDragging(false);
+    }
+  }, [isTask, saving]);
+
+  const onPanelDragOver = useCallback(e => {
+    if (!isTask || saving || !hasFilePayload(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }, [hasFilePayload, isTask, saving]);
+
+  const onPanelDrop = useCallback(e => {
+    if (!isTask || saving) return;
+    e.preventDefault();
+    panelDragCounter.current = 0;
+    setPanelDragging(false);
+    if (e.dataTransfer?.files?.length) {
+      attachmentRef.current?.processFiles?.(e.dataTransfer.files);
+    }
+  }, [isTask, saving]);
 
   useEffect(() => {
     setDraft(normalizeDraftForPanel(task));
@@ -353,7 +397,16 @@ export default function TaskPanel({
   return (
     <>
       <button type="button" className="appdev-overlay" onClick={onClose} aria-label={t('hub.internal.close')} />
-      <aside className="appdev-panel internal-task-panel" role="dialog" aria-modal="true" aria-labelledby="internal-panel-title">
+      <aside
+        className={`appdev-panel internal-task-panel${panelDragging ? ' is-attachment-dragover' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="internal-panel-title"
+        onDragEnter={onPanelDragEnter}
+        onDragLeave={onPanelDragLeave}
+        onDragOver={onPanelDragOver}
+        onDrop={onPanelDrop}
+      >
         <header className={`appdev-panel-head${isNew ? ' appdev-panel-head--draft' : ''}`}>
           <span className="appdev-issue-id" id="internal-panel-title">{panelTitle}</span>
           <button type="button" className="appdev-panel-close" onClick={onClose} aria-label={t('hub.internal.close')}>
@@ -385,15 +438,17 @@ export default function TaskPanel({
           </div>
 
           {isTask && (
-            <MediaUrlFields
+            <TaskAttachmentFields
+              ref={attachmentRef}
               imageUrls={draft.image_urls || []}
               videoUrls={draft.video_urls || []}
+              fileUrls={draft.file_urls || []}
               onChangeImages={urls => set('image_urls', urls)}
               onChangeVideos={urls => set('video_urls', urls)}
+              onChangeFiles={files => set('file_urls', files)}
               t={t}
               disabled={saving}
-              canManageMedia
-              uploadMediaFile={uploadMedia}
+              canManage
             />
           )}
 

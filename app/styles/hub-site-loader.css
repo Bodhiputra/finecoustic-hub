@@ -20,6 +20,12 @@ html.hub-site-loader-active .hub-site-loader,
   display: flex;
 }
 
+/* Boot script adds pending before React hydrates — show logo/tagline immediately */
+html.hub-site-loader-pending .hub-site-loader__inner {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .hub-site-loader__inner {
   display: flex;
   flex-direction: column;

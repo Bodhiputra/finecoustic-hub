@@ -79,6 +79,35 @@ export default function CampaignsWorkspace({
     }
   }
 
+  async function renameCampaign(campaign) {
+    const name = await requestPrompt({
+      title: t('hub.internal.renameCampaign'),
+      label: t('hub.internal.campaignNamePrompt'),
+      defaultValue: campaign.name,
+      confirmLabel: t('common.save'),
+      cancelLabel: t('common.cancel'),
+      maxLength: 120,
+    });
+    if (!name || name === campaign.name) return;
+    setBusy(true);
+    try {
+      const res = await fetch(API_V1.internalCampaign(campaign.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        await refresh();
+        toast.success(t('hub.internal.campaignRenamed'));
+      } else {
+        toast.error(t('common.somethingWrong'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function removeCampaign(campaign) {
     const ok = await requestConfirm({
       title: t('hub.internal.deleteCampaign'),
@@ -184,15 +213,26 @@ export default function CampaignsWorkspace({
                 ) : null}
               </button>
               {canDeleteCampaignFor(campaign) ? (
-                <button
-                  type="button"
-                  className="appdev-btn-ghost is-danger internal-campaign-card-delete"
-                  onClick={() => removeCampaign(campaign)}
-                  disabled={busy}
-                  aria-label={t('hub.internal.deleteCampaign')}
-                >
-                  <Icon name="x" size={14} />
-                </button>
+                <div className="internal-campaign-card-actions">
+                  <button
+                    type="button"
+                    className="appdev-btn-ghost internal-campaign-card-rename"
+                    onClick={() => renameCampaign(campaign)}
+                    disabled={busy}
+                    aria-label={t('hub.internal.renameCampaign')}
+                  >
+                    <Icon name="edit" size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="appdev-btn-ghost is-danger internal-campaign-card-delete"
+                    onClick={() => removeCampaign(campaign)}
+                    disabled={busy}
+                    aria-label={t('hub.internal.deleteCampaign')}
+                  >
+                    <Icon name="x" size={14} />
+                  </button>
+                </div>
               ) : null}
             </li>
           ))}

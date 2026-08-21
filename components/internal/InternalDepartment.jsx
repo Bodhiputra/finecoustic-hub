@@ -13,6 +13,7 @@ import KanbanCreateModal from '@/components/internal/KanbanCreateModal';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 import { useConfirm } from '@/hooks/useConfirm';
+import { usePrompt } from '@/hooks/usePrompt';
 import { useInternalTasks } from '@/hooks/useInternalTasks';
 import { useTaskDeepLink } from '@/hooks/useTaskDeepLink';
 import { useToast } from '@/hooks/useToast';
@@ -28,7 +29,7 @@ import OpsStockPanel from '@/components/ops/OpsStockPanel';
 import OpsExpensesPanel from '@/components/ops/OpsExpensesPanel';
 import { PERSONAL_JOT_DOWN_TOOL } from '@/lib/personal-jots-shared';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
-import { appendKanbanNodeToFlow } from '@/lib/campaign-flow-utils';
+import { appendKanbanNodeToFlow, syncBoardNameInFlow } from '@/lib/campaign-flow-utils';
 import { boardStatusColumns, flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import {
@@ -107,6 +108,7 @@ export default function InternalDepartment({
   const dept = getDepartment(departmentId);
   const { t } = useLocale();
   const { requestConfirm, confirmDialog } = useConfirm();
+  const { requestPrompt, promptDialog } = usePrompt();
   const { toast, toastStack } = useToast();
   const router = useRouter();
   const pathname = usePathname();
@@ -769,6 +771,85 @@ export default function InternalDepartment({
     }
   }
 
+  async function handleRenameBoard() {
+    if (!resolvedBoard?.id) return;
+    const name = await requestPrompt({
+      title: t('hub.internal.renameBoard'),
+      label: t('hub.internal.boardNamePrompt'),
+      defaultValue: resolvedBoard.name,
+      confirmLabel: t('common.save'),
+      cancelLabel: t('common.cancel'),
+      maxLength: 120,
+    });
+    if (!name || name === resolvedBoard.name) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API_V1.internalBoard(resolvedBoard.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body);
+      const board = data?.board || data;
+      if (board?.id) {
+        setActiveBoard(board);
+        if (activeCampaign?.boards?.some(b => b.id === board.id)) {
+          setActiveCampaign(prev => prev ? {
+            ...prev,
+            boards: prev.boards.map(b => (b.id === board.id ? { ...b, name: board.name } : b)),
+            flow_data: syncBoardNameInFlow(prev.flow_data, board.id, board.name),
+          } : prev);
+        }
+        dispatchBoardsChanged();
+        toast.success(t('hub.internal.boardRenamed'));
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRenameCampaign() {
+    const campaign = activeCampaign || resolvedCampaign;
+    if (!campaign?.id) return;
+    const name = await requestPrompt({
+      title: t('hub.internal.renameCampaign'),
+      label: t('hub.internal.campaignNamePrompt'),
+      defaultValue: campaign.name,
+      confirmLabel: t('common.save'),
+      cancelLabel: t('common.cancel'),
+      maxLength: 120,
+    });
+    if (!name || name === campaign.name) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API_V1.internalCampaign(campaign.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body);
+      const updated = data?.campaign || data;
+      if (updated?.id) {
+        setActiveCampaign(updated);
+        toast.success(t('hub.internal.campaignRenamed'));
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function postComment(taskId, payload) {
     setPostingComment(true);
     try {
@@ -1002,6 +1083,9 @@ export default function InternalDepartment({
     [flowView, resolvedCampaign, actor]
   );
 
+  const canRenameActiveCampaign = canDeleteActiveCampaign;
+  const canRenameActiveBoard = canEditBoardFields;
+
   const flowViews = [
     { id: 'flow', label: t('hub.internal.viewFlow'), icon: 'flow' },
     { id: 'board', label: t('hub.internal.viewBoard'), icon: 'kanban' },
@@ -1165,6 +1249,17 @@ export default function InternalDepartment({
             </button>
             </>
             ) : null}
+            {canRenameActiveCampaign ? (
+            <button
+              type="button"
+              className="appdev-btn-ghost"
+              onClick={handleRenameCampaign}
+              disabled={saving}
+            >
+              <Icon name="edit" size={16} />
+              {t('hub.internal.renameCampaign')}
+            </button>
+            ) : null}
             {canDeleteActiveCampaign ? (
             <button
               type="button"
@@ -1194,6 +1289,17 @@ export default function InternalDepartment({
                 </Link>
               ))}
             </div>
+            {canRenameActiveBoard ? (
+            <button
+              type="button"
+              className="appdev-btn-ghost"
+              onClick={handleRenameBoard}
+              disabled={saving}
+            >
+              <Icon name="edit" size={16} />
+              {t('hub.internal.renameBoard')}
+            </button>
+            ) : null}
             {canEditBoardFields ? (
             <button
               type="button"
@@ -1479,6 +1585,7 @@ export default function InternalDepartment({
       )}
 
       {confirmDialog}
+      {promptDialog}
       <KanbanCreateModal
         open={kanbanCreateOpen}
         title={t('hub.internal.addKanbanNode')}

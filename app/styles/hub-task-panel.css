@@ -651,6 +651,30 @@
   background: var(--surface, var(--bg));
 }
 
-.appdev-media-video-open:hover {
-  border-color: var(--accent);
+
+.internal-task-panel.is-attachment-dragover {
+  outline: 2px dashed color-mix(in srgb, var(--fc-yellow) 70%, var(--line));
+  outline-offset: -2px;
 }
+
+.internal-task-panel.is-attachment-dragover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--fc-yellow-soft, #fff8e6) 35%, transparent);
+  z-index: 2;
+}
+
+.internal-task-panel {
+  position: relative;
+}
+
+.task-attachment-dropzone {
+  min-height: 5.5rem;
+}
+
+.task-attachment-fields .appdev-file-list {
+  margin-top: var(--space-3);
+}
+

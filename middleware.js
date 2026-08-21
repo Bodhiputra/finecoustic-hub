@@ -7,7 +7,8 @@ function isPublicAsset(pathname) {
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/fonts/') ||
     pathname === '/favicon.ico' ||
-    pathname === '/FLogo.png'
+    pathname === '/FLogo.png' ||
+    pathname === '/FLogo-mark-yellow.svg'
   );
 }
 

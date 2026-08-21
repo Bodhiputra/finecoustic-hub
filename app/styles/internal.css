@@ -2123,11 +2123,23 @@ button.internal-campaign-card {
   list-style: none;
 }
 
-.internal-campaign-card-item .internal-campaign-card-delete {
+.internal-campaign-card-item .internal-campaign-card-actions {
   position: absolute;
   top: var(--space-3);
   right: var(--space-3);
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.internal-campaign-card-item .internal-campaign-card-delete,
+.internal-campaign-card-item .internal-campaign-card-rename {
+  position: static;
+}
+
+.internal-campaign-card-item:has(.internal-campaign-card-actions) .internal-campaign-card {
+  padding-right: calc(var(--space-4) + 4.5rem);
 }
 
 .internal-campaign-card-item:has(.internal-campaign-card-delete) .internal-campaign-card {

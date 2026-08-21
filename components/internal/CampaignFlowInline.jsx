@@ -7,6 +7,7 @@ import Icon from '@/components/Icon';
 import KanbanCreateModal from '@/components/internal/KanbanCreateModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useHubPermissions } from '@/hooks/useHubPermissions';
+import { usePrompt } from '@/hooks/usePrompt';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, internalTasksQuery, unwrapData } from '@/lib/api/routes';
 import { navigateToBoardOrigin } from '@/lib/client-board-nav';
@@ -33,9 +34,10 @@ export default function CampaignFlowInline({
   const { t } = useLocale();
   const { toast } = useToast();
   const router = useRouter();
-  const { permissions } = useHubPermissions(initialProfile);
+  const { permissions, canDeleteCampaignFor } = useHubPermissions(initialProfile);
   const canCreate = permissions?.canCreateCampaign ?? false;
   const canEditBoard = permissions?.canEditBoardConfig ?? false;
+  const { requestPrompt, promptDialog } = usePrompt();
   const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [flowDataVersion, setFlowDataVersion] = useState(0);
@@ -243,6 +245,40 @@ export default function CampaignFlowInline({
     }
   }
 
+  async function handleRenameCampaign() {
+    if (!campaign?.id) return;
+    const name = await requestPrompt({
+      title: t('hub.internal.renameCampaign'),
+      label: t('hub.internal.campaignNamePrompt'),
+      defaultValue: campaign.name,
+      confirmLabel: t('common.save'),
+      cancelLabel: t('common.cancel'),
+      maxLength: 120,
+    });
+    if (!name || name === campaign.name) return;
+    setBusy(true);
+    try {
+      const res = await fetch(API_V1.internalCampaign(campaign.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body);
+      if (data?.campaign) {
+        setCampaign(data.campaign);
+        toast.success(t('hub.internal.campaignRenamed'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const flowStatusLabel = useCallback(
     statusId => {
       const col = flowStatusColumns().find(c => c.id === statusId);
@@ -285,8 +321,19 @@ export default function CampaignFlowInline({
         </div>
       </header>
 
-      {(canCreate || canEditBoard) ? (
+      {(canCreate || canEditBoard || canDeleteCampaignFor(campaign)) ? (
         <div className="internal-dept-toolbar internal-dept-toolbar--board internal-campaign-flow-toolbar">
+          {canDeleteCampaignFor(campaign) ? (
+            <button
+              type="button"
+              className="appdev-btn-ghost"
+              onClick={handleRenameCampaign}
+              disabled={busy}
+            >
+              <Icon name="edit" size={16} />
+              {t('hub.internal.renameCampaign')}
+            </button>
+          ) : null}
           {canEditBoard ? (
             <button
               type="button"
@@ -356,6 +403,7 @@ export default function CampaignFlowInline({
         onSubmit={handleConfirmCampaignKanban}
         onSelectExisting={handleAddExistingKanban}
       />
+      {promptDialog}
     </section>
   );
 }
