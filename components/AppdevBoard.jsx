@@ -373,6 +373,7 @@ export default function AppdevBoard({ initialData = null }) {
     completed_at: draft.completed_at,
     image_urls: draft.image_urls,
     video_urls: draft.video_urls,
+    file_urls: draft.file_urls,
   });
 
   const patchIssue = async (id, patch, { silent = false } = {}) => {
@@ -461,6 +462,7 @@ export default function AppdevBoard({ initialData = null }) {
             workers: draft.workers,
             image_urls: draft.image_urls,
             video_urls: draft.video_urls,
+            file_urls: draft.file_urls,
           }),
         });
         if (res.status === 403) {

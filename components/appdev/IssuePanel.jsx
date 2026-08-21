@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import DatePicker from '@/components/appdev/DatePicker';
 import MediaUrlFields from '@/components/appdev/MediaUrlFields';
+import FileUrlFields from '@/components/appdev/FileUrlFields';
 import IssueChat from '@/components/appdev/IssueChat';
 import WorkersField from '@/components/appdev/WorkersField';
 import Icon from '@/components/Icon';
@@ -321,6 +322,14 @@ export default function IssuePanel({
             t={t}
             disabled={saving}
             canManageMedia={caps.canManageMedia}
+          />
+
+          <FileUrlFields
+            fileUrls={draft.file_urls || []}
+            onChangeFiles={files => applyPatch({ file_urls: files })}
+            t={t}
+            disabled={saving}
+            canManageFiles={caps.canManageMedia}
           />
 
           <div className="appdev-field">
