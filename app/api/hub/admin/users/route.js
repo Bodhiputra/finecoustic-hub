@@ -8,7 +8,7 @@ import {
   setHubUserBlocked,
   updateHubUserDepartmentAccess,
 } from '@/lib/hub-users';
-import { HUB_ASSIGNABLE_DEPARTMENT_IDS, normalizeDepartmentAccess } from '@/lib/hub-departments';
+import { HUB_ASSIGNABLE_DEPARTMENT_IDS, HUB_DEPARTMENT_IDS, normalizeDepartmentAccess } from '@/lib/hub-departments';
 
 export async function GET() {
   let actor;
