@@ -27,11 +27,12 @@ export async function GET(request) {
   const scope = new URL(request.url).searchParams.get('scope') || '';
 
   if (scope === 'hub') {
-    const [hub, hubActor] = await Promise.all([isHubAuthenticated(), resolveHubActor()]);
+    const hubActor = await resolveHubActor();
     return NextResponse.json({
-      hub,
+      hub: hubActor.ok,
       displayName: hubActor.ok ? hubActor.displayName : '',
       hubUser: hubUserPayload(hubActor),
+      signOutReason: hubActor.ok ? '' : hubActor.reason || '',
     });
   }
 

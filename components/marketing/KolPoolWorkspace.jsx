@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 import { useLocale } from '@/components/LocaleProvider';
@@ -14,6 +14,9 @@ import {
   kolShippingSummary,
   platformChipClass,
 } from '@/lib/kol-pool';
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const DEFAULT_PAGE_SIZE = 25;
 
 function formatSyncTime(iso, locale = 'en') {
   if (!iso) return '—';
@@ -48,6 +51,8 @@ export default function KolPoolWorkspace({
   const [counts, setCounts] = useState(initialCounts || {});
   const [configured] = useState(initialConfigured);
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
 
@@ -71,6 +76,25 @@ export default function KolPoolWorkspace({
       return hay.includes(q);
     });
   }, [records, section, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  const paged = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, safePage, pageSize]);
+
+  const rangeFrom = filtered.length ? (safePage - 1) * pageSize + 1 : 0;
+  const rangeTo = filtered.length ? Math.min(safePage * pageSize, filtered.length) : 0;
+
+  useEffect(() => {
+    setPage(1);
+  }, [section, query, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   function handleSaved(record) {
     if (!record) return;
@@ -145,8 +169,25 @@ export default function KolPoolWorkspace({
           />
         </label>
         <span className="kol-pool-result-count">
-          {t('hub.kol.showing').replace('{count}', String(filtered.length))}
+          {filtered.length
+            ? t('hub.kol.showingRange')
+                .replace('{from}', String(rangeFrom))
+                .replace('{to}', String(rangeTo))
+                .replace('{total}', String(filtered.length))
+            : t('hub.kol.showing').replace('{count}', '0')}
         </span>
+        <label className="kol-pool-page-size">
+          <span>{t('hub.kol.perPage')}</span>
+          <select
+            value={pageSize}
+            onChange={e => setPageSize(Number(e.target.value) || DEFAULT_PAGE_SIZE)}
+            aria-label={t('hub.kol.perPage')}
+          >
+            {PAGE_SIZE_OPTIONS.map(size => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {filtered.length === 0 ? (
@@ -171,7 +212,7 @@ export default function KolPoolWorkspace({
               </tr>
             </thead>
             <tbody>
-              {filtered.map(row => (
+              {paged.map(row => (
                 <tr
                   key={row.notion_page_id}
                   className="kol-pool-row-click"
@@ -251,6 +292,34 @@ export default function KolPoolWorkspace({
           </table>
         </div>
       )}
+
+      {filtered.length > pageSize ? (
+        <nav className="kol-pool-pagination" aria-label={t('hub.kol.paginationLabel')}>
+          <button
+            type="button"
+            className="kol-pool-page-btn"
+            onClick={() => setPage(current => Math.max(1, current - 1))}
+            disabled={safePage <= 1}
+          >
+            <Icon name="chevronLeft" size={16} />
+            {t('hub.kol.prevPage')}
+          </button>
+          <span className="kol-pool-page-status">
+            {t('hub.kol.pageOf')
+              .replace('{page}', String(safePage))
+              .replace('{pages}', String(totalPages))}
+          </span>
+          <button
+            type="button"
+            className="kol-pool-page-btn"
+            onClick={() => setPage(current => Math.min(totalPages, current + 1))}
+            disabled={safePage >= totalPages}
+          >
+            {t('hub.kol.nextPage')}
+            <Icon name="chevronRight" size={16} />
+          </button>
+        </nav>
+      ) : null}
 
       {editing ? (
         <KolPoolFormPanel

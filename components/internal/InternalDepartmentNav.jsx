@@ -26,7 +26,6 @@ export default function InternalDepartmentNav({
   homeTab = null,
   onHomeTabChange = null,
   wikiPageId = '',
-  accountDisplayName = '',
 }) {
   const { t } = useLocale();
   const sessionProfile = useHubSessionProfile();
@@ -37,9 +36,6 @@ export default function InternalDepartmentNav({
     () => seededHubUser?.permissions?.departmentAccess || seededHubUser?.departmentAccess || null
   );
   const [isAdmin, setIsAdmin] = useState(() => Boolean(seededHubUser?.isAdmin));
-  const [canManageUsers, setCanManageUsers] = useState(() =>
-    Boolean(seededHubUser?.permissions?.canManageUsers)
-  );
   const [accessResolved, setAccessResolved] = useState(() => Boolean(seededHubUser));
   const clientHomeTabs = pathname === '/' && typeof onHomeTabChange === 'function';
   const campaignsListOnHome = clientHomeTabs
@@ -63,7 +59,6 @@ export default function InternalDepartmentNav({
         || null;
       setDepartmentAccess(access);
       setIsAdmin(Boolean(seededHubUser.isAdmin));
-      setCanManageUsers(Boolean(seededHubUser.permissions?.canManageUsers));
       setAccessResolved(true);
       return;
     }
@@ -76,51 +71,19 @@ export default function InternalDepartmentNav({
           || null;
         setDepartmentAccess(access);
         setIsAdmin(Boolean(data?.hubUser?.isAdmin));
-        setCanManageUsers(Boolean(data?.hubUser?.permissions?.canManageUsers));
       })
       .catch(() => {})
       .finally(() => setAccessResolved(true));
-  }, [seededHubUser?.id, seededHubUser?.permissions?.canManageUsers]);
+  }, [seededHubUser?.id]);
 
   const visibleDepartments = departmentsVisibleToUser(
     { isAdmin, departmentAccess, accessResolved },
     DEPARTMENTS
   );
 
-  const personalSectionLabel =
-    (accountDisplayName || sessionProfile?.displayName || '').trim()
-    || t('hub.personal.sectionYou');
-
   return (
     <div className="internal-sidebar-home-nav">
       <div className="internal-sidebar-home-nav-main">
-        <div className="internal-sidebar-section internal-sidebar-personal">
-          <small>{personalSectionLabel}</small>
-          <nav className="sidebar-nav" aria-label={personalSectionLabel}>
-            <Link
-              href="/me"
-              className={`nav${pathname === '/me' ? ' active' : ''}`}
-              aria-current={pathname === '/me' ? 'page' : undefined}
-              title={t('hub.personal.navHint')}
-              onClick={() => requestHubLoaderForNavigation(pathname, '/me')}
-            >
-              <Icon name="user" size={15} />
-              <span className="nav-label">{t('hub.personal.navLabel')}</span>
-            </Link>
-            {canManageUsers ? (
-              <Link
-                href="/hub/admin"
-                className={`nav${pathname === '/hub/admin' ? ' active' : ''}`}
-                aria-current={pathname === '/hub/admin' ? 'page' : undefined}
-                title={t('hub.admin.teamMembersHint')}
-              >
-                <Icon name="users" size={15} />
-                <span className="nav-label">{t('hub.admin.teamMembers')}</span>
-              </Link>
-            ) : null}
-          </nav>
-        </div>
-
         <div className="internal-sidebar-section internal-sidebar-work">
           <small>{t('hub.internal.sectionWork')}</small>
           <nav className="sidebar-nav" aria-label={t('hub.internal.sectionWork')}>

@@ -126,6 +126,7 @@ export function HubLayout({
             title={topNavTitle}
             subtitle={topNavSubtitle}
             authEnabled={authEnabled}
+            displayName={displayName}
             onLogout={onLogout}
           />
           {children}

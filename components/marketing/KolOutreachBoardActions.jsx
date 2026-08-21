@@ -102,7 +102,7 @@ export default function KolOutreachBoardActions({
   initialPoolRecords = [],
   onTasksChanged,
   canCreate = false,
-  defaultInitiative = 'fbs',
+  initiative = 'fbs',
   existingKeys = null,
 }) {
   const { t } = useLocale();
@@ -111,11 +111,7 @@ export default function KolOutreachBoardActions({
   const [newKolOpen, setNewKolOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [poolRecords, setPoolRecords] = useState(initialPoolRecords);
-  const [initiative, setInitiative] = useState(defaultInitiative || 'fbs');
-
-  useEffect(() => {
-    setInitiative(defaultInitiative || 'fbs');
-  }, [defaultInitiative]);
+  const addInitiative = initiative || 'fbs';
 
   useEffect(() => {
     if (initialPoolRecords.length) {
@@ -154,14 +150,14 @@ export default function KolOutreachBoardActions({
         status: 'not_started',
         custom_values: {
           [KOL_BOARD_PROP.kolPoolId]: kol.notion_page_id,
-          [KOL_BOARD_PROP.initiative]: initiative,
+          [KOL_BOARD_PROP.initiative]: addInitiative,
         },
       }),
     });
     if (!res.ok) throw new Error('create_failed');
     const body = await res.json();
     return unwrapData(body, 'task')?.task || unwrapData(body);
-  }, [initiative]);
+  }, [addInitiative]);
 
   async function addFromPool(ids) {
     setBusy(true);
@@ -169,7 +165,7 @@ export default function KolOutreachBoardActions({
       let created = 0;
       for (const id of ids) {
         const kol = poolRecords.find(r => r.notion_page_id === id);
-        if (!kol || outreachKeys.has(outreachRowKey(id, initiative))) continue;
+        if (!kol || outreachKeys.has(outreachRowKey(id, addInitiative))) continue;
         await createTaskForKol(kol);
         created += 1;
       }
@@ -219,14 +215,6 @@ export default function KolOutreachBoardActions({
 
   return (
     <>
-      <label className="kol-outreach-initiative-pick">
-        <span>{t('hub.campaignKol.initiative')}</span>
-        <select value={initiative} onChange={e => setInitiative(e.target.value)} disabled={busy}>
-          {KOL_INITIATIVES.map(item => (
-            <option key={item.id} value={item.id}>{item.label}</option>
-          ))}
-        </select>
-      </label>
       <button type="button" className="appdev-btn-ghost" onClick={() => setPickerOpen(true)} disabled={busy}>
         <Icon name="users" size={16} />
         {t('hub.campaignKol.addFromPool')}
@@ -240,7 +228,7 @@ export default function KolOutreachBoardActions({
         open={pickerOpen}
         poolRecords={poolRecords}
         existingKeys={outreachKeys}
-        initiative={initiative}
+        initiative={addInitiative}
         onClose={() => setPickerOpen(false)}
         onAdd={addFromPool}
         busy={busy}

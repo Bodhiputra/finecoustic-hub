@@ -251,7 +251,7 @@ export default function KolOutreachWorkspace({
             initialPoolRecords={poolRecords}
             onTasksChanged={onTasksChanged}
             canCreate={canCreate}
-            defaultInitiative={defaultInitiative}
+            initiative={defaultInitiative}
             existingKeys={existingOutreachKeys(normalizedTasks)}
           />
         )}

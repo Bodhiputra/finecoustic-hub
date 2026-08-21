@@ -251,7 +251,26 @@ if (serverUp) {
     const meHubData = await meHub.json();
     assert(meHub.ok && meHubData.hubUser?.id, '/api/auth/me reports hub user');
 
-    const tasksApi = await getWithCookies('/api/v1/internal/tasks', hubLogin.cookies);
+    const firstHubSession = { ...hubLogin.cookies };
+    const hubRelogin = await login('/api/auth/hub/login', hubUserPw, hubUserName);
+    assert(hubRelogin.res.ok, 'second hub login on same name succeeds');
+
+    const meHubStale = await getWithCookies('/api/auth/me?scope=hub', firstHubSession);
+    const meHubStaleData = await meHubStale.json();
+    assert(!meHubStaleData.hub, 'first hub device session revoked after login elsewhere');
+    assert(
+      meHubStaleData.signOutReason === 'session_revoked',
+      'stale hub session reports session_revoked'
+    );
+
+    const tasksStale = await getWithCookies('/api/v1/internal/tasks', firstHubSession);
+    assert(tasksStale.status === 401, 'stale hub session blocked from internal API', String(tasksStale.status));
+
+    const meHubSecond = await getWithCookies('/api/auth/me', hubRelogin.cookies);
+    const meHubSecondData = await meHubSecond.json();
+    assert(meHubSecond.ok && meHubSecondData.hub, 'second hub session is active');
+
+    const tasksApi = await getWithCookies('/api/v1/internal/tasks', hubRelogin.cookies);
     assert(tasksApi.ok, 'hub user can access internal API', String(tasksApi.status));
   }
 

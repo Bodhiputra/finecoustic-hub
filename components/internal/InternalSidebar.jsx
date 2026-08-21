@@ -46,7 +46,6 @@ export default function InternalSidebar({
   onDeptToolChange = null,
   clientDeptBoardNav = false,
   onDeptBoardChange = null,
-  accountDisplayName = '',
 }) {
   const { t } = useLocale();
   const sessionProfile = useHubSessionProfile();
@@ -428,7 +427,6 @@ export default function InternalSidebar({
           homeTab={homeTab}
           wikiPageId={wikiPageId}
           onHomeTabChange={onHomeTabChange}
-          accountDisplayName={accountDisplayName}
         />
       </div>
     </>

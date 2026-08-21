@@ -712,7 +712,6 @@ export default function InternalDepartment({
         toast.error(t('common.somethingWrong'));
         return;
       }
-      dispatchBoardsChanged();
       toast.success(t('hub.internal.boardDeleted'));
       if (personalMode) {
         router.push('/me');
@@ -721,6 +720,7 @@ export default function InternalDepartment({
       } else {
         router.push(deptBase);
       }
+      dispatchBoardsChanged();
     } finally {
       setSaving(false);
     }
@@ -988,12 +988,12 @@ export default function InternalDepartment({
   const flowViews = [
     { id: 'flow', label: t('hub.internal.viewFlow'), icon: 'flow' },
     { id: 'board', label: t('hub.internal.viewBoard'), icon: 'kanban' },
-    { id: 'list', label: t('hub.internal.viewList'), icon: 'layout' },
+    { id: 'list', label: t('hub.internal.viewTable'), icon: 'layout' },
   ];
 
   const taskViews = [
     { id: 'board', label: t('hub.internal.viewBoard'), icon: 'kanban' },
-    { id: 'list', label: t('hub.internal.viewList'), icon: 'layout' },
+    { id: 'list', label: t('hub.internal.viewTable'), icon: 'layout' },
   ];
 
   const topNavTitle = boardView
@@ -1267,6 +1267,7 @@ export default function InternalDepartment({
             deptBase={deptBase}
             activeView={BUCKET_VIEWS.includes(viewParam) ? viewParam : ''}
             taskView={view}
+            defaultView={personalHomeSection ? 'list' : 'board'}
             activePeople={activePeople}
             activeSubtype={activeSubtype}
             people={peopleOptions}
@@ -1359,6 +1360,8 @@ export default function InternalDepartment({
             tasks={listTaskItems}
             onTaskClick={personalHomeSection ? handleAssignedTaskClick : setPanelTask}
             showTaskOrigin={personalHomeSection}
+            onStatusChange={personalHomeSection ? undefined : handleStatusChange}
+            saving={saving}
           />
         )}
 
@@ -1381,7 +1384,13 @@ export default function InternalDepartment({
         )}
 
         {boardTaskSection && boardCview === 'list' && (
-          <InternalListView tasks={taskItems} onTaskClick={setPanelTask} statusColumns={boardStatusCols} />
+          <InternalListView
+            tasks={taskItems}
+            onTaskClick={setPanelTask}
+            statusColumns={boardStatusCols}
+            onStatusChange={handleStatusChange}
+            saving={saving}
+          />
         )}
 
         {flowTaskSection && flowCview === 'flow' && (
@@ -1416,6 +1425,8 @@ export default function InternalDepartment({
             tasks={workspaceItems}
             onTaskClick={setPanelTask}
             flowData={resolvedCampaign?.flow_data}
+            onStatusChange={handleStatusChange}
+            saving={saving}
           />
         )}
       </main>

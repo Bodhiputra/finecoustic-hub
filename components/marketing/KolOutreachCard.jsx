@@ -35,58 +35,71 @@ export default function KolOutreachCard({
       ]
         .filter(Boolean)
         .join(' ')}
-      draggable={canDrag}
-      onDragStart={canDrag ? onDragStart : undefined}
-      onDragEnd={onDragEnd}
     >
-      <button type="button" className="kol-outreach-card-main" onClick={() => onOpenCard?.(task)}>
-        <span className="kol-outreach-card-title">{task.title || '—'}</span>
-        {chips.length ? (
-          <div className="kol-outreach-card-chips">
-            {chips.map(chip => (
-              <span key={chip.key} className={`internal-hint-chip ${chip.className}`}>
-                {chip.label}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        {assignee ? (
-          <span className="kol-outreach-card-assignee">
-            <UserAvatar name={assignee} size={18} />
-            <span>{assignee}</span>
-          </span>
-        ) : (
-          <span className="kol-outreach-card-unassigned">{t('hub.campaignKol.unassigned')}</span>
-        )}
-      </button>
-      <button
-        type="button"
-        className="kol-outreach-card-info"
-        onClick={e => {
-          e.stopPropagation();
-          onMoreInfo?.(task);
-        }}
-      >
-        {t('hub.campaignKol.moreInfo')}
-      </button>
-      {showFollowUp ? (
-        <button
-          type="button"
-          className={`kol-outreach-card-follow-up${needsFollowUp(task) ? ' is-due' : ''}`}
-          onClick={e => {
-            e.stopPropagation();
-            onFollowUp?.(task);
-          }}
+      <div className="kol-outreach-card-shell">
+        <span
+          className={`kol-outreach-card-grip${canDrag ? '' : ' is-locked'}`}
+          draggable={canDrag}
+          onDragStart={canDrag ? onDragStart : undefined}
+          onDragEnd={onDragEnd}
+          aria-label={canDrag ? t('hub.campaignKol.dragCard') : undefined}
+          aria-hidden={!canDrag}
+          title={canDrag ? t('hub.campaignKol.dragCard') : undefined}
         >
-          {t('hub.campaignKol.followUpAction')}
-        </button>
-      ) : null}
-      {!canDrag && draggable && assignee && assignee !== displayName ? (
-        <p className="kol-outreach-card-hint">{t('hub.campaignKol.assigneeOnlyDrag')}</p>
-      ) : null}
-      {!assignee ? (
-        <p className="kol-outreach-card-hint">{t('hub.campaignKol.assignBeforeDrag')}</p>
-      ) : null}
+          <Icon name="gripVertical" size={14} />
+        </span>
+
+        <div className="kol-outreach-card-content">
+          <button type="button" className="kol-outreach-card-main" onClick={() => onOpenCard?.(task)}>
+            <span className="kol-outreach-card-title">{task.title || '—'}</span>
+            {chips.length ? (
+              <div className="kol-outreach-card-chips">
+                {chips.map(chip => (
+                  <span key={chip.key} className={`internal-hint-chip ${chip.className}`}>
+                    {chip.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            {assignee ? (
+              <span className="kol-outreach-card-assignee">
+                <UserAvatar name={assignee} size={18} />
+                <span>{assignee}</span>
+              </span>
+            ) : (
+              <span className="kol-outreach-card-unassigned">{t('hub.campaignKol.unassigned')}</span>
+            )}
+          </button>
+          <button
+            type="button"
+            className="kol-outreach-card-info"
+            onClick={e => {
+              e.stopPropagation();
+              onMoreInfo?.(task);
+            }}
+          >
+            {t('hub.campaignKol.moreInfo')}
+          </button>
+          {showFollowUp ? (
+            <button
+              type="button"
+              className={`kol-outreach-card-follow-up${needsFollowUp(task) ? ' is-due' : ''}`}
+              onClick={e => {
+                e.stopPropagation();
+                onFollowUp?.(task);
+              }}
+            >
+              {t('hub.campaignKol.followUpAction')}
+            </button>
+          ) : null}
+          {!canDrag && draggable && assignee && assignee !== displayName ? (
+            <p className="kol-outreach-card-hint">{t('hub.campaignKol.assigneeOnlyDrag')}</p>
+          ) : null}
+          {!assignee ? (
+            <p className="kol-outreach-card-hint">{t('hub.campaignKol.assignBeforeDrag')}</p>
+          ) : null}
+        </div>
+      </div>
     </article>
   );
 }

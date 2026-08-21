@@ -6,12 +6,13 @@ import { useLocale } from '@/components/LocaleProvider';
 import { personKey } from '@/lib/appdev';
 import { togglePeopleKey, internalTasksUrl } from '@/lib/internal';
 
-const FILTER_IDS = ['in_progress', 'today', 'overdue'];
+const FILTER_IDS = ['in_progress', 'overdue'];
 
 export default function InternalTaskFilters({
   deptBase,
   activeView = '',
   taskView = 'board',
+  defaultView = '',
   activePeople = new Set(),
   activeSubtype = '',
   people = [],
@@ -24,10 +25,10 @@ export default function InternalTaskFilters({
   const { t } = useLocale();
   const meKey = currentUserName ? personKey(currentUserName) : '';
   const meActive = Boolean(meKey && activePeople.size === 1 && activePeople.has(meKey));
+  const unfilteredView = defaultView || taskView;
 
   const filters = [
     { id: 'in_progress', label: t('hub.internal.inProgress') },
-    { id: 'today', label: t('hub.internal.today') },
     { id: 'overdue', label: t('hub.internal.overdue') },
   ];
 
@@ -50,6 +51,11 @@ export default function InternalTaskFilters({
     return hrefFor({ view: currentView, subtype: next });
   }
 
+  function bucketHref(id) {
+    const nextView = activeView === id ? unfilteredView : id;
+    return hrefFor({ view: nextView });
+  }
+
   const showClear = peopleOnly
     ? (peopleActive && !hidePeople) || subtypeActive
     : bucketActive || (peopleActive && !hidePeople) || subtypeActive;
@@ -63,9 +69,9 @@ export default function InternalTaskFilters({
           {filters.map(({ id, label }) => (
             <Link
               key={id}
-              href={hrefFor({ view: id })}
+              href={bucketHref(id)}
               className={`internal-task-filter${activeView === id ? ' is-active' : ''}`}
-              aria-current={activeView === id ? 'page' : undefined}
+              aria-pressed={activeView === id}
             >
               {label}
             </Link>
@@ -128,7 +134,7 @@ export default function InternalTaskFilters({
 
       {showClear ? (
         <div className="internal-task-filters-clear">
-          <Link href={hrefFor({ view: taskView, peopleKeys: new Set(), subtype: '' })} className="internal-task-filter is-clear">
+          <Link href={hrefFor({ view: unfilteredView, peopleKeys: new Set(), subtype: '' })} className="internal-task-filter is-clear">
             {t('hub.internal.clearFilters')}
           </Link>
         </div>

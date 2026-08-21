@@ -370,7 +370,6 @@ export default function InternalHome({
           mode="home"
           initialHubUser={profile.hubUser}
           initialWikiPages={initialWikiPages}
-          accountDisplayName={displayNameResolved}
           homeTab={homeTab}
           wikiPageId={wikiPageId}
           onHomeTabChange={setHomeTabClient}

@@ -14,6 +14,8 @@ function HubAuthFormInner({
 }) {
   const searchParams = useSearchParams();
   const { t, locale } = useLocale();
+  const signOutReason = searchParams.get('reason') || '';
+  const sessionRevoked = signOutReason === 'session_revoked';
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -156,6 +158,10 @@ function HubAuthFormInner({
       <form className="login-card" onSubmit={onSubmit}>
         <h1>{t('login.title')}</h1>
         <p className="login-subtitle">{t('hub.auth.signInSubtitle')}</p>
+
+        {sessionRevoked ? (
+          <p className="login-notice" role="status">{t('hub.auth.sessionRevoked')}</p>
+        ) : null}
 
         <label htmlFor={nameId}>{t('common.yourName')}</label>
         <input
