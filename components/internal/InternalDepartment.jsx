@@ -634,21 +634,38 @@ export default function InternalDepartment({
   }
 
   async function handleStatusChange(task, status) {
-    const res = await fetch(API_V1.internalTask(task.id), {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) {
-      toast.error(t('hub.internal.workflow.transitionFailed'));
-      return;
+    if (!task?.id || task.status === status) return;
+
+    const snapshot = task;
+    const optimistic = { ...task, status, updated_at: new Date().toISOString() };
+    mergeTask(optimistic);
+    setPanelTask(prev => (prev?.id === task.id ? optimistic : prev));
+
+    try {
+      const res = await fetch(API_V1.internalTask(task.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        mergeTask(snapshot);
+        setPanelTask(prev => (prev?.id === task.id ? snapshot : prev));
+        toast.error(t('hub.internal.workflow.transitionFailed'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body, 'task');
+      const updated = data?.task || data;
+      if (updated?.id) {
+        mergeTask(updated);
+        setPanelTask(prev => (prev?.id === task.id ? updated : prev));
+      }
+    } catch {
+      mergeTask(snapshot);
+      setPanelTask(prev => (prev?.id === task.id ? snapshot : prev));
+      toast.error(t('common.somethingWrong'));
     }
-    const body = await res.json();
-    const data = unwrapData(body, 'task');
-    const updated = data?.task || data;
-    if (updated?.id) mergeTask(updated);
-    if (panelTask?.id === task.id && updated?.id) setPanelTask(updated);
   }
 
   async function handleWorkflowAction(taskId, action) {

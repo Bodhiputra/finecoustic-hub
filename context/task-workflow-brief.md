@@ -19,6 +19,7 @@ Default board columns: `todo` → `in_progress` → `in_review` → `done`.
 |---|---|
 | `todo` → `in_progress` | Assignee (**Accept**) |
 | `in_progress` → `in_review` | Assignee (**Request review**) |
+| `in_progress` → `todo` | Assignee, assigner, or manager (board drag / pause) |
 | `in_review` → `done` | Assigner only (**Mark done**) |
 | `in_review` → `in_progress` | Assigner only (**Send back**) |
 | → `cancelled` | Assigner (or manager) |
