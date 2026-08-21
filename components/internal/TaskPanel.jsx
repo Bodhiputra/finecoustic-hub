@@ -127,6 +127,45 @@ function HubSinglePick({ legend, name, value, options, onChange, disabled = fals
   );
 }
 
+/** Multi choice — same pill UI; click to toggle each person. */
+function HubMultiPick({ legend, name, value = [], options = [], onChange, disabled = false }) {
+  const selected = new Set(Array.isArray(value) ? value : []);
+
+  function toggle(optValue) {
+    if (disabled) return;
+    const next = new Set(selected);
+    if (next.has(optValue)) next.delete(optValue);
+    else next.add(optValue);
+    onChange(
+      [...next].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+    );
+  }
+
+  return (
+    <fieldset className="hub-single-pick hub-multi-pick appdev-field">
+      <legend className="hub-single-pick-label">{legend}</legend>
+      <div className="hub-single-pick-options" role="group" aria-label={legend}>
+        {options.map(optValue => (
+          <label
+            key={optValue}
+            className={`hub-single-pick-option${selected.has(optValue) ? ' is-active' : ''}`}
+          >
+            <input
+              type="checkbox"
+              name={name}
+              value={optValue}
+              checked={selected.has(optValue)}
+              onChange={() => toggle(optValue)}
+              disabled={disabled}
+            />
+            <span>{optValue}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 const WORKFLOW_ACTION_KEYS = {
   accept: 'hub.internal.workflow.accept',
   request_review: 'hub.internal.workflow.requestReview',
@@ -358,7 +397,7 @@ export default function TaskPanel({
             />
           )}
 
-          {!hideDepartment ? (
+          {!hideDepartment && !isMeeting ? (
             <label className="appdev-field">
               <span>{t('hub.internal.taskPanel.department')}</span>
               <select
@@ -489,25 +528,17 @@ export default function TaskPanel({
                 </label>
               ) : null}
               {draft.meeting_scope === 'individual' ? (
-                <label className="appdev-field">
-                  <span>{t('hub.internal.meetingAttendees')}</span>
-                  <select
-                    multiple
+                <div className="appdev-field">
+                  <HubMultiPick
+                    legend={t('hub.internal.meetingAttendees')}
+                    name="meeting-attendees"
                     value={draft.meeting_attendees || []}
-                    onChange={e =>
-                      set(
-                        'meeting_attendees',
-                        [...e.target.selectedOptions].map(o => o.value)
-                      )
-                    }
+                    options={assigneeOptions}
+                    onChange={names => set('meeting_attendees', names)}
                     disabled={saving}
-                  >
-                    {assigneeOptions.map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
+                  />
                   <span className="appdev-field-hint">{t('hub.internal.meetingAttendeesHint')}</span>
-                </label>
+                </div>
               ) : null}
             </>
           )}
