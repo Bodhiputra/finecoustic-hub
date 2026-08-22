@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import IssueChat from '@/components/appdev/IssueChat';
 import Icon from '@/components/Icon';
+import ModalPortal from '@/components/ModalPortal';
 import TaskAttachmentFields from '@/components/internal/TaskAttachmentFields';
 import TaskCustomFields from '@/components/internal/TaskCustomFields';
 import TaskDateTimeField from '@/components/internal/TaskDateTimeField';
@@ -395,18 +396,23 @@ export default function TaskPanel({
   const canSave = Boolean(draft.title?.trim());
 
   return (
-    <>
-      <button type="button" className="appdev-overlay" onClick={onClose} aria-label={t('hub.internal.close')} />
-      <aside
-        className={`appdev-panel internal-task-panel${panelDragging ? ' is-attachment-dragover' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="internal-panel-title"
+    <ModalPortal>
+      <div
+        className={`internal-task-panel-backdrop${panelDragging ? ' is-attachment-dragover' : ''}`}
+        role="presentation"
+        onClick={onClose}
         onDragEnter={onPanelDragEnter}
         onDragLeave={onPanelDragLeave}
         onDragOver={onPanelDragOver}
         onDrop={onPanelDrop}
       >
+        <aside
+          className="appdev-panel internal-task-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="internal-panel-title"
+          onClick={e => e.stopPropagation()}
+        >
         <header className={`appdev-panel-head${isNew ? ' appdev-panel-head--draft' : ''}`}>
           <span className="appdev-issue-id" id="internal-panel-title">{panelTitle}</span>
           <button type="button" className="appdev-panel-close" onClick={onClose} aria-label={t('hub.internal.close')}>
@@ -735,6 +741,7 @@ export default function TaskPanel({
           </div>
         </footer>
       </aside>
-    </>
+      </div>
+    </ModalPortal>
   );
 }

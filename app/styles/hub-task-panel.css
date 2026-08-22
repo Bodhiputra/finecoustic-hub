@@ -652,22 +652,53 @@
 }
 
 
-.internal-task-panel.is-attachment-dragover {
-  outline: 2px dashed color-mix(in srgb, var(--fc-yellow) 70%, var(--line));
+.internal-task-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(var(--space-3), env(safe-area-inset-top, 0px))
+    max(var(--space-3), env(safe-area-inset-right, 0px))
+    max(var(--space-3), env(safe-area-inset-bottom, 0px))
+    max(var(--space-3), env(safe-area-inset-left, 0px));
+  background: rgba(0, 0, 0, 0.35);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.internal-task-panel.appdev-panel {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: min(560px, 100%);
+  height: auto;
+  max-height: min(90dvh, 880px);
+  margin: auto;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-md);
+}
+
+.internal-task-panel-backdrop.is-attachment-dragover {
+  outline: 2px dashed color-mix(in srgb, var(--fc-yellow) 70%, transparent);
   outline-offset: -2px;
 }
 
-.internal-task-panel.is-attachment-dragover::after {
+.internal-task-panel-backdrop.is-attachment-dragover::after {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
   background: color-mix(in srgb, var(--fc-yellow-soft, #fff8e6) 35%, transparent);
-  z-index: 2;
+  z-index: 1;
 }
 
-.internal-task-panel {
+.internal-task-panel-backdrop.is-attachment-dragover .internal-task-panel {
   position: relative;
+  z-index: 2;
 }
 
 .task-attachment-dropzone {

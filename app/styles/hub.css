@@ -770,8 +770,38 @@
   }
 
   .hub-topnav {
-    padding-left: max(var(--space-3), env(safe-area-inset-left, 0px));
-    padding-right: max(var(--space-3), env(safe-area-inset-right, 0px));
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'nav-menu nav-title nav-actions';
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: var(--space-2) max(var(--space-4), env(safe-area-inset-right, 0px)) var(--space-2)
+      max(var(--space-3), env(safe-area-inset-left, 0px));
+    gap: var(--space-2);
+  }
+
+  .hub-topnav-start {
+    display: contents;
+  }
+
+  .hub-menu-btn {
+    grid-area: nav-menu;
+  }
+
+  .hub-topnav-titles {
+    grid-area: nav-title;
+    min-width: 0;
+  }
+
+  .hub-topnav-actions {
+    grid-area: nav-actions;
+    justify-self: end;
+    flex-wrap: nowrap;
+  }
+
+  .hub-topnav-user-name,
+  .hub-topnav-signout span {
+    display: none;
   }
 
   .hub-sidebar-backdrop {
@@ -792,16 +822,6 @@
 
   .hub-main {
     padding: var(--space-5) var(--space-4);
-  }
-
-  .hub-topnav {
-    padding: var(--space-2) var(--space-4);
-    gap: var(--space-2);
-  }
-
-  .hub-topnav-user-name,
-  .hub-topnav-signout span {
-    display: none;
   }
 
   .topbar {
