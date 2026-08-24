@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -15,6 +15,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useConfirm } from '@/hooks/useConfirm';
 import { usePrompt } from '@/hooks/usePrompt';
 import { useInternalTasks } from '@/hooks/useInternalTasks';
+import { bumpLocalEditQuiet, useInternalWorkspacePoll } from '@/hooks/useInternalWorkspacePoll';
 import { useTaskDeepLink } from '@/hooks/useTaskDeepLink';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
@@ -242,6 +243,7 @@ export default function InternalDepartment({
   const [statusEditorOpen, setStatusEditorOpen] = useState(false);
   const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
   const [flowDataVersion, setFlowDataVersion] = useState(0);
+  const localEditQuietUntilRef = useRef(0);
 
   useEffect(() => {
     signalHubNavigationReady();
@@ -411,6 +413,23 @@ export default function InternalDepartment({
   );
   const flowCview = FLOW_CVIEW.includes(cviewParam) ? cviewParam : 'flow';
   const boardCview = cviewParam === 'list' ? 'list' : 'board';
+
+  const handleRemoteCampaignUpdate = useCallback(campaign => {
+    if (!campaign?.id) return;
+    setActiveCampaign(prev => {
+      if (!prev || prev.id !== campaign.id) return campaign;
+      if (prev.updated_at === campaign.updated_at) return prev;
+      return campaign;
+    });
+  }, []);
+
+  useInternalWorkspacePoll({
+    enabled: Boolean(shouldLoadTasks && !outreachToolView && (flowView || boardView)),
+    campaignId: flowView ? flowParam : '',
+    onCampaignUpdate: flowView ? handleRemoteCampaignUpdate : undefined,
+    onTasksUpdate: refresh,
+    quietUntilRef: localEditQuietUntilRef,
+  });
 
   useEffect(() => {
     if (seededMe?.hubUser?.permissions) {
@@ -638,6 +657,8 @@ export default function InternalDepartment({
   async function handleStatusChange(task, status) {
     if (!task?.id || task.status === status) return;
 
+    bumpLocalEditQuiet(localEditQuietUntilRef);
+
     const snapshot = task;
     const optimistic = { ...task, status, updated_at: new Date().toISOString() };
     mergeTask(optimistic);
@@ -672,6 +693,7 @@ export default function InternalDepartment({
   }
 
   async function handleWorkflowAction(taskId, action) {
+    bumpLocalEditQuiet(localEditQuietUntilRef);
     setWorkflowBusy(true);
     try {
       const res = await fetch(API_V1.internalTask(taskId), {
@@ -958,6 +980,7 @@ export default function InternalDepartment({
 
   const patchFlowData = useCallback(async flowData => {
     if (!activeCampaign?.id) return false;
+    bumpLocalEditQuiet(localEditQuietUntilRef);
     try {
       const res = await fetch(API_V1.internalCampaign(activeCampaign.id), {
         method: 'PATCH',
@@ -993,6 +1016,7 @@ export default function InternalDepartment({
 
   const handleSaveFlowData = useCallback(async flowData => {
     if (!activeCampaign?.id) return false;
+    bumpLocalEditQuiet(localEditQuietUntilRef);
     try {
       const res = await fetch(API_V1.internalCampaign(activeCampaign.id), {
         method: 'PATCH',
@@ -1001,7 +1025,13 @@ export default function InternalDepartment({
         body: JSON.stringify({ flow_data: flowData }),
       });
       if (res.ok) {
-        setActiveCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+        const body = await res.json();
+        const data = unwrapData(body);
+        if (data?.campaign) {
+          setActiveCampaign(data.campaign);
+        } else {
+          setActiveCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+        }
         return true;
       }
       toast.error(t('common.somethingWrong'));

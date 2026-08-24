@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
@@ -14,6 +14,7 @@ import { navigateToBoardOrigin } from '@/lib/client-board-nav';
 import { appendKanbanNodeToFlow, appendTaskNodeToFlow } from '@/lib/campaign-flow-utils';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
+import { bumpLocalEditQuiet, useInternalWorkspacePoll } from '@/hooks/useInternalWorkspacePoll';
 import { flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
 import { initiativeFromCampaign } from '@/lib/kol-outreach-shared';
 
@@ -41,6 +42,7 @@ export default function CampaignFlowInline({
   const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [flowDataVersion, setFlowDataVersion] = useState(0);
+  const localEditQuietUntilRef = useRef(0);
   const seeded = useMemo(
     () => initialCampaigns?.find(campaign => campaign.id === campaignId) || null,
     [initialCampaigns, campaignId]
@@ -82,6 +84,7 @@ export default function CampaignFlowInline({
 
   const patchFlowData = useCallback(async flowData => {
     if (!campaign?.id) return false;
+    bumpLocalEditQuiet(localEditQuietUntilRef);
     try {
       const res = await fetch(API_V1.internalCampaign(campaign.id), {
         method: 'PATCH',
@@ -117,6 +120,7 @@ export default function CampaignFlowInline({
 
   const handleSaveFlowData = useCallback(async flowData => {
     if (!campaign?.id) return false;
+    bumpLocalEditQuiet(localEditQuietUntilRef);
     try {
       const res = await fetch(API_V1.internalCampaign(campaign.id), {
         method: 'PATCH',
@@ -125,7 +129,13 @@ export default function CampaignFlowInline({
         body: JSON.stringify({ flow_data: flowData }),
       });
       if (res.ok) {
-        setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+        const body = await res.json();
+        const data = unwrapData(body);
+        if (data?.campaign) {
+          setCampaign(data.campaign);
+        } else {
+          setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+        }
         return true;
       }
       toast.error(t('common.somethingWrong'));
@@ -157,6 +167,28 @@ export default function CampaignFlowInline({
     if (!campaignId) return;
     refreshTasks();
   }, [campaignId, refreshTasks, tasksRefreshKey]);
+
+  const handleRemoteCampaignUpdate = useCallback(nextCampaign => {
+    if (!nextCampaign?.id) return;
+    setCampaign(prev => {
+      if (!prev || prev.id !== nextCampaign.id) return nextCampaign;
+      if (prev.updated_at === nextCampaign.updated_at) return prev;
+      return nextCampaign;
+    });
+  }, []);
+
+  useInternalWorkspacePoll({
+    enabled: Boolean(campaignId),
+    campaignId,
+    onCampaignUpdate: handleRemoteCampaignUpdate,
+    onTasksUpdate: refreshTasks,
+    quietUntilRef: localEditQuietUntilRef,
+  });
+
+  useEffect(() => {
+    if (!tasksRefreshKey) return;
+    bumpLocalEditQuiet(localEditQuietUntilRef);
+  }, [tasksRefreshKey]);
 
   useEffect(() => {
     if (!savedFlowTask?.id || !campaign?.id) return;
