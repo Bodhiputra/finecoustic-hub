@@ -12,7 +12,7 @@ import {
 } from '@/lib/hub-notification-nav';
 import { HUB_NOTIFICATIONS_REFRESH_EVENT } from '@/lib/hub-notifications-ui';
 
-const POLL_MS = 12_000;
+const POLL_MS = 60_000;
 
 function formatNotificationDate(iso, locale) {
   if (!iso) return '';
