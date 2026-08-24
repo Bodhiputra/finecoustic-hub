@@ -18,7 +18,7 @@ export function useFlowKanbanPickerBoards({ open, department, campaignBoards, fl
 
     let cancelled = false;
     setLoading(true);
-    fetch(internalBoardsQuery({ department }), { credentials: 'same-origin' })
+    fetch(internalBoardsQuery({ department, forFlowPicker: true }), { credentials: 'same-origin' })
       .then(res => (res.ok ? res.json() : null))
       .then(body => {
         if (cancelled) return;

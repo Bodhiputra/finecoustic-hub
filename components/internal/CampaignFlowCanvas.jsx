@@ -16,6 +16,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import { flowNodeStatusClass, flowNodeStatusLabel, normalizeFlowEdgeDirection } from '@/lib/campaign-flow-utils';
 
 const SAVE_DEBOUNCE_MS = 250;
 
@@ -43,7 +44,9 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
           {isKanban ? '▦' : isMilestone ? '◇' : '□'}
         </span>
         {!isKanban && data.status ? (
-          <span className={`campaign-flow-node-status is-${data.status}`}>{data.statusLabel || data.status}</span>
+          <span className={`campaign-flow-node-status is-${data.statusClass || data.status}`}>
+            {data.statusLabel || data.status}
+          </span>
         ) : null}
       </div>
       <span className="campaign-flow-node-label">{data.label}</span>
@@ -101,27 +104,35 @@ function buildFlowGraph(flowData, tasks, boards = [], statusLabelFor) {
         type: 'flowNode',
         position: node.position || { x: 0, y: 0 },
         data: {
-          nodeType: kind === 'milestone' ? 'milestone' : 'task',
+          nodeType: kind === 'milestone' ? 'milestone' : kind === 'meeting' ? 'meeting' : 'task',
           label,
           taskId: node.taskId,
           kind,
           status,
-          statusLabel: statusLabelFor?.(status) || status,
+          statusClass: flowNodeStatusClass(status, kind),
+          statusLabel: statusLabelFor?.(status, kind) || status,
         },
       };
     });
 
   const nodeIds = new Set(nodes.map(node => node.id));
+  const flowNodeById = new Map((flowData?.nodes || []).map(node => [node.id, node]));
   const edges = (flowData?.edges || [])
     .filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target))
-    .map(edge => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      sourceHandle: edge.sourceHandle || 'source-bottom',
-      targetHandle: edge.targetHandle || 'target-top',
-      markerEnd: { type: MarkerType.ArrowClosed },
-    }));
+    .map(edge =>
+      normalizeFlowEdgeDirection(
+        {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle || 'source-bottom',
+          targetHandle: edge.targetHandle || 'target-top',
+          markerEnd: { type: MarkerType.ArrowClosed },
+        },
+        flowNodeById,
+        taskById
+      )
+    );
 
   return { nodes, edges };
 }
@@ -156,6 +167,7 @@ function mergeNodeData(currentNodes, freshNodes) {
       if (
         node.data?.label === fresh.data?.label &&
         node.data?.status === fresh.data?.status &&
+        node.data?.statusClass === fresh.data?.statusClass &&
         node.data?.statusLabel === fresh.data?.statusLabel &&
         node.data?.kind === fresh.data?.kind &&
         node.data?.boardId === fresh.data?.boardId &&
@@ -195,6 +207,8 @@ function CampaignFlowCanvasInner({
   const lastSyncKeys = useRef({ task: '', flow: '' });
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
   const isDragging = useRef(false);
   const hasLocalFlowEdits = useRef(false);
   const saveInFlight = useRef(false);
@@ -328,7 +342,14 @@ function CampaignFlowCanvasInner({
   const onConnect = useCallback(
     params => {
       setEdges(current => {
-        const next = addEdge({ ...params, id: newEdgeId(), markerEnd: { type: MarkerType.ArrowClosed } }, current);
+        const nodeById = new Map(nodesRef.current.map(node => [node.id, node]));
+        const taskById = new Map((tasksRef.current || []).map(task => [task.id, task]));
+        const normalized = normalizeFlowEdgeDirection(
+          { ...params, id: newEdgeId(), markerEnd: { type: MarkerType.ArrowClosed } },
+          nodeById,
+          taskById
+        );
+        const next = addEdge(normalized, current);
         scheduleSave(nodesRef.current, next);
         return next;
       });

@@ -11,7 +11,7 @@ import { usePrompt } from '@/hooks/usePrompt';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, internalTasksQuery, unwrapData } from '@/lib/api/routes';
 import { navigateToBoardOrigin } from '@/lib/client-board-nav';
-import { appendKanbanNodeToFlow, appendTaskNodeToFlow } from '@/lib/campaign-flow-utils';
+import { appendKanbanNodeToFlow, appendTaskNodeToFlow, flowNodeStatusLabel } from '@/lib/campaign-flow-utils';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import { bumpLocalEditQuiet, useInternalWorkspacePoll } from '@/hooks/useInternalWorkspacePoll';
@@ -40,6 +40,7 @@ export default function CampaignFlowInline({
   const canEditBoard = permissions?.canEditBoardConfig ?? false;
   const { requestPrompt, promptDialog } = usePrompt();
   const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
+  const [kanbanPickerDept, setKanbanPickerDept] = useState('marketing');
   const [busy, setBusy] = useState(false);
   const [flowDataVersion, setFlowDataVersion] = useState(0);
   const localEditQuietUntilRef = useRef(0);
@@ -213,10 +214,14 @@ export default function CampaignFlowInline({
     };
   }, [savedFlowTask, campaign, saveFlowFromParent, refreshTasks, onSavedFlowTaskHandled]);
 
-  const kanbanPickerDepartment = campaign?.department || 'marketing';
+  useEffect(() => {
+    if (!kanbanCreateOpen) return;
+    setKanbanPickerDept(campaign?.department || 'marketing');
+  }, [kanbanCreateOpen, campaign?.department]);
+
   const { boards: kanbansNotOnFlow, loading: kanbanPickerLoading } = useFlowKanbanPickerBoards({
     open: kanbanCreateOpen,
-    department: kanbanPickerDepartment,
+    department: kanbanPickerDept,
     campaignBoards: campaign?.boards,
     flowData: campaign?.flow_data,
   });
@@ -312,10 +317,7 @@ export default function CampaignFlowInline({
   }
 
   const flowStatusLabel = useCallback(
-    statusId => {
-      const col = flowStatusColumns().find(c => c.id === statusId);
-      return col ? statusColumnLabel(col, t) : statusId;
-    },
+    (statusId, kind = 'task') => flowNodeStatusLabel(statusId, kind, t, flowStatusColumns(), statusColumnLabel),
     [t]
   );
 
@@ -434,6 +436,7 @@ export default function CampaignFlowInline({
         onCancel={() => setKanbanCreateOpen(false)}
         onSubmit={handleConfirmCampaignKanban}
         onSelectExisting={handleAddExistingKanban}
+        onDepartmentChange={setKanbanPickerDept}
       />
       {promptDialog}
     </section>

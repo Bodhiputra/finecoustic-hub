@@ -30,7 +30,7 @@ import OpsStockPanel from '@/components/ops/OpsStockPanel';
 import OpsExpensesPanel from '@/components/ops/OpsExpensesPanel';
 import { PERSONAL_JOT_DOWN_TOOL } from '@/lib/personal-jots-shared';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
-import { appendKanbanNodeToFlow, syncBoardNameInFlow } from '@/lib/campaign-flow-utils';
+import { appendKanbanNodeToFlow, flowNodeStatusLabel, syncBoardNameInFlow } from '@/lib/campaign-flow-utils';
 import { boardStatusColumns, flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import {
@@ -242,6 +242,7 @@ export default function InternalDepartment({
   const [activeCampaign, setActiveCampaign] = useState(initialCampaign);
   const [statusEditorOpen, setStatusEditorOpen] = useState(false);
   const [kanbanCreateOpen, setKanbanCreateOpen] = useState(false);
+  const [kanbanPickerDept, setKanbanPickerDept] = useState('marketing');
   const [flowDataVersion, setFlowDataVersion] = useState(0);
   const localEditQuietUntilRef = useRef(0);
 
@@ -343,12 +344,18 @@ export default function InternalDepartment({
     return seededCampaign;
   }, [flowParam, activeCampaign, seededCampaign]);
 
-  const kanbanPickerDepartment =
+  const resolvedKanbanPickerDept =
     activeCampaign?.department
     || (departmentId !== 'all' && departmentId !== CAMPAIGNS_ID ? departmentId : 'marketing');
+
+  useEffect(() => {
+    if (!kanbanCreateOpen) return;
+    setKanbanPickerDept(resolvedKanbanPickerDept);
+  }, [kanbanCreateOpen, resolvedKanbanPickerDept]);
+
   const { boards: kanbansNotOnFlow, loading: kanbanPickerLoading } = useFlowKanbanPickerBoards({
     open: kanbanCreateOpen,
-    department: kanbanPickerDepartment,
+    department: kanbanPickerDept,
     campaignBoards: activeCampaign?.boards,
     flowData: activeCampaign?.flow_data,
   });
@@ -586,10 +593,7 @@ export default function InternalDepartment({
   );
 
   const flowStatusLabel = useCallback(
-    statusId => {
-      const col = flowStatusCols?.find(c => c.id === statusId);
-      return col ? statusColumnLabel(col, t) : statusId;
-    },
+    (statusId, kind = 'task') => flowNodeStatusLabel(statusId, kind, t, flowStatusCols, statusColumnLabel),
     [flowStatusCols, t]
   );
 
@@ -1637,6 +1641,7 @@ export default function InternalDepartment({
         onCancel={() => setKanbanCreateOpen(false)}
         onSubmit={handleConfirmCampaignKanban}
         onSelectExisting={handleAddExistingKanban}
+        onDepartmentChange={setKanbanPickerDept}
       />
       {toastStack}
     </HubLayout>

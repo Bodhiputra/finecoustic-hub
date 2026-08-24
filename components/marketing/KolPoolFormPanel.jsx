@@ -31,6 +31,7 @@ function formPayload(fd) {
     shipping_postal: fd.get('shipping_postal'),
     shipping_country: fd.get('shipping_country'),
     shipping_phone: fd.get('shipping_phone'),
+    shipping_email: fd.get('shipping_email'),
     shipping_notes: fd.get('shipping_notes'),
     collaboration_products: collabRaw.split(/[,;|\n]/).map(s => s.trim()).filter(Boolean),
   };
@@ -200,6 +201,10 @@ export default function KolPoolFormPanel({
                 <label>
                   {t('hub.kol.shippingPhone')}
                   <input name="shipping_phone" defaultValue={data.shipping_phone || ''} />
+                </label>
+                <label>
+                  {t('hub.kol.shippingEmail')}
+                  <input name="shipping_email" type="email" defaultValue={data.shipping_email || ''} />
                 </label>
                 <label className="kol-edit-form-full">
                   {t('hub.kol.shippingNotes')}

@@ -19,6 +19,7 @@ export default function KanbanCreateModal({
   onCancel,
   onSubmit,
   onSelectExisting,
+  onDepartmentChange,
 }) {
   const { t } = useLocale();
   const nameId = useId();
@@ -31,8 +32,10 @@ export default function KanbanCreateModal({
 
   useEffect(() => {
     if (!open) return;
+    const dept = defaultDepartment || BOARD_DEPARTMENT_IDS[0];
     setName('');
-    setDepartment(defaultDepartment || BOARD_DEPARTMENT_IDS[0]);
+    setDepartment(dept);
+    onDepartmentChange?.(dept);
     const timer = window.setTimeout(() => {
       if (!hasExisting) inputRef.current?.focus();
     }, 0);
@@ -44,7 +47,7 @@ export default function KanbanCreateModal({
       window.clearTimeout(timer);
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, defaultDepartment, busy, onCancel, hasExisting]);
+  }, [open, defaultDepartment, busy, onCancel, hasExisting, onDepartmentChange]);
 
   if (!open) return null;
 
@@ -122,7 +125,11 @@ export default function KanbanCreateModal({
               id={deptId}
               className="appdev-prompt-input appdev-prompt-select"
               value={department}
-              onChange={e => setDepartment(e.target.value)}
+              onChange={e => {
+                const next = e.target.value;
+                setDepartment(next);
+                onDepartmentChange?.(next);
+              }}
               disabled={busy}
             >
               {BOARD_DEPARTMENT_IDS.map(id => (

@@ -435,18 +435,40 @@
   cursor: pointer;
 }
 
+.kanban-create-modal.appdev-confirm-modal {
+  width: min(440px, 100%);
+}
+
+.kanban-create-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.kanban-create-modal .appdev-confirm-title {
+  margin: 0;
+}
+
+.kanban-create-modal .appdev-confirm-actions {
+  margin-top: 0;
+  padding-top: var(--space-1);
+}
+
 .kanban-create-loading {
-  margin: 0 0 0.75rem;
+  margin: 0;
   font-size: 0.875rem;
   color: var(--muted, #888);
 }
 
 .kanban-create-existing {
-  margin-bottom: 0.75rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .kanban-create-list {
-  margin: 0.35rem 0 0.75rem;
+  margin: 0;
   max-height: 200px;
 }
 
@@ -470,7 +492,7 @@
 }
 
 .kanban-create-divider-label {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;

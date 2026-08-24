@@ -2441,19 +2441,9 @@ button.internal-campaign-card {
   pointer-events: all;
 }
 
-/* Task — solid card, muted left rail */
+/* Task — solid card */
 .campaign-flow-node.is-task {
   border-radius: 8px;
-  padding-left: 14px;
-}
-
-.campaign-flow-node.is-task::before {
-  content: '';
-  position: absolute;
-  inset: 8px auto 8px 0;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: color-mix(in srgb, var(--muted) 55%, transparent);
 }
 
 .campaign-flow-node.is-task .campaign-flow-node-type-icon {
@@ -2504,6 +2494,17 @@ button.internal-campaign-card {
   gap: var(--space-2);
   margin-bottom: 6px;
   min-height: 18px;
+}
+
+.campaign-flow-node-status.is-scheduled {
+  color: #d4a017;
+  border-color: rgba(212, 160, 23, 0.35);
+}
+
+.campaign-flow-node.is-milestone .campaign-flow-node-status.is-completed,
+.campaign-flow-node-status.is-completed {
+  color: var(--ok, #3d9970);
+  border-color: rgba(61, 153, 112, 0.35);
 }
 
 .campaign-flow-node-status {
