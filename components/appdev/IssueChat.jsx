@@ -6,6 +6,7 @@ import MediaAttachments from '@/components/appdev/MediaAttachments';
 import Icon from '@/components/Icon';
 import { personKey } from '@/lib/appdev';
 import { nameToInitials, avatarStyle } from '@/lib/appdev-avatars';
+import { findMentionSpans } from '@/lib/mention-parse';
 
 function formatWhen(iso, locale) {
   try {
@@ -20,6 +21,28 @@ function formatWhen(iso, locale) {
   }
 }
 
+function CommentBody({ text, mentionNames = [] }) {
+  const body = String(text || '');
+  const spans = findMentionSpans(body, mentionNames);
+  if (!spans.length) return body;
+
+  const parts = [];
+  let cursor = 0;
+  spans.forEach((span, i) => {
+    if (span.start > cursor) {
+      parts.push(body.slice(cursor, span.start));
+    }
+    parts.push(
+      <span key={`${span.start}-${i}`} className="appdev-chat-mention">
+        {span.name}
+      </span>
+    );
+    cursor = span.end;
+  });
+  if (cursor < body.length) parts.push(body.slice(cursor));
+  return parts;
+}
+
 export default function IssueChat({
   comments = [],
   displayName = '',
@@ -29,6 +52,7 @@ export default function IssueChat({
   t,
   locale,
   uploadMediaFile,
+  mentionNames = [],
 }) {
   const [body, setBody] = useState('');
   const [imageUrls, setImageUrls] = useState([]);
@@ -115,7 +139,9 @@ export default function IssueChat({
                       </span>
                     )}
                     {msg.body ? (
-                      <div className="appdev-chat-text">{msg.body}</div>
+                      <div className="appdev-chat-text">
+                        <CommentBody text={msg.body} mentionNames={mentionNames} />
+                      </div>
                     ) : null}
                     <MediaAttachments
                       imageUrls={msg.image_urls || []}
@@ -202,6 +228,7 @@ export default function IssueChat({
             <Icon name="send" size={18} />
           </button>
         </div>
+        <p className="appdev-field-hint appdev-chat-mention-hint">{t('appdev.chat.mentionHint')}</p>
       </form>
       ) : (
         <p className="appdev-chat-readonly-notice" role="note">

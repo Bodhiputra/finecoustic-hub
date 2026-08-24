@@ -30,6 +30,7 @@ import {
   DEPARTMENT_IDS,
   calendarItemMatchesDepartmentFilter,
   calendarItemMatchesKindFilter,
+  isTeamScheduleCalendarItem,
   newTaskDraft,
 } from '@/lib/internal';
 
@@ -170,7 +171,7 @@ export default function InternalHome({
   });
 
   const scheduleItems = useMemo(
-    () => tasks.filter(t => t.status !== 'archived'),
+    () => tasks.filter(t => t.status !== 'archived' && isTeamScheduleCalendarItem(t)),
     [tasks]
   );
 
@@ -199,7 +200,6 @@ export default function InternalHome({
     () =>
       scheduleItems.filter(item => {
         if (!calendarItemMatchesDepartmentFilter(item, activeDepartments)) return false;
-        if (item.kind === 'task') return activeKindFilters.has('tasks');
         if (item.kind === 'milestone' || item.kind === 'event') return activeKindFilters.has('milestones');
         if (item.kind === 'meeting') return activeKindFilters.has('meetings');
         return false;
@@ -474,6 +474,8 @@ export default function InternalHome({
           postingComment={postingComment}
           displayName={displayNameResolved}
           teamMembers={teamMembers}
+          isManager={Boolean(actor?.isManager)}
+          isAdmin={Boolean(actor?.isAdmin)}
           saving={saving}
         />
       )}

@@ -13,14 +13,17 @@ import {
   DEPARTMENTS,
   TASK_PRIORITIES,
   TASK_STATUSES,
+  buildTeamAssigneeOptions,
   deptText,
+  getDepartment,
 } from '@/lib/internal';
 import { statusColumnLabel } from '@/lib/internal-campaigns';
 import { getWorkflowActions } from '@/lib/task-workflow';
+import { getTaskPanelCapabilities } from '@/lib/internal-task-panel-permissions';
+import { buildMentionKnownNames } from '@/lib/mention-parse';
+import { HARDCODED_MASTER_NAMES } from '@/lib/appdev-constants';
 import { TASK_RECURRENCES } from '@/lib/task-recurrence';
 import { useLocale } from '@/components/LocaleProvider';
-import { API_V1 } from '@/lib/api/routes';
-import { useToast } from '@/hooks/useToast';
 import { uploadInternalMediaFile } from '@/lib/hub-upload-client';
 
 function normalizeDraftForPanel(task) {
@@ -128,6 +131,11 @@ function HubSinglePick({ legend, name, value, options, onChange, disabled = fals
   );
 }
 
+/** Read-only field value for assignee view. */
+function ReadonlyValue({ children, className = '' }) {
+  return <div className={`appdev-readonly-value ${className}`.trim()}>{children || '—'}</div>;
+}
+
 /** Multi choice — same pill UI; click to toggle each person. */
 function HubMultiPick({ legend, name, value = [], options = [], onChange, disabled = false }) {
   const selected = new Set(Array.isArray(value) ? value : []);
@@ -168,7 +176,7 @@ function HubMultiPick({ legend, name, value = [], options = [], onChange, disabl
 }
 
 const WORKFLOW_ACTION_KEYS = {
-  accept: 'hub.internal.workflow.accept',
+  claim: 'hub.internal.workflow.claim',
   request_review: 'hub.internal.workflow.requestReview',
   approve: 'hub.internal.workflow.approve',
   send_back: 'hub.internal.workflow.sendBack',
@@ -197,16 +205,17 @@ function TaskWorkflowSection({ task, displayName, statusColumns, onAction, busy,
   return (
     <div className="task-workflow">
       <div className="task-workflow-status">
-        <span className="task-workflow-status-label">{t('hub.internal.taskPanel.status')}</span>
+        <span className="task-workflow-status-label">{t('hub.internal.taskPanel.workflowStep')}</span>
         <span className={`task-workflow-badge is-${status}`}>{statusLabel}</span>
       </div>
+      <p className="appdev-field-hint">{t('hub.internal.taskPanel.workflowStatusHint')}</p>
       {actions.length > 0 && onAction ? (
         <div className="task-workflow-actions">
           {actions.map(action => (
             <button
               key={action}
               type="button"
-              className={action === 'approve' ? 'appdev-btn-primary' : 'btn-ghost'}
+              className={action === 'approve' || action === 'claim' ? 'appdev-btn-primary' : 'btn-ghost'}
               disabled={busy}
               onClick={() => onAction(task.id, action)}
             >
@@ -239,12 +248,11 @@ export default function TaskPanel({
   onManageBoardFields,
   teamMembers = [],
   lockAssigneeToSelf = false,
+  isManager = false,
+  isAdmin = false,
 }) {
   const { locale, t } = useLocale();
-  const { toast } = useToast();
   const [draft, setDraft] = useState(task);
-  const [reminderDue, setReminderDue] = useState('');
-  const [reminderBusy, setReminderBusy] = useState(false);
   const isNew = Boolean(task?._draft || !task?.id);
   const isMeeting = draft.kind === 'meeting';
   const isMilestone = draft.kind === 'milestone';
@@ -256,6 +264,11 @@ export default function TaskPanel({
   const panelDragCounter = useRef(0);
   const [panelDragging, setPanelDragging] = useState(false);
 
+  const caps = useMemo(
+    () => getTaskPanelCapabilities(draft, { displayName, isManager, isAdmin }),
+    [draft, displayName, isManager, isAdmin]
+  );
+
   const hasFilePayload = useCallback(e => {
     const types = e.dataTransfer?.types;
     if (!types) return false;
@@ -265,37 +278,37 @@ export default function TaskPanel({
   }, []);
 
   const onPanelDragEnter = useCallback(e => {
-    if (!isTask || saving || !hasFilePayload(e)) return;
+    if (!isTask || saving || !caps.canManageAttachments || !hasFilePayload(e)) return;
     e.preventDefault();
     panelDragCounter.current += 1;
     setPanelDragging(true);
-  }, [hasFilePayload, isTask, saving]);
+  }, [hasFilePayload, isTask, saving, caps.canManageAttachments]);
 
   const onPanelDragLeave = useCallback(e => {
-    if (!isTask || saving) return;
+    if (!isTask || saving || !caps.canManageAttachments) return;
     e.preventDefault();
     panelDragCounter.current -= 1;
     if (panelDragCounter.current <= 0) {
       panelDragCounter.current = 0;
       setPanelDragging(false);
     }
-  }, [isTask, saving]);
+  }, [isTask, saving, caps.canManageAttachments]);
 
   const onPanelDragOver = useCallback(e => {
-    if (!isTask || saving || !hasFilePayload(e)) return;
+    if (!isTask || saving || !caps.canManageAttachments || !hasFilePayload(e)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-  }, [hasFilePayload, isTask, saving]);
+  }, [hasFilePayload, isTask, saving, caps.canManageAttachments]);
 
   const onPanelDrop = useCallback(e => {
-    if (!isTask || saving) return;
+    if (!isTask || saving || !caps.canManageAttachments) return;
     e.preventDefault();
     panelDragCounter.current = 0;
     setPanelDragging(false);
     if (e.dataTransfer?.files?.length) {
       attachmentRef.current?.processFiles?.(e.dataTransfer.files);
     }
-  }, [isTask, saving]);
+  }, [isTask, saving, caps.canManageAttachments]);
 
   useEffect(() => {
     setDraft(normalizeDraftForPanel(task));
@@ -322,10 +335,16 @@ export default function TaskPanel({
 
   const assigneeOptions = useMemo(() => {
     if (lockAssigneeToSelf && displayName) return [displayName];
-    const names = new Set(teamMembers.filter(Boolean));
-    if (draft?.assignee) names.add(draft.assignee);
-    return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [teamMembers, draft?.assignee, lockAssigneeToSelf, displayName]);
+    return buildTeamAssigneeOptions(teamMembers, {
+      displayName,
+      extraNames: [draft?.assignee, draft?.created_by],
+    });
+  }, [teamMembers, draft?.assignee, draft?.created_by, lockAssigneeToSelf, displayName]);
+
+  const mentionNames = useMemo(
+    () => buildMentionKnownNames(assigneeOptions, HARDCODED_MASTER_NAMES),
+    [assigneeOptions]
+  );
 
   const priorityPickOptions = useMemo(
     () => TASK_PRIORITIES.map(p => ({
@@ -367,51 +386,29 @@ export default function TaskPanel({
         ? t('hub.internal.taskPanel.milestone')
         : t('hub.internal.taskPanel.task');
 
-  async function setReminder() {
-    if (!draft?.id || !reminderDue) return;
-    setReminderBusy(true);
-    try {
-      const res = await fetch(API_V1.hubReminders, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          title: draft.title,
-          due_at: reminderDue,
-          entity_type: 'task',
-          entity_id: draft.id,
-        }),
-      });
-      if (res.ok) {
-        toast.success(t('hub.internal.reminderSet'));
-        setReminderDue('');
-      } else {
-        toast.error(t('common.somethingWrong'));
-      }
-    } finally {
-      setReminderBusy(false);
-    }
-  }
-
-  const canSave = Boolean(draft.title?.trim());
+  const canSave = Boolean(draft.title?.trim()) && caps.canSavePanel;
+  const showContributorNotice = !isNew && caps.isAssignee && !caps.isAssigner && isTask;
 
   return (
     <ModalPortal>
       <div
-        className={`internal-task-panel-backdrop${panelDragging ? ' is-attachment-dragover' : ''}`}
-        role="presentation"
-        onClick={onClose}
+        className={`internal-task-panel-layer${panelDragging ? ' is-attachment-dragover' : ''}`}
         onDragEnter={onPanelDragEnter}
         onDragLeave={onPanelDragLeave}
         onDragOver={onPanelDragOver}
         onDrop={onPanelDrop}
       >
+        <button
+          type="button"
+          className="appdev-overlay"
+          onClick={onClose}
+          aria-label={t('hub.internal.close')}
+        />
         <aside
           className="appdev-panel internal-task-panel"
           role="dialog"
           aria-modal="true"
           aria-labelledby="internal-panel-title"
-          onClick={e => e.stopPropagation()}
         >
         <header className={`appdev-panel-head${isNew ? ' appdev-panel-head--draft' : ''}`}>
           <span className="appdev-issue-id" id="internal-panel-title">{panelTitle}</span>
@@ -421,26 +418,42 @@ export default function TaskPanel({
         </header>
 
         <div className="appdev-panel-body">
+          {showContributorNotice ? (
+            <p className="appdev-contributor-notice" role="note">
+              {t('hub.internal.taskPanel.contributorNotice').replace('{assigner}', draft.created_by || '—')}
+            </p>
+          ) : null}
+
           <div className="appdev-field">
             <span>{t('hub.internal.taskPanel.title')}</span>
-            <input
-              value={draft.title || ''}
-              onChange={e => set('title', e.target.value)}
-              disabled={saving}
-              placeholder={t('hub.internal.taskPanel.titlePlaceholder')}
-              autoFocus
-            />
+            {caps.canEditMetadata ? (
+              <input
+                value={draft.title || ''}
+                onChange={e => set('title', e.target.value)}
+                disabled={saving}
+                placeholder={t('hub.internal.taskPanel.titlePlaceholder')}
+                autoFocus
+              />
+            ) : (
+              <ReadonlyValue>{draft.title}</ReadonlyValue>
+            )}
           </div>
 
           <div className="appdev-field">
             <span>{t('hub.internal.taskPanel.description')}</span>
-            <textarea
-              rows={5}
-              value={draft.notes || ''}
-              onChange={e => set('notes', e.target.value)}
-              disabled={saving}
-              placeholder={t('hub.internal.taskPanel.descriptionPlaceholder')}
-            />
+            {caps.canEditMetadata ? (
+              <textarea
+                rows={5}
+                value={draft.notes || ''}
+                onChange={e => set('notes', e.target.value)}
+                disabled={saving}
+                placeholder={t('hub.internal.taskPanel.descriptionPlaceholder')}
+              />
+            ) : (
+              <ReadonlyValue className="appdev-readonly-multiline">
+                {draft.notes || t('appdev.board.noDescription')}
+              </ReadonlyValue>
+            )}
           </div>
 
           {isTask && (
@@ -454,11 +467,12 @@ export default function TaskPanel({
               onChangeFiles={files => set('file_urls', files)}
               t={t}
               disabled={saving}
-              canManage
+              canManage={caps.canManageAttachments}
             />
           )}
 
           {!hideDepartment && !isMeeting ? (
+            caps.canEditMetadata ? (
             <label className="appdev-field">
               <span>{t('hub.internal.taskPanel.department')}</span>
               <select
@@ -472,10 +486,17 @@ export default function TaskPanel({
                 ))}
               </select>
             </label>
+            ) : (
+            <div className="appdev-field">
+              <span>{t('hub.internal.taskPanel.department')}</span>
+              <ReadonlyValue>{deptText(getDepartment(draft.department), t, 'label') || draft.department}</ReadonlyValue>
+            </div>
+            )
           ) : null}
 
           {isTask ? (
             <>
+              {caps.canEditMetadata ? (
               <div className="appdev-field-row">
                 <label className="appdev-field">
                   <span>{t('hub.internal.taskPanel.subtype')}</span>
@@ -493,7 +514,15 @@ export default function TaskPanel({
                   </datalist>
                 </label>
               </div>
+              ) : draft.subtype ? (
+              <div className="appdev-field">
+                <span>{t('hub.internal.taskPanel.subtype')}</span>
+                <ReadonlyValue>{draft.subtype}</ReadonlyValue>
+              </div>
+              ) : null}
 
+              {caps.canEditMetadata ? (
+              <>
               <HubSinglePick
                 legend={t('hub.internal.taskPanel.priority')}
                 name="task-priority"
@@ -514,8 +543,10 @@ export default function TaskPanel({
               {draft.recurrence === 'daily' ? (
                 <p className="appdev-field-hint">{t('hub.internal.recurrenceDailyHint')}</p>
               ) : null}
+              </>
+              ) : null}
 
-              {!isNew ? (
+              {!isNew && caps.canUseWorkflow ? (
                 <TaskWorkflowSection
                   task={draft}
                   displayName={displayName}
@@ -524,9 +555,9 @@ export default function TaskPanel({
                   busy={saving || workflowBusy}
                   t={t}
                 />
-              ) : (
+              ) : isNew && caps.canEditMetadata ? (
                 <p className="appdev-field-hint">{t('hub.internal.workflow.newTaskHint')}</p>
-              )}
+              ) : null}
             </>
           ) : null}
 
@@ -535,32 +566,14 @@ export default function TaskPanel({
               properties={boardCustomProperties}
               values={draft.custom_values || {}}
               onChange={values => set('custom_values', values)}
-              onManageFields={onManageBoardFields}
-              disabled={saving}
+              onManageFields={caps.canManageCustomFields ? onManageBoardFields : undefined}
+              disabled={saving || !caps.canManageCustomFields}
               teamMembers={assigneeOptions}
               locale={locale}
             />
           ) : null}
 
-          {isTask && !isNew && (
-            <div className="appdev-field task-reminder-field">
-              <span>{t('hub.internal.setReminder')}</span>
-              <div className="task-reminder-row">
-                <input
-                  type="datetime-local"
-                  value={reminderDue}
-                  onChange={e => setReminderDue(e.target.value)}
-                  disabled={saving || reminderBusy}
-                />
-                <button type="button" className="appdev-btn-ghost" onClick={setReminder} disabled={!reminderDue || reminderBusy}>
-                  {t('hub.internal.addReminder')}
-                </button>
-              </div>
-              <span className="appdev-field-hint">{t('hub.internal.reminderHint')}</span>
-            </div>
-          )}
-
-          {isMeeting && (
+          {isMeeting && caps.canEditCalendarFields && (
             <>
               <HubSinglePick
                 legend={t('hub.internal.meetingScope')}
@@ -614,7 +627,7 @@ export default function TaskPanel({
                   timeValue={draft.planned_for_time}
                   onDateChange={v => set('planned_for', v)}
                   onTimeChange={v => set('planned_for_time', v)}
-                  disabled={saving}
+                  disabled={saving || !caps.canEditCalendarFields}
                   locale={locale}
                   datePlaceholder={t('hub.internal.taskPanel.pickDate')}
                   timePlaceholder={t('hub.internal.taskPanel.pickTime')}
@@ -626,7 +639,7 @@ export default function TaskPanel({
                   timeValue={draft.deadline_time}
                   onDateChange={v => set('deadline', v)}
                   onTimeChange={v => set('deadline_time', v)}
-                  disabled={saving}
+                  disabled={saving || !caps.canEditCalendarFields}
                   locale={locale}
                   datePlaceholder={t('hub.internal.taskPanel.pickDate')}
                   timePlaceholder={t('hub.internal.taskPanel.pickTime')}
@@ -634,6 +647,7 @@ export default function TaskPanel({
               </div>
               {isMilestone ? (
                 <>
+                  {caps.canEditCalendarFields ? (
                   <HubSinglePick
                     legend={t('hub.internal.taskPanel.milestoneStatus')}
                     name="milestone-status"
@@ -642,6 +656,14 @@ export default function TaskPanel({
                     onChange={v => set('status', v)}
                     disabled={saving}
                   />
+                  ) : (
+                  <div className="appdev-field">
+                    <span>{t('hub.internal.taskPanel.milestoneStatus')}</span>
+                    <ReadonlyValue>
+                      {milestoneStatusPickOptions.find(o => o.value === (draft.status === 'done' ? 'done' : draft.status === 'cancelled' ? 'cancelled' : 'todo'))?.label || draft.status}
+                    </ReadonlyValue>
+                  </div>
+                  )}
                   <p className="appdev-field-hint">{t('hub.internal.taskPanel.milestoneHint')}</p>
                 </>
               ) : (
@@ -659,14 +681,23 @@ export default function TaskPanel({
                 timeValue={draft.deadline_time}
                 onDateChange={v => set('deadline', v)}
                 onTimeChange={v => set('deadline_time', v)}
-                disabled={saving}
+                disabled={saving || !caps.canEditMetadata}
                 locale={locale}
                 datePlaceholder={t('hub.internal.taskPanel.pickDate')}
                 timePlaceholder={t('hub.internal.taskPanel.pickTime')}
               />
-              <p className="appdev-field-hint">{t('hub.internal.taskPanel.dueDateHint')}</p>
+              {caps.canEditMetadata ? (
+                <p className="appdev-field-hint">{t('hub.internal.taskPanel.dueDateHint')}</p>
+              ) : null}
             </>
           )}
+
+          {isTask && !isNew && draft.created_by ? (
+            <div className="appdev-field">
+              <span>{t('hub.internal.taskPanel.assigner')}</span>
+              <ReadonlyValue>{draft.created_by}</ReadonlyValue>
+            </div>
+          ) : null}
 
           {isTask && (
             lockAssigneeToSelf ? (
@@ -674,7 +705,7 @@ export default function TaskPanel({
                 <span>{t('hub.internal.taskPanel.assignee')}</span>
                 <input value={displayName} readOnly disabled aria-readonly="true" />
               </div>
-            ) : (
+            ) : caps.canEditAssignee ? (
               <label className="appdev-field">
                 <span>{t('hub.internal.taskPanel.assignee')}</span>
                 <select
@@ -688,10 +719,15 @@ export default function TaskPanel({
                   ))}
                 </select>
               </label>
+            ) : (
+              <div className="appdev-field">
+                <span>{t('hub.internal.taskPanel.assignee')}</span>
+                <ReadonlyValue>{draft.assignee || t('hub.internal.taskPanel.assigneeUnassigned')}</ReadonlyValue>
+              </div>
             )
           )}
 
-          {isTask && onPostComment && (
+          {isTask && onPostComment && caps.canComment && (
             isNew ? (
               <p className="appdev-panel-notice" role="note">
                 {t('appdev.chat.saveFirst')}
@@ -706,6 +742,7 @@ export default function TaskPanel({
                 t={t}
                 locale={locale}
                 uploadMediaFile={uploadMedia}
+                mentionNames={mentionNames}
               />
             )
           )}
@@ -721,8 +758,9 @@ export default function TaskPanel({
           )}
           <div className="appdev-panel-foot-actions">
             <button type="button" className="btn-ghost" onClick={onClose} disabled={saving}>
-              {t('hub.internal.taskPanel.cancel')}
+              {caps.canSavePanel ? t('hub.internal.taskPanel.cancel') : t('hub.internal.close')}
             </button>
+            {caps.canSavePanel ? (
             <button
               type="button"
               className="appdev-btn-primary"
@@ -738,6 +776,7 @@ export default function TaskPanel({
             >
               {saving ? t('hub.internal.taskPanel.saving') : isNew ? t('hub.internal.taskPanel.create') : t('hub.internal.taskPanel.save')}
             </button>
+            ) : null}
           </div>
         </footer>
       </aside>

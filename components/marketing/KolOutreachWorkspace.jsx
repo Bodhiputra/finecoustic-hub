@@ -27,6 +27,7 @@ import {
   poolRecordForTask,
   taskPoolId,
 } from '@/lib/kol-outreach-utils';
+import { buildTeamAssigneeOptions } from '@/lib/internal';
 
 const STATUS_LABEL_KEYS = {
   not_started: 'hub.campaignKol.statusNotStarted',
@@ -99,6 +100,11 @@ export default function KolOutreachWorkspace({
     }
     return map;
   }, [normalizedTasks, statusColumns]);
+
+  const assigneeOptions = useMemo(
+    () => buildTeamAssigneeOptions(teamMembers, { displayName }),
+    [teamMembers, displayName]
+  );
 
   const filtered = useMemo(
     () =>
@@ -298,7 +304,7 @@ export default function KolOutreachWorkspace({
             <span>{t('hub.internal.taskPanel.assignee')}</span>
             <select value={assigneeFilter} onChange={e => setAssigneeFilter(e.target.value)}>
               <option value="all">{t('hub.campaignKol.filterAll')}</option>
-              {teamMembers.map(name => (
+              {assigneeOptions.map(name => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
@@ -370,6 +376,7 @@ export default function KolOutreachWorkspace({
         open={Boolean(cardTask)}
         task={cardTask}
         teamMembers={teamMembers}
+        displayName={displayName}
         defaultInitiative={defaultInitiative}
         onClose={() => setCardTask(null)}
         onSave={handleCardSave}

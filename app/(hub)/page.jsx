@@ -1,7 +1,8 @@
 import { Suspense } from 'react';
 import InternalHome from '@/components/InternalHome';
 import HubLogin from '@/components/HubLogin';
-import { isHubAuthEnabled, isHubAuthenticated } from '@/lib/auth';
+import { isHubAuthEnabled } from '@/lib/auth';
+import { resolveHubActor } from '@/lib/hub-actor';
 import { loadHomePageData } from '@/lib/internal-page-data';
 
 export const dynamic = 'force-dynamic';
@@ -20,8 +21,8 @@ export default async function HomePage() {
     );
   }
 
-  const authed = await isHubAuthenticated();
-  if (!authed) {
+  const actor = await resolveHubActor();
+  if (!actor.ok) {
     return <HubLogin />;
   }
 

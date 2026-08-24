@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
+import { buildTeamAssigneeOptions } from '@/lib/internal';
 import { KOL_INITIATIVES, KOL_BOARD_PROP } from '@/lib/kol-outreach-shared';
 import { taskInitiative } from '@/lib/kol-outreach-utils';
 
@@ -11,6 +12,7 @@ export default function KolOutreachCardModal({
   open,
   task,
   teamMembers = [],
+  displayName = '',
   defaultInitiative = '',
   onClose,
   onSave,
@@ -19,6 +21,14 @@ export default function KolOutreachCardModal({
   const { t } = useLocale();
   const [assignee, setAssignee] = useState('');
   const [initiative, setInitiative] = useState('');
+
+  const assigneeOptions = useMemo(
+    () => buildTeamAssigneeOptions(teamMembers, {
+      displayName,
+      extraNames: [task?.assignee],
+    }),
+    [teamMembers, displayName, task?.assignee]
+  );
 
   useEffect(() => {
     if (!open || !task) return;
@@ -53,7 +63,7 @@ export default function KolOutreachCardModal({
           <span>{t('hub.internal.taskPanel.assignee')}</span>
           <select value={assignee} onChange={e => setAssignee(e.target.value)} disabled={busy}>
             <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
-            {teamMembers.map(name => (
+            {assigneeOptions.map(name => (
               <option key={name} value={name}>{name}</option>
             ))}
           </select>

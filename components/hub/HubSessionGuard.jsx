@@ -18,15 +18,14 @@ export default function HubSessionGuard() {
   const hasActiveSession = Boolean(session?.initialProfile?.displayName);
 
   useEffect(() => {
-    // Login page has no server profile — do not poll or redirect (fixes mobile login refresh loop).
-    if (!authEnabled || !hasActiveSession) return undefined;
+    // Never poll on the login screen — avoids refresh loops while signed out or during build errors.
+    if (!authEnabled || !hasActiveSession || isLoginPath()) return undefined;
 
     let cancelled = false;
 
     async function redirectForSignOut(reason = 'session_revoked') {
-      if (reason === 'unauthorized' && isLoginPath()) return;
-      const params = new URLSearchParams(window.location.search);
-      if (isLoginPath() && params.get('reason') === reason) return;
+      if (reason === 'unauthorized') return;
+      if (isLoginPath()) return;
 
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
       window.location.replace(`/?reason=${encodeURIComponent(reason)}`);
@@ -36,15 +35,19 @@ export default function HubSessionGuard() {
       try {
         const res = await fetch('/api/auth/me?scope=hub', { credentials: 'same-origin' });
         if (cancelled) return;
+
+        // Server/build errors are not session expiry — do not force logout.
         if (!res.ok) {
+          if (res.status >= 500) return;
           await redirectForSignOut('session_revoked');
           return;
         }
+
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
+
         if (!data.hub) {
           const reason = data.signOutReason || 'session_revoked';
-          if (reason === 'unauthorized') return;
           await redirectForSignOut(reason);
         }
       } catch {

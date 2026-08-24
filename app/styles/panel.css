@@ -546,3 +546,29 @@
   font-size: .85rem;
   line-height: 1.45;
 }
+
+.appdev-contributor-notice {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--fc-yellow) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--fc-yellow) 25%, var(--line));
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.45;
+}
+
+.appdev-readonly-value {
+  padding: .55rem .65rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: .92rem;
+  line-height: 1.45;
+  min-height: 2.35rem;
+}
+
+.appdev-readonly-multiline {
+  min-height: 5rem;
+  white-space: pre-wrap;
+}

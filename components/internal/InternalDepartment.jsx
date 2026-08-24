@@ -1581,6 +1581,8 @@ export default function InternalDepartment({
           teamMembers={teamMembers}
           lockAssigneeToSelf={personalMode}
           saving={saving}
+          isManager={Boolean(actor?.isManager)}
+          isAdmin={Boolean(actor?.isAdmin)}
         />
       )}
 
