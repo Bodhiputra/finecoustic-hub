@@ -56,6 +56,7 @@ export default function ChatMediaAttach({
       setUploading('image');
       try {
         const url = await uploadMediaFile(file, 'image');
+        if (!url) throw new Error(t('appdev.media.uploadFailed'));
         onImage(url);
       } catch (err) {
         reportError(err.message || t('appdev.media.uploadFailed'));
@@ -85,6 +86,7 @@ export default function ChatMediaAttach({
       setUploading('video');
       try {
         const url = await uploadMediaFile(file, 'video');
+        if (!url) throw new Error(t('appdev.media.uploadFailed'));
         onVideo(url);
       } catch (err) {
         reportError(err.message || t('appdev.media.uploadFailed'));

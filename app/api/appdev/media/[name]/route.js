@@ -4,7 +4,13 @@ import { contentTypeForName, readLocalMedia } from '@/lib/appdev-upload-store';
 export const runtime = 'nodejs';
 
 export async function GET(_request, { params }) {
-  const { name } = await params;
+  const { name: rawName } = await params;
+  let name = rawName;
+  try {
+    name = decodeURIComponent(rawName);
+  } catch {
+    name = rawName;
+  }
   const file = await readLocalMedia(name);
   if (!file) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });

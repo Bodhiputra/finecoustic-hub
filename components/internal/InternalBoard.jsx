@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import { BOARD_STATUSES } from '@/lib/internal';
-import { boardStatusColumns, normalizeStatusColumn, sortTasksByFlowOrder, statusColumnLabel } from '@/lib/internal-campaigns';
+import { boardStatusColumns, ensureWorkflowStatusColumns, normalizeStatusColumn, sortTasksByFlowOrder, statusColumnLabel } from '@/lib/internal-campaigns';
 import InternalTaskCard from '@/components/internal/InternalTaskCard';
 
 export default function InternalBoard({
@@ -36,7 +36,7 @@ export default function InternalBoard({
       return statusColumns.map(col => normalizeStatusColumn(col)).filter(Boolean);
     }
     if (board) return boardStatusColumns(board);
-    return BOARD_STATUSES.map(id => normalizeStatusColumn(id));
+    return ensureWorkflowStatusColumns(BOARD_STATUSES);
   }, [statusColumns, board]);
 
   const columnIds = useMemo(() => new Set(columns.map(c => c.id)), [columns]);
@@ -75,14 +75,19 @@ export default function InternalBoard({
     return (
       <div
         key={col.id}
-        className={`internal-board-col is-${orphan ? 'orphan' : col.id}${orphan ? ' is-orphan' : ''}${!orphan && overCol === col.id ? ' is-drop-target' : ''}`}
+        className={`internal-board-col is-${orphan ? 'orphan' : col.id}${orphan ? ' is-orphan' : ''}${!orphan && overCol === col.id ? ' is-drop-target' : ''}${col.id === 'in_review' ? ' is-review-queue' : ''}`}
         onDragOver={orphan ? undefined : e => onDragOver(e, col.id)}
         onDragLeave={orphan ? undefined : () => setOverCol(c => (c === col.id ? null : c))}
         onDrop={orphan ? undefined : e => onDrop(e, col.id)}
       >
         <header className="internal-board-col-head">
           <span className={`internal-board-col-bar is-${col.id}`} aria-hidden="true" />
-          <h3>{statusColumnLabel(col, t)}</h3>
+          <div className="internal-board-col-head-text">
+            <h3>{statusColumnLabel(col, t)}</h3>
+            {col.id === 'in_review' && (
+              <p className="internal-board-col-hint">{t('hub.internal.reviewColumnHint')}</p>
+            )}
+          </div>
           <span className="internal-board-col-count">{colTasks.length}</span>
         </header>
         <div className="internal-board-col-body">

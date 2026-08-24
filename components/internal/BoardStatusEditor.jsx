@@ -12,6 +12,7 @@ import {
   normalizeStatusColumn,
   statusColumnLabel,
 } from '@/lib/internal-campaigns';
+import { isWorkflowLockedColumnId } from '@/lib/task-workflow';
 import { normalizeBoardProperties } from '@/lib/board-properties';
 
 function columnsEqual(a, b) {
@@ -116,6 +117,12 @@ export default function BoardStatusEditor({ board, tasks = [], onSaved, onClose 
 
   function removeColumn(index) {
     const col = columns[index];
+    if (isWorkflowLockedColumnId(col.id)) {
+      const msg = t('hub.internal.statusColumnLocked');
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
     const count = taskCounts.get(col.id) || 0;
     if (count > 0) {
       const msg = t('hub.internal.statusColumnHasTasks').replace('{count}', String(count));

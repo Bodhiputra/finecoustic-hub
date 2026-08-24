@@ -1,7 +1,7 @@
 import { getHubNotifications, patchHubNotifications } from '@/lib/api/hub-notifications-handlers';
 
-export async function GET() {
-  return getHubNotifications();
+export async function GET(request) {
+  return getHubNotifications(request);
 }
 
 export async function PATCH(request) {

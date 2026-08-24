@@ -85,10 +85,10 @@ npm run test:auth
    - `PREORDER_SURVEY_SECRET` — shared with Shopify theme (questionnaire webhook)
    - `SHOPIFY_STORE` — e.g. `j5gawi-vu.myshopify.com`
    - `SHOPIFY_ADMIN_TOKEN` — Admin API token with `read_customers`
-   - **Media uploads (pick one):**
-     - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (preferred — files go to `finehub/appdev` in your Cloudinary account)
+   - **Media uploads (pick one)** — required on Vercel (`finehub.vercel.app`); local dev uses `data/internal-uploads/` without these:
+     - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (preferred — internal uploads → `finehub/internal`, appdev → `finehub/appdev`)
      - `BLOB_READ_WRITE_TOKEN` (fallback — public Vercel Blob URLs)
-     - If neither is set, uploads only work locally (`data/appdev-uploads/`).
+     - If neither is set on Vercel, Discussion attachments and task file uploads fail with a clear error.
    - **Notion KOL sync (Marketing):** `NOTION_API_KEY`, `NOTION_KOL_DATABASE_ID` — connect Finecoustic_Team integration to KOL POOLS in Notion.
 
 ## Appdev field names

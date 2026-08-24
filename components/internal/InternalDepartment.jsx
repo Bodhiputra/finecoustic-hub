@@ -662,6 +662,7 @@ export default function InternalDepartment({
       if (updated?.id) {
         mergeTask(updated);
         setPanelTask(prev => (prev?.id === task.id ? updated : prev));
+        signalHubNotificationsRefresh();
       }
     } catch {
       mergeTask(snapshot);
@@ -689,6 +690,7 @@ export default function InternalDepartment({
       if (updated?.id) {
         mergeTask(updated);
         setPanelTask(updated);
+        signalHubNotificationsRefresh();
       }
     } finally {
       setWorkflowBusy(false);
@@ -868,6 +870,8 @@ export default function InternalDepartment({
         setPanelTask(task);
         signalHubNotificationsRefresh();
       }
+    } catch (err) {
+      throw err;
     } finally {
       setPostingComment(false);
     }
@@ -1566,6 +1570,8 @@ export default function InternalDepartment({
           }
           onPostComment={postComment}
           onWorkflowAction={handleWorkflowAction}
+          onStatusChange={flowView && flowCview === 'flow' ? handleStatusChange : undefined}
+          showStatusPicker={flowView && flowCview === 'flow'}
           postingComment={postingComment}
           workflowBusy={workflowBusy}
           displayName={me.displayName}

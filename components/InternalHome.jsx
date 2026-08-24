@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/useToast';
 import { HOME_TAB, homeTabFromSearchParams, homeTabToUrl } from '@/lib/home-tabs';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
+import { flowStatusColumns } from '@/lib/internal-campaigns';
 import {
   canCreateTask,
   isHubAdmin,
@@ -297,6 +298,8 @@ export default function InternalHome({
         setPanelTask(task);
         signalHubNotificationsRefresh();
       }
+    } catch (err) {
+      throw err;
     } finally {
       setPostingComment(false);
     }
@@ -325,6 +328,42 @@ export default function InternalHome({
     }
   }
 
+  async function handleStatusChange(task, status) {
+    if (!task?.id || task.status === status) return;
+
+    const snapshot = task;
+    const optimistic = { ...task, status, updated_at: new Date().toISOString() };
+    setPanelTask(prev => (prev?.id === task.id ? optimistic : prev));
+
+    try {
+      const res = await fetch(API_V1.internalTask(task.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        setPanelTask(prev => (prev?.id === task.id ? snapshot : prev));
+        toast.error(t('hub.internal.workflow.transitionFailed'));
+        return;
+      }
+      const body = await res.json();
+      const data = unwrapData(body, 'task');
+      const updated = data?.task || data;
+      if (updated?.id) {
+        setPanelTask(updated);
+        if (homeTab === HOME_TAB.SCHEDULE) mergeTask(updated);
+        if (homeTab === HOME_TAB.CAMPAIGNS && campaignFlowId) {
+          setFlowTasksRefreshKey(key => key + 1);
+        }
+        signalHubNotificationsRefresh();
+      }
+    } catch {
+      setPanelTask(prev => (prev?.id === task.id ? snapshot : prev));
+      toast.error(t('common.somethingWrong'));
+    }
+  }
+
   async function handleWorkflowAction(taskId, action) {
     setWorkflowBusy(true);
     try {
@@ -346,6 +385,7 @@ export default function InternalHome({
       if (homeTab === HOME_TAB.CAMPAIGNS && campaignFlowId) {
         setFlowTasksRefreshKey(key => key + 1);
       }
+      signalHubNotificationsRefresh();
     } finally {
       setWorkflowBusy(false);
     }
@@ -469,11 +509,15 @@ export default function InternalHome({
             panelTask && canDeleteTaskFor(panelTask) ? handleDelete : undefined
           }
           onWorkflowAction={handleWorkflowAction}
+          onStatusChange={campaignFlowId ? handleStatusChange : undefined}
+          showStatusPicker={Boolean(campaignFlowId)}
           onPostComment={postComment}
           workflowBusy={workflowBusy}
           postingComment={postingComment}
           displayName={displayNameResolved}
           teamMembers={teamMembers}
+          lockBoard={campaignFlowId ? { board_id: null, campaign_id: campaignFlowId } : null}
+          statusColumns={campaignFlowId ? flowStatusColumns() : null}
           isManager={Boolean(actor?.isManager)}
           isAdmin={Boolean(actor?.isAdmin)}
           saving={saving}

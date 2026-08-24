@@ -18,7 +18,7 @@ import {
   getDepartment,
 } from '@/lib/internal';
 import { statusColumnLabel } from '@/lib/internal-campaigns';
-import { getWorkflowActions } from '@/lib/task-workflow';
+import { getAllowedWorkflowStatusOptions, getWorkflowActions, isTaskAssignee } from '@/lib/task-workflow';
 import { getTaskPanelCapabilities } from '@/lib/internal-task-panel-permissions';
 import { buildMentionKnownNames } from '@/lib/mention-parse';
 import { HARDCODED_MASTER_NAMES } from '@/lib/appdev-constants';
@@ -177,13 +177,26 @@ function HubMultiPick({ legend, name, value = [], options = [], onChange, disabl
 
 const WORKFLOW_ACTION_KEYS = {
   claim: 'hub.internal.workflow.claim',
-  request_review: 'hub.internal.workflow.requestReview',
   approve: 'hub.internal.workflow.approve',
   send_back: 'hub.internal.workflow.sendBack',
 };
 
-function TaskWorkflowSection({ task, displayName, statusColumns, onAction, busy, t }) {
+function TaskWorkflowSection({
+  task,
+  displayName,
+  statusColumns,
+  onAction,
+  onStatusChange,
+  onStatusDraftChange,
+  showStatusPicker = false,
+  isNew = false,
+  isManager = false,
+  isAdmin = false,
+  busy,
+  t,
+}) {
   const status = task?.status || 'todo';
+
   const statusLabel = useMemo(() => {
     const col = statusColumns?.find(c => (typeof c === 'string' ? c : c.id) === status);
     if (col) return statusColumnLabel(col, t);
@@ -197,18 +210,53 @@ function TaskWorkflowSection({ task, displayName, statusColumns, onAction, busy,
     return key ? t(key) : status.replace(/_/g, ' ');
   }, [status, statusColumns, t]);
 
+  const statusPickOptions = useMemo(() => {
+    if (!showStatusPicker || !statusColumns?.length) return [];
+    return getAllowedWorkflowStatusOptions(task, displayName, statusColumns, { isManager, isAdmin, isNew }).map(col => ({
+      value: col.id,
+      label: col.label || statusColumnLabel(col, t),
+    }));
+  }, [showStatusPicker, statusColumns, task, displayName, isManager, isAdmin, isNew, t]);
+
   const actions = useMemo(
-    () => getWorkflowActions(task, displayName),
-    [task, displayName]
+    () => getWorkflowActions(task, displayName, { isManager }),
+    [task, displayName, isManager]
   );
+
+  function handleStatusPick(nextStatus) {
+    if (!nextStatus || nextStatus === status) return;
+    if (isNew) {
+      onStatusDraftChange?.(nextStatus);
+      return;
+    }
+    if (onStatusChange && task?.id) {
+      onStatusChange(task, nextStatus);
+    }
+  }
 
   return (
     <div className="task-workflow">
-      <div className="task-workflow-status">
-        <span className="task-workflow-status-label">{t('hub.internal.taskPanel.workflowStep')}</span>
-        <span className={`task-workflow-badge is-${status}`}>{statusLabel}</span>
-      </div>
-      <p className="appdev-field-hint">{t('hub.internal.taskPanel.workflowStatusHint')}</p>
+      {showStatusPicker && statusPickOptions.length > 0 ? (
+        <>
+          <HubSinglePick
+            legend={t('hub.internal.taskPanel.workflowStep')}
+            name="task-workflow-status"
+            value={status}
+            options={statusPickOptions}
+            onChange={handleStatusPick}
+            disabled={busy}
+          />
+          <p className="appdev-field-hint">{t('hub.internal.taskPanel.flowStatusHint')}</p>
+        </>
+      ) : (
+        <>
+          <div className="task-workflow-status">
+            <span className="task-workflow-status-label">{t('hub.internal.taskPanel.workflowStep')}</span>
+            <span className={`task-workflow-badge is-${status}`}>{statusLabel}</span>
+          </div>
+          <p className="appdev-field-hint">{t('hub.internal.taskPanel.workflowStatusHint')}</p>
+        </>
+      )}
       {actions.length > 0 && onAction ? (
         <div className="task-workflow-actions">
           {actions.map(action => (
@@ -223,9 +271,13 @@ function TaskWorkflowSection({ task, displayName, statusColumns, onAction, busy,
             </button>
           ))}
         </div>
-      ) : (
-        <p className="appdev-field-hint">{t('hub.internal.workflow.noActions')}</p>
-      )}
+      ) : !showStatusPicker ? (
+        <p className="appdev-field-hint">
+          {status === 'in_progress' && isTaskAssignee(task, displayName)
+            ? t('hub.internal.workflow.boardSubmitReview')
+            : t('hub.internal.workflow.noActions')}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -237,6 +289,8 @@ export default function TaskPanel({
   onDelete,
   onPostComment,
   onWorkflowAction,
+  onStatusChange,
+  showStatusPicker = false,
   saving = false,
   postingComment = false,
   workflowBusy = false,
@@ -546,12 +600,18 @@ export default function TaskPanel({
               </>
               ) : null}
 
-              {!isNew && caps.canUseWorkflow ? (
+              {(showStatusPicker || (!isNew && caps.canUseWorkflow)) ? (
                 <TaskWorkflowSection
                   task={draft}
                   displayName={displayName}
                   statusColumns={statusOptions}
                   onAction={onWorkflowAction}
+                  onStatusChange={onStatusChange}
+                  onStatusDraftChange={v => set('status', v)}
+                  showStatusPicker={showStatusPicker && (caps.canUseWorkflow || isNew)}
+                  isNew={isNew}
+                  isManager={isManager}
+                  isAdmin={isAdmin}
                   busy={saving || workflowBusy}
                   t={t}
                 />

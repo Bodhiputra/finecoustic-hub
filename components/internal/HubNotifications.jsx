@@ -1,10 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import {
+  notificationLinksToTask,
+  taskFallbackUrl,
+  taskNavigationUrl,
+} from '@/lib/hub-notification-nav';
 import { HUB_NOTIFICATIONS_REFRESH_EVENT } from '@/lib/hub-notifications-ui';
+
+const POLL_MS = 12_000;
 
 function formatNotificationDate(iso, locale) {
   if (!iso) return '';
@@ -28,10 +36,16 @@ function notificationText(item, t) {
       return t('hub.notifications.assigned').replace('{title}', title).replace('{actor}', actor);
     case 'mention':
       return t('hub.notifications.mention').replace('{title}', title).replace('{actor}', actor);
+    case 'comment':
+      return t('hub.notifications.comment').replace('{title}', title).replace('{actor}', actor);
     case 'review_request':
       return t('hub.notifications.reviewRequest').replace('{title}', title).replace('{actor}', actor);
     case 'workflow_done':
       return t('hub.notifications.workflowDone').replace('{title}', title).replace('{actor}', actor);
+    case 'status_change':
+      return item.payload?.sent_back
+        ? t('hub.notifications.sentBack').replace('{title}', title).replace('{actor}', actor)
+        : t('hub.notifications.statusChange').replace('{title}', title).replace('{actor}', actor);
     case 'reminder_due':
       return t('hub.notifications.reminderDue').replace('{title}', title);
     case 'deadline_7d':
@@ -61,11 +75,17 @@ function notificationText(item, t) {
 
 export default function HubNotifications() {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
   const rootRef = useRef(null);
+  const unreadRef = useRef(0);
+
+  useEffect(() => {
+    unreadRef.current = unread;
+  }, [unread]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,20 +116,38 @@ export default function HubNotifications() {
     }
   }, []);
 
+  const pollUnread = useCallback(async () => {
+    if (document.visibilityState !== 'visible') return;
+    try {
+      const res = await fetch(API_V1.hubNotificationsPing, { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const body = await res.json();
+      const data = unwrapData(body);
+      const nextUnread = Number(data?.unread) || 0;
+      if (nextUnread !== unreadRef.current) {
+        await refreshQuietly();
+      } else {
+        setUnread(nextUnread);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [refreshQuietly]);
+
   useEffect(() => {
     let intervalId;
     const timeoutId = window.setTimeout(() => {
       load();
-      intervalId = window.setInterval(() => {
-        if (document.visibilityState === 'visible') refreshQuietly();
-      }, 60_000);
+      intervalId = window.setInterval(pollUnread, POLL_MS);
     }, 2500);
 
     function onRefresh() {
       if (document.visibilityState === 'visible') refreshQuietly();
     }
     function onVisible() {
-      if (document.visibilityState === 'visible') refreshQuietly();
+      if (document.visibilityState === 'visible') {
+        pollUnread();
+      }
     }
 
     window.addEventListener(HUB_NOTIFICATIONS_REFRESH_EVENT, onRefresh);
@@ -121,7 +159,7 @@ export default function HubNotifications() {
       window.removeEventListener(HUB_NOTIFICATIONS_REFRESH_EVENT, onRefresh);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [load, refreshQuietly]);
+  }, [load, pollUnread, refreshQuietly]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -166,9 +204,36 @@ export default function HubNotifications() {
     setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
   };
 
+  const navigateForNotification = useCallback(
+    async item => {
+      if (!notificationLinksToTask(item)) return;
+      const taskId = String(item.entity_id || '').trim();
+      if (!taskId) return;
+
+      try {
+        const res = await fetch(API_V1.internalTask(taskId), { credentials: 'same-origin' });
+        if (res.ok) {
+          const body = await res.json();
+          const data = unwrapData(body, 'task');
+          const task = data?.task || data;
+          if (task?.id) {
+            router.push(taskNavigationUrl(task));
+            return;
+          }
+        }
+      } catch {
+        /* fallback below */
+      }
+
+      router.push(taskFallbackUrl(taskId));
+    },
+    [router]
+  );
+
   const handleItemClick = async item => {
     if (!item.read_at) await markRead(item.id);
     setOpen(false);
+    await navigateForNotification(item);
   };
 
   return (
@@ -209,7 +274,7 @@ export default function HubNotifications() {
               <li key={item.id}>
                 <button
                   type="button"
-                  className={`hub-notifications-item${item.read_at ? ' is-read' : ' is-unread'}`}
+                  className={`hub-notifications-item${item.read_at ? ' is-read' : ' is-unread'}${notificationLinksToTask(item) ? ' is-clickable' : ''}`}
                   onClick={() => handleItemClick(item)}
                 >
                   <span className="hub-notifications-item-text">

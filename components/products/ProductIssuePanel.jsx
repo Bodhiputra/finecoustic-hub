@@ -54,6 +54,8 @@ export default function ProductIssuePanel({
       const body = await res.json();
       const data = unwrapData(body);
       if (data?.item) setDraft(data.item);
+    } catch (err) {
+      throw err;
     } finally {
       setPostingComment(false);
     }
