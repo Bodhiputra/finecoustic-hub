@@ -16,14 +16,32 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { flowNodeStatusClass, flowNodeStatusLabel, normalizeFlowEdgeDirection } from '@/lib/campaign-flow-utils';
+import { flowCanvasTaskIds, flowNodeStatusClass, flowNodeStatusLabel, flowCanvasTaskSyncKey, flowStructureKey, normalizeFlowEdgeDirection } from '@/lib/campaign-flow-utils';
 
-const SAVE_DEBOUNCE_MS = 250;
+const SAVE_DEBOUNCE_MS = 400;
+const FLOW_BG_NODE_LIMIT = 35;
+const ARROW_MARKER = { type: MarkerType.ArrowClosed };
+const DEFAULT_EDGE_OPTIONS = { type: 'smoothstep', markerEnd: ARROW_MARKER };
 
 function newEdgeId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `edge-${Date.now()}`;
+}
+
+function flowNodeDataEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.label === b.label
+    && a.status === b.status
+    && a.statusClass === b.statusClass
+    && a.statusLabel === b.statusLabel
+    && a.kind === b.kind
+    && a.nodeType === b.nodeType
+    && a.taskId === b.taskId
+    && a.boardId === b.boardId
+  );
 }
 
 const FlowNode = memo(function FlowNode({ data, selected }) {
@@ -55,7 +73,7 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
       <Handle id="source-right" type="source" position={Position.Right} />
     </div>
   );
-});
+}, (prev, next) => prev.selected === next.selected && flowNodeDataEqual(prev.data, next.data));
 
 const nodeTypes = { flowNode: FlowNode };
 
@@ -127,7 +145,7 @@ function buildFlowGraph(flowData, tasks, boards = [], statusLabelFor) {
           target: edge.target,
           sourceHandle: edge.sourceHandle || 'source-bottom',
           targetHandle: edge.targetHandle || 'target-top',
-          markerEnd: { type: MarkerType.ArrowClosed },
+          markerEnd: ARROW_MARKER,
         },
         flowNodeById,
         taskById
@@ -183,6 +201,12 @@ function mergeNodeData(currentNodes, freshNodes) {
   return merged;
 }
 
+function edgesSame(current, nextEdges) {
+  if (current.length !== nextEdges.length) return false;
+  const ids = new Set(current.map(edge => edge.id));
+  return nextEdges.every(edge => ids.has(edge.id));
+}
+
 function CampaignFlowCanvasInner({
   campaign,
   tasks,
@@ -208,19 +232,37 @@ function CampaignFlowCanvasInner({
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const tasksRef = useRef(tasks);
+  const statusLabelForRef = useRef(statusLabelFor);
   tasksRef.current = tasks;
+  statusLabelForRef.current = statusLabelFor;
   const isDragging = useRef(false);
   const hasLocalFlowEdits = useRef(false);
   const saveInFlight = useRef(false);
   const flowDataVersionRef = useRef(flowDataVersion);
   flowDataVersionRef.current = flowDataVersion;
 
+  const flowLayoutKey = useMemo(
+    () => flowStructureKey(campaign?.flow_data, boards),
+    [campaign?.flow_data, boards]
+  );
+
+  const flowTasks = useMemo(() => {
+    const ids = flowCanvasTaskIds(campaign?.flow_data);
+    if (!ids.size) return tasks;
+    return tasks.filter(task => ids.has(String(task.id)));
+  }, [tasks, flowLayoutKey, campaign?.flow_data]);
+
+  const taskSyncKey = useMemo(
+    () => flowCanvasTaskSyncKey(tasks, campaign?.flow_data),
+    [tasks, campaign?.flow_data]
+  );
+
   const syncSerializedFromCampaign = useCallback(() => {
-    const fresh = buildFlowGraph(campaign?.flow_data, tasks, boards, statusLabelFor);
+    const fresh = buildFlowGraph(campaign?.flow_data, flowTasks, boards, statusLabelForRef.current);
     lastSerialized.current = JSON.stringify(serializeFlow(fresh.nodes, fresh.edges));
     hasLocalFlowEdits.current = false;
     return fresh;
-  }, [campaign?.flow_data, tasks, boards, statusLabelFor]);
+  }, [campaign?.flow_data, flowTasks, boards]);
 
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -237,7 +279,7 @@ function CampaignFlowCanvasInner({
     lastSerialized.current = '';
     lastSyncKeys.current = { task: '', flow: '' };
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    const next = buildFlowGraph(campaign?.flow_data, tasks, boards, statusLabelFor);
+    const next = buildFlowGraph(campaign?.flow_data, flowTasks, boards, statusLabelForRef.current);
     setNodes(next.nodes);
     setEdges(next.edges);
     // Only rebuild the canvas when switching campaigns — not on every flow_data PATCH.
@@ -249,16 +291,6 @@ function CampaignFlowCanvasInner({
       fitView({ padding: 0.2, duration: 0 });
     });
   }, [campaign?.id, fitView]);
-
-  const taskSyncKey = useMemo(
-    () => tasks.map(t => `${t.id}:${t.title}:${t.status}:${t.kind}`).sort().join(','),
-    [tasks]
-  );
-
-  const flowLayoutKey = useMemo(
-    () => `${JSON.stringify(campaign?.flow_data?.nodes || [])}|${(boards || []).map(b => b.id).sort().join(',')}`,
-    [campaign?.flow_data, boards]
-  );
 
   const flushSave = useCallback(
     async (nextNodes, nextEdges) => {
@@ -311,7 +343,7 @@ function CampaignFlowCanvasInner({
     }
     lastSyncKeys.current = { task: taskSyncKey, flow: flowLayoutKey };
 
-    const fresh = buildFlowGraph(campaign?.flow_data, tasks, boards, statusLabelFor);
+    const fresh = buildFlowGraph(campaign?.flow_data, flowTasks, boards, statusLabelForRef.current);
 
     if (hasLocalFlowEdits.current || saveInFlight.current) {
       setNodes(current => mergeNodeData(current, fresh.nodes));
@@ -320,24 +352,26 @@ function CampaignFlowCanvasInner({
         const nextEdges = fresh.edges.filter(
           edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)
         );
-        const localKey = JSON.stringify(current.map(edge => edge.id).sort());
-        const nextKey = JSON.stringify(nextEdges.map(edge => edge.id).sort());
-        return localKey === nextKey ? current : nextEdges;
+        if (edgesSame(current, nextEdges)) {
+          return current;
+        }
+        return nextEdges;
       });
       return;
     }
 
-    const localKey = JSON.stringify(serializeFlow(nodesRef.current, edgesRef.current));
-    const nextKey = JSON.stringify(serializeFlow(fresh.nodes, fresh.edges));
-    if (localKey === nextKey) {
-      setNodes(current => mergeNodeData(current, fresh.nodes));
-      return;
-    }
-
-    setNodes(fresh.nodes);
-    setEdges(fresh.edges);
-    lastSerialized.current = JSON.stringify(serializeFlow(fresh.nodes, fresh.edges));
-  }, [taskSyncKey, flowLayoutKey, campaign?.flow_data, tasks, boards, statusLabelFor, setNodes, setEdges]);
+    setNodes(current => mergeNodeData(current, fresh.nodes));
+    setEdges(current => {
+      const nodeIds = new Set(fresh.nodes.map(node => node.id));
+      const nextEdges = fresh.edges.filter(
+        edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)
+      );
+      if (edgesSame(current, nextEdges)) {
+        return current;
+      }
+      return nextEdges;
+    });
+  }, [taskSyncKey, flowLayoutKey, campaign?.flow_data, flowTasks, boards, setNodes, setEdges]);
 
   const onConnect = useCallback(
     params => {
@@ -345,7 +379,7 @@ function CampaignFlowCanvasInner({
         const nodeById = new Map(nodesRef.current.map(node => [node.id, node]));
         const taskById = new Map((tasksRef.current || []).map(task => [task.id, task]));
         const normalized = normalizeFlowEdgeDirection(
-          { ...params, id: newEdgeId(), markerEnd: { type: MarkerType.ArrowClosed } },
+          { ...params, id: newEdgeId(), markerEnd: ARROW_MARKER },
           nodeById,
           taskById
         );
@@ -406,7 +440,7 @@ function CampaignFlowCanvasInner({
       }
       const taskId = node?.data?.taskId;
       if (!taskId) return;
-      const local = tasks.find(item => item.id === taskId);
+      const local = tasksRef.current.find(item => item.id === taskId);
       if (local) {
         onTaskClick?.(local);
         return;
@@ -422,8 +456,10 @@ function CampaignFlowCanvasInner({
         /* ignore */
       }
     },
-    [onKanbanClick, onTaskClick, tasks]
+    [onKanbanClick, onTaskClick]
   );
+
+  const showBackground = nodes.length <= FLOW_BG_NODE_LIMIT;
 
   return (
     <div className="campaign-flow-canvas">
@@ -440,24 +476,38 @@ function CampaignFlowCanvasInner({
         onNodesDelete={handleNodesDelete}
         onNodeClick={handleNodeClick}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
         deleteKeyCode={['Backspace', 'Delete']}
         minZoom={0.2}
         maxZoom={1.5}
         onlyRenderVisibleElements
         elevateNodesOnSelect={false}
+        autoPanOnNodeDrag={false}
+        selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
       >
-        <Background gap={18} size={1} />
+        {showBackground ? <Background gap={22} size={1} /> : null}
         <Controls />
       </ReactFlow>
     </div>
   );
 }
 
+const CampaignFlowCanvasInnerMemo = memo(CampaignFlowCanvasInner, (prev, next) => (
+  prev.campaign?.id === next.campaign?.id
+  && prev.flowDataVersion === next.flowDataVersion
+  && flowStructureKey(prev.campaign?.flow_data, prev.boards) === flowStructureKey(next.campaign?.flow_data, next.boards)
+  && flowCanvasTaskSyncKey(prev.tasks, prev.campaign?.flow_data) === flowCanvasTaskSyncKey(next.tasks, next.campaign?.flow_data)
+  && prev.onTaskClick === next.onTaskClick
+  && prev.onKanbanClick === next.onKanbanClick
+  && prev.onSaveFlowData === next.onSaveFlowData
+  && prev.statusLabelFor === next.statusLabelFor
+));
+
 export default function CampaignFlowCanvas(props) {
   return (
     <ReactFlowProvider>
-      <CampaignFlowCanvasInner {...props} />
+      <CampaignFlowCanvasInnerMemo {...props} />
     </ReactFlowProvider>
   );
 }

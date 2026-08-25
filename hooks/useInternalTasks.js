@@ -86,9 +86,12 @@ export function useInternalTasks({
       const body = await res.json();
       const payload = unwrapData(body);
       const nextTasks = payload?.tasks ?? [];
-      setTasks(nextTasks);
+      const nextKey = tasksListSeedKey(nextTasks);
+      if (lastSeedKey.current !== nextKey) {
+        setTasks(nextTasks);
+        lastSeedKey.current = nextKey;
+      }
       serverSeedFilterKey.current = internalTasksFilterKey(q);
-      lastSeedKey.current = tasksListSeedKey(nextTasks);
     }
     return res.ok;
   }, []);
