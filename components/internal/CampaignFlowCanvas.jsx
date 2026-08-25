@@ -13,15 +13,35 @@ import {
   Position,
   useReactFlow,
   ReactFlowProvider,
+  SelectionMode,
+  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { flowCanvasTaskIds, flowNodeStatusClass, flowNodeStatusLabel, flowCanvasTaskSyncKey, flowStructureKey, normalizeFlowEdgeDirection } from '@/lib/campaign-flow-utils';
+import { useLocale } from '@/components/LocaleProvider';
+import FlowCanvasContextMenu from '@/components/internal/FlowCanvasContextMenu';
+import {
+  flowCanvasTaskIds,
+  flowNodeStatusClass,
+  flowCanvasTaskSyncKey,
+  flowStructureKey,
+  normalizeFlowEdgeDirection,
+  getFlowDragFollowers,
+} from '@/lib/campaign-flow-utils';
 
 const SAVE_DEBOUNCE_MS = 400;
 const FLOW_BG_NODE_LIMIT = 35;
 const ARROW_MARKER = { type: MarkerType.ArrowClosed };
 const DEFAULT_EDGE_OPTIONS = { type: 'smoothstep', markerEnd: ARROW_MARKER };
+const FLOW_NODE_CENTER_OFFSET = { x: 70, y: 28 };
+
+function flowPositionAtCursor(screenToFlowPosition, clientX, clientY) {
+  const point = screenToFlowPosition({ x: clientX, y: clientY });
+  return {
+    x: point.x - FLOW_NODE_CENTER_OFFSET.x,
+    y: point.y - FLOW_NODE_CENTER_OFFSET.y,
+  };
+}
 
 const FlowCanvasActionsContext = createContext(null);
 
@@ -53,7 +73,8 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
   const typeClass = isKanban ? ' is-kanban' : isMilestone ? ' is-milestone' : ' is-task';
   const typeLabel = isKanban ? 'Kanban board' : isMilestone ? 'Milestone' : 'Task';
 
-  const handleClick = useCallback(() => {
+  const handleClick = useCallback(event => {
+    if (event.shiftKey || event.metaKey || event.ctrlKey) return;
     const actions = actionsRef?.current;
     if (!actions) return;
     if (isKanban && data.boardId) {
@@ -77,9 +98,9 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
       role="button"
       tabIndex={0}
     >
-      <Handle id="target-top" type="target" position={Position.Top} className="campaign-flow-handle is-target-top" />
-      <Handle id="source-top" type="source" position={Position.Top} className="campaign-flow-handle is-source-top" />
-      <Handle id="target-left" type="target" position={Position.Left} />
+      <Handle id="target-top" type="target" position={Position.Top} isConnectable className="campaign-flow-handle is-target-top" />
+      <Handle id="source-top" type="source" position={Position.Top} isConnectable className="campaign-flow-handle is-source-top" />
+      <Handle id="target-left" type="target" position={Position.Left} isConnectable />
       <div className="campaign-flow-node-meta">
         <span className="campaign-flow-node-type-icon" aria-hidden="true">
           {isKanban ? '▦' : isMilestone ? '◇' : '□'}
@@ -92,9 +113,9 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
       </div>
       <span className="campaign-flow-node-label">{data.label}</span>
       {isKanban ? <span className="campaign-flow-node-hint">Open board →</span> : null}
-      <Handle id="target-bottom" type="target" position={Position.Bottom} className="campaign-flow-handle is-target-bottom" />
-      <Handle id="source-bottom" type="source" position={Position.Bottom} className="campaign-flow-handle is-source-bottom" />
-      <Handle id="source-right" type="source" position={Position.Right} />
+      <Handle id="target-bottom" type="target" position={Position.Bottom} isConnectable className="campaign-flow-handle is-target-bottom" />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} isConnectable className="campaign-flow-handle is-source-bottom" />
+      <Handle id="source-right" type="source" position={Position.Right} isConnectable />
     </div>
   );
 }, (prev, next) => prev.selected === next.selected && flowNodeDataEqual(prev.data, next.data));
@@ -254,10 +275,16 @@ function CampaignFlowCanvasInner({
   onTaskClick,
   onKanbanClick,
   onSaveFlowData,
+  onCanvasAddNode,
+  canAddTask = false,
+  canAddMilestone = false,
+  canAddKanban = false,
   statusLabelFor,
 }) {
+  const { t } = useLocale();
   const colorMode = useHubColorMode();
-  const { fitView } = useReactFlow();
+  const { fitView, screenToFlowPosition } = useReactFlow();
+  const [contextMenu, setContextMenu] = useState(null);
   const initial = useMemo(
     () => buildFlowGraph(campaign?.flow_data, tasks, boards, statusLabelFor),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once per campaign mount
@@ -305,6 +332,7 @@ function CampaignFlowCanvasInner({
   };
   const isDragging = useRef(false);
   const suppressClickRef = useRef(false);
+  const dragFollowRef = useRef({ nodeId: '', lastX: 0, lastY: 0, followers: new Set() });
   const hasLocalFlowEdits = useRef(false);
   const saveInFlight = useRef(false);
   const flowDataVersionRef = useRef(flowDataVersion);
@@ -482,14 +510,90 @@ function CampaignFlowCanvasInner({
     [scheduleSave, setEdges]
   );
 
-  const onNodeDragStart = useCallback(() => {
+  const isValidConnection = useCallback(connection => {
+    if (!connection.source || !connection.target) return false;
+    if (connection.source === connection.target) return false;
+    return !edgesRef.current.some(
+      edge =>
+        edge.source === connection.source
+        && edge.target === connection.target
+        && (edge.sourceHandle || null) === (connection.sourceHandle || null)
+        && (edge.targetHandle || null) === (connection.targetHandle || null)
+    );
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const onPaneContextMenu = useCallback(
+    event => {
+      if (!onCanvasAddNode) return;
+      event.preventDefault();
+      const position = flowPositionAtCursor(screenToFlowPosition, event.clientX, event.clientY);
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        position,
+      });
+    },
+    [onCanvasAddNode, screenToFlowPosition]
+  );
+
+  const onNodeContextMenu = useCallback(event => {
+    event.preventDefault();
+  }, []);
+
+  const handleContextMenuPick = useCallback(
+    kind => {
+      if (!contextMenu?.position || !onCanvasAddNode) return;
+      onCanvasAddNode({ kind, position: contextMenu.position });
+      closeContextMenu();
+    },
+    [closeContextMenu, contextMenu, onCanvasAddNode]
+  );
+
+  const onNodeDragStart = useCallback((_, node, currentNodes) => {
     isDragging.current = true;
     suppressClickRef.current = true;
     if (saveTimer.current) clearTimeout(saveTimer.current);
+
+    const selectedCount = currentNodes.filter(n => n.selected).length;
+    const followers =
+      selectedCount > 1 ? new Set() : getFlowDragFollowers(node.id, edgesRef.current);
+    dragFollowRef.current = {
+      nodeId: node.id,
+      lastX: node.position.x,
+      lastY: node.position.y,
+      followers,
+    };
   }, []);
+
+  const onNodeDrag = useCallback((_, node) => {
+    const drag = dragFollowRef.current;
+    if (node.id !== drag.nodeId || drag.followers.size === 0) return;
+
+    const dx = node.position.x - drag.lastX;
+    const dy = node.position.y - drag.lastY;
+    if (dx === 0 && dy === 0) return;
+
+    drag.lastX = node.position.x;
+    drag.lastY = node.position.y;
+
+    setNodes(current =>
+      current.map(n => {
+        if (!drag.followers.has(n.id)) return n;
+        return {
+          ...n,
+          position: { x: n.position.x + dx, y: n.position.y + dy },
+        };
+      })
+    );
+  }, [setNodes]);
 
   const handleNodeDragStop = useCallback(() => {
     isDragging.current = false;
+    dragFollowRef.current = { nodeId: '', lastX: 0, lastY: 0, followers: new Set() };
     if (saveTimer.current) clearTimeout(saveTimer.current);
     flushSave(nodesRef.current, edgesRef.current);
     window.setTimeout(() => {
@@ -539,7 +643,12 @@ function CampaignFlowCanvasInner({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onPaneContextMenu={onPaneContextMenu}
+          onNodeContextMenu={onNodeContextMenu}
+          isValidConnection={isValidConnection}
+          connectionMode={ConnectionMode.Loose}
           onNodeDragStart={onNodeDragStart}
+          onNodeDrag={onNodeDrag}
           onNodeDragStop={handleNodeDragStop}
           onEdgesDelete={handleEdgesDelete}
           onNodesDelete={handleNodesDelete}
@@ -552,11 +661,26 @@ function CampaignFlowCanvasInner({
           elevateNodesOnSelect={false}
           autoPanOnNodeDrag={false}
           selectNodesOnDrag={false}
+          selectionOnDrag
+          selectionMode={SelectionMode.Partial}
+          panOnDrag={[1]}
+          multiSelectionKeyCode="Shift"
           proOptions={{ hideAttribution: true }}
         >
           {showBackground ? <Background gap={22} size={1} /> : null}
           <Controls />
         </ReactFlow>
+        <FlowCanvasContextMenu
+          open={Boolean(contextMenu)}
+          x={contextMenu?.x ?? 0}
+          y={contextMenu?.y ?? 0}
+          t={t}
+          canAddTask={canAddTask}
+          canAddMilestone={canAddMilestone}
+          canAddKanban={canAddKanban}
+          onPick={handleContextMenuPick}
+          onClose={closeContextMenu}
+        />
       </div>
     </FlowCanvasActionsContext.Provider>
   );

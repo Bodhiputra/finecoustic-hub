@@ -30,7 +30,7 @@ import OpsStockPanel from '@/components/ops/OpsStockPanel';
 import OpsExpensesPanel from '@/components/ops/OpsExpensesPanel';
 import { PERSONAL_JOT_DOWN_TOOL } from '@/lib/personal-jots-shared';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
-import { appendKanbanNodeToFlow, flowNodeStatusLabel, syncBoardNameInFlow } from '@/lib/campaign-flow-utils';
+import { appendKanbanNodeToFlow, flowNodeStatusLabel, syncBoardNameInFlow, appendTaskNodeToFlow } from '@/lib/campaign-flow-utils';
 import { boardStatusColumns, flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import {
@@ -217,12 +217,18 @@ export default function InternalDepartment({
   }, [clientDeptTools, departmentId]);
 
   const [panelTask, setPanelTask] = useState(null);
+  const pendingFlowPositionRef = useRef(null);
   const { closePanel: closeTaskPanel } = useTaskDeepLink({
     tasks,
     panelTask,
     setPanelTask,
     enabled: !outreachToolView,
   });
+
+  useEffect(() => {
+    if (!panelTask) pendingFlowPositionRef.current = null;
+  }, [panelTask]);
+
   const [saving, setSaving] = useState(false);
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
@@ -643,19 +649,9 @@ export default function InternalDepartment({
     if (!activeCampaign?.id || !item?.id) return;
     const flowData = activeCampaign.flow_data || { nodes: [], edges: [] };
     if (flowData.nodes?.some(node => node.taskId === item.id)) return;
-    const y = (flowData.nodes?.length || 0) * 96;
-    await saveFlowFromParent({
-      nodes: [
-        ...(flowData.nodes || []),
-        {
-          id: `node-${item.id}`,
-          taskId: item.id,
-          label: item.title || 'Untitled',
-          position: { x: 160, y },
-        },
-      ],
-      edges: flowData.edges || [],
-    });
+    const position = pendingFlowPositionRef.current;
+    pendingFlowPositionRef.current = null;
+    await saveFlowFromParent(appendTaskNodeToFlow(flowData, item, position));
   }
 
   async function handleStatusChange(task, status) {
@@ -921,6 +917,15 @@ export default function InternalDepartment({
     }));
   }
 
+  function handleCanvasAddNode({ kind, position }) {
+    pendingFlowPositionRef.current = position;
+    if (kind === 'kanban') {
+      setKanbanCreateOpen(true);
+      return;
+    }
+    openNew(kind);
+  }
+
   async function handleAddKanbanNode() {
     if (!activeCampaign?.id) return;
     setKanbanCreateOpen(true);
@@ -929,7 +934,9 @@ export default function InternalDepartment({
   async function handleAddExistingKanban(board) {
     if (!board?.id || !activeCampaign?.id) return;
     const prevFlow = activeCampaign.flow_data;
-    const nextFlow = appendKanbanNodeToFlow(prevFlow, board);
+    const position = pendingFlowPositionRef.current;
+    pendingFlowPositionRef.current = null;
+    const nextFlow = appendKanbanNodeToFlow(prevFlow, board, board.name, position);
     if (nextFlow === prevFlow) {
       setKanbanCreateOpen(false);
       return;
@@ -968,7 +975,9 @@ export default function InternalDepartment({
       const board = data?.board;
       if (!board?.id) return;
       dispatchBoardsChanged();
-      const nextFlow = appendKanbanNodeToFlow(activeCampaign.flow_data, board, name);
+      const position = pendingFlowPositionRef.current;
+      pendingFlowPositionRef.current = null;
+      const nextFlow = appendKanbanNodeToFlow(activeCampaign.flow_data, board, name, position);
       const ok = await saveFlowFromParent(nextFlow);
       if (!ok) return;
       setActiveCampaign(prev => ({
@@ -1568,6 +1577,10 @@ export default function InternalDepartment({
               })
             }
             onSaveFlowData={handleSaveFlowData}
+            onCanvasAddNode={handleCanvasAddNode}
+            canAddTask={canCreate}
+            canAddMilestone={canCreate}
+            canAddKanban={canEditBoard}
             statusLabelFor={flowStatusLabel}
           />
         )}
@@ -1640,7 +1653,10 @@ export default function InternalDepartment({
         loadingExisting={kanbanPickerLoading}
         confirmLabel={t('common.confirm')}
         cancelLabel={t('common.cancel')}
-        onCancel={() => setKanbanCreateOpen(false)}
+        onCancel={() => {
+          pendingFlowPositionRef.current = null;
+          setKanbanCreateOpen(false);
+        }}
         onSubmit={handleConfirmCampaignKanban}
         onSelectExisting={handleAddExistingKanban}
         onDepartmentChange={setKanbanPickerDept}

@@ -43,6 +43,7 @@ export default function CampaignFlowInline({
   const [kanbanPickerDept, setKanbanPickerDept] = useState('marketing');
   const [busy, setBusy] = useState(false);
   const [flowDataVersion, setFlowDataVersion] = useState(0);
+  const pendingFlowPositionRef = useRef(null);
   const localEditQuietUntilRef = useRef(0);
   const seeded = useMemo(
     () => initialCampaigns?.find(campaign => campaign.id === campaignId) || null,
@@ -197,7 +198,9 @@ export default function CampaignFlowInline({
     let cancelled = false;
 
     async function appendSavedTask() {
-      const nextFlow = appendTaskNodeToFlow(campaign.flow_data, savedFlowTask);
+      const position = pendingFlowPositionRef.current;
+      pendingFlowPositionRef.current = null;
+      const nextFlow = appendTaskNodeToFlow(campaign.flow_data, savedFlowTask, position);
       if (nextFlow === campaign.flow_data) {
         onSavedFlowTaskHandled?.();
         return;
@@ -230,7 +233,9 @@ export default function CampaignFlowInline({
   async function handleAddExistingKanban(board) {
     if (!board?.id || !campaign?.id) return;
     const prevFlow = campaign.flow_data;
-    const nextFlow = appendKanbanNodeToFlow(prevFlow, board);
+    const position = pendingFlowPositionRef.current;
+    pendingFlowPositionRef.current = null;
+    const nextFlow = appendKanbanNodeToFlow(prevFlow, board, board.name, position);
     if (nextFlow === prevFlow) {
       setKanbanCreateOpen(false);
       return;
@@ -269,7 +274,9 @@ export default function CampaignFlowInline({
       const board = data?.board;
       if (!board?.id) return;
       dispatchBoardsChanged();
-      const nextFlow = appendKanbanNodeToFlow(campaign.flow_data, board, name);
+      const position = pendingFlowPositionRef.current;
+      pendingFlowPositionRef.current = null;
+      const nextFlow = appendKanbanNodeToFlow(campaign.flow_data, board, name, position);
       const ok = await saveFlowFromParent(nextFlow);
       if (!ok) return;
       setCampaign(prev => ({
@@ -315,6 +322,15 @@ export default function CampaignFlowInline({
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleCanvasAddNode({ kind, position }) {
+    pendingFlowPositionRef.current = position;
+    if (kind === 'kanban') {
+      setKanbanCreateOpen(true);
+      return;
+    }
+    onOpenNewTask?.(kind);
   }
 
   const flowStatusLabel = useCallback(
@@ -420,6 +436,10 @@ export default function CampaignFlowInline({
             })
           }
           onSaveFlowData={handleSaveFlowData}
+          onCanvasAddNode={handleCanvasAddNode}
+          canAddTask={canCreate}
+          canAddMilestone={canCreate}
+          canAddKanban={canEditBoard}
           statusLabelFor={flowStatusLabel}
         />
       )}
@@ -434,7 +454,10 @@ export default function CampaignFlowInline({
         loadingExisting={kanbanPickerLoading}
         confirmLabel={t('common.confirm')}
         cancelLabel={t('common.cancel')}
-        onCancel={() => setKanbanCreateOpen(false)}
+        onCancel={() => {
+          pendingFlowPositionRef.current = null;
+          setKanbanCreateOpen(false);
+        }}
         onSubmit={handleConfirmCampaignKanban}
         onSelectExisting={handleAddExistingKanban}
         onDepartmentChange={setKanbanPickerDept}
