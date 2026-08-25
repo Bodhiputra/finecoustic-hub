@@ -430,7 +430,7 @@ export default function InternalDepartment({
     });
   }, []);
 
-  useInternalWorkspacePoll({
+  const { markCampaignSynced } = useInternalWorkspacePoll({
     enabled: Boolean(shouldLoadTasks && !outreachToolView && (flowView || boardView)),
     campaignId: flowView ? flowParam : '',
     onCampaignUpdate: flowView ? handleRemoteCampaignUpdate : undefined,
@@ -1033,6 +1033,7 @@ export default function InternalDepartment({
         const data = unwrapData(body);
         if (data?.campaign) {
           setActiveCampaign(data.campaign);
+          markCampaignSynced(data.campaign.updated_at);
         } else {
           setActiveCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
         }
@@ -1044,7 +1045,7 @@ export default function InternalDepartment({
       toast.error(t('common.somethingWrong'));
       return false;
     }
-  }, [activeCampaign?.id, t, toast]);
+  }, [activeCampaign?.id, markCampaignSynced, t, toast]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -1623,6 +1624,7 @@ export default function InternalDepartment({
           saving={saving}
           isManager={Boolean(actor?.isManager)}
           isAdmin={Boolean(actor?.isAdmin)}
+          subtypeSuggestions={subtypeOptions}
         />
       )}
 

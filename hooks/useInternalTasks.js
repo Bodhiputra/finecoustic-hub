@@ -107,6 +107,13 @@ export function useInternalTasks({
     prevFilterKey.current = filterKey;
 
     if (filterChanged && serverSeedFilterKey.current !== filterKey) {
+      if (initialTasksFilterKey === filterKey && initialTasks != null) {
+        lastSeedKey.current = tasksListSeedKey(initialTasks);
+        serverSeedFilterKey.current = filterKey;
+        setTasks(initialTasks);
+        setLoading(false);
+        return;
+      }
       setTasks([]);
     }
 

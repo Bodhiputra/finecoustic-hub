@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -22,6 +22,8 @@ const SAVE_DEBOUNCE_MS = 400;
 const FLOW_BG_NODE_LIMIT = 35;
 const ARROW_MARKER = { type: MarkerType.ArrowClosed };
 const DEFAULT_EDGE_OPTIONS = { type: 'smoothstep', markerEnd: ARROW_MARKER };
+
+const FlowCanvasActionsContext = createContext(null);
 
 function newEdgeId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -45,17 +47,38 @@ function flowNodeDataEqual(a, b) {
 }
 
 const FlowNode = memo(function FlowNode({ data, selected }) {
+  const actionsRef = useContext(FlowCanvasActionsContext);
   const isMilestone = data.nodeType === 'milestone' || data.kind === 'milestone';
   const isKanban = data.nodeType === 'kanban';
   const typeClass = isKanban ? ' is-kanban' : isMilestone ? ' is-milestone' : ' is-task';
   const typeLabel = isKanban ? 'Kanban board' : isMilestone ? 'Milestone' : 'Task';
 
+  const handleClick = useCallback(() => {
+    const actions = actionsRef?.current;
+    if (!actions) return;
+    if (isKanban && data.boardId) {
+      actions.openKanban?.(data.boardId);
+      return;
+    }
+    if (data.taskId) actions.openTask?.(data.taskId);
+  }, [actionsRef, data.boardId, data.taskId, isKanban]);
+
   return (
     <div
       className={`campaign-flow-node${typeClass}${selected ? ' is-selected' : ''}`}
       aria-label={`${typeLabel}: ${data.label || 'Untitled'}`}
+      onClick={handleClick}
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
-      <Handle id="target-top" type="target" position={Position.Top} />
+      <Handle id="target-top" type="target" position={Position.Top} className="campaign-flow-handle is-target-top" />
+      <Handle id="source-top" type="source" position={Position.Top} className="campaign-flow-handle is-source-top" />
       <Handle id="target-left" type="target" position={Position.Left} />
       <div className="campaign-flow-node-meta">
         <span className="campaign-flow-node-type-icon" aria-hidden="true">
@@ -69,7 +92,8 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
       </div>
       <span className="campaign-flow-node-label">{data.label}</span>
       {isKanban ? <span className="campaign-flow-node-hint">Open board →</span> : null}
-      <Handle id="source-bottom" type="source" position={Position.Bottom} />
+      <Handle id="target-bottom" type="target" position={Position.Bottom} className="campaign-flow-handle is-target-bottom" />
+      <Handle id="source-bottom" type="source" position={Position.Bottom} className="campaign-flow-handle is-source-bottom" />
       <Handle id="source-right" type="source" position={Position.Right} />
     </div>
   );
@@ -134,23 +158,16 @@ function buildFlowGraph(flowData, tasks, boards = [], statusLabelFor) {
     });
 
   const nodeIds = new Set(nodes.map(node => node.id));
-  const flowNodeById = new Map((flowData?.nodes || []).map(node => [node.id, node]));
   const edges = (flowData?.edges || [])
     .filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target))
-    .map(edge =>
-      normalizeFlowEdgeDirection(
-        {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          sourceHandle: edge.sourceHandle || 'source-bottom',
-          targetHandle: edge.targetHandle || 'target-top',
-          markerEnd: ARROW_MARKER,
-        },
-        flowNodeById,
-        taskById
-      )
-    );
+    .map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: edge.sourceHandle || 'source-bottom',
+      targetHandle: edge.targetHandle || 'target-top',
+      markerEnd: ARROW_MARKER,
+    }));
 
   return { nodes, edges };
 }
@@ -201,10 +218,32 @@ function mergeNodeData(currentNodes, freshNodes) {
   return merged;
 }
 
+function mergeEdgeHandles(current, nextEdges) {
+  const currentById = new Map(current.map(edge => [edge.id, edge]));
+  return nextEdges.map(edge => {
+    const prev = currentById.get(edge.id);
+    if (!prev) return edge;
+    return {
+      ...edge,
+      sourceHandle: edge.sourceHandle || prev.sourceHandle,
+      targetHandle: edge.targetHandle || prev.targetHandle,
+    };
+  });
+}
+
 function edgesSame(current, nextEdges) {
   if (current.length !== nextEdges.length) return false;
-  const ids = new Set(current.map(edge => edge.id));
-  return nextEdges.every(edge => ids.has(edge.id));
+  const byId = new Map(current.map(edge => [edge.id, edge]));
+  return nextEdges.every(edge => {
+    const prev = byId.get(edge.id);
+    return (
+      prev
+      && prev.source === edge.source
+      && prev.target === edge.target
+      && (prev.sourceHandle || 'source-bottom') === (edge.sourceHandle || 'source-bottom')
+      && (prev.targetHandle || 'target-top') === (edge.targetHandle || 'target-top')
+    );
+  });
 }
 
 function CampaignFlowCanvasInner({
@@ -233,13 +272,45 @@ function CampaignFlowCanvasInner({
   const edgesRef = useRef(edges);
   const tasksRef = useRef(tasks);
   const statusLabelForRef = useRef(statusLabelFor);
+  const onTaskClickRef = useRef(onTaskClick);
+  const onKanbanClickRef = useRef(onKanbanClick);
+  const flowActionsRef = useRef({});
   tasksRef.current = tasks;
   statusLabelForRef.current = statusLabelFor;
+  onTaskClickRef.current = onTaskClick;
+  onKanbanClickRef.current = onKanbanClick;
+  flowActionsRef.current = {
+    openKanban: boardId => {
+      if (suppressClickRef.current) return;
+      onKanbanClickRef.current?.(boardId);
+    },
+    openTask: async taskId => {
+      if (suppressClickRef.current || !taskId) return;
+      const local = tasksRef.current.find(item => String(item.id) === String(taskId));
+      if (local) {
+        onTaskClickRef.current?.(local);
+        return;
+      }
+      try {
+        const res = await fetch(API_V1.internalTask(taskId), { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const body = await res.json();
+        const data = unwrapData(body, 'task');
+        const task = data?.task || data;
+        if (task?.id) onTaskClickRef.current?.(task);
+      } catch {
+        /* ignore */
+      }
+    },
+  };
   const isDragging = useRef(false);
+  const suppressClickRef = useRef(false);
   const hasLocalFlowEdits = useRef(false);
   const saveInFlight = useRef(false);
   const flowDataVersionRef = useRef(flowDataVersion);
+  const campaignFlowDataRef = useRef(campaign?.flow_data);
   flowDataVersionRef.current = flowDataVersion;
+  campaignFlowDataRef.current = campaign?.flow_data;
 
   const flowLayoutKey = useMemo(
     () => flowStructureKey(campaign?.flow_data, boards),
@@ -266,8 +337,17 @@ function CampaignFlowCanvasInner({
 
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    syncSerializedFromCampaign();
-  }, [flowDataVersion, syncSerializedFromCampaign]);
+    const fresh = buildFlowGraph(
+      campaignFlowDataRef.current,
+      flowTasks,
+      boards,
+      statusLabelForRef.current
+    );
+    lastSerialized.current = JSON.stringify(serializeFlow(fresh.nodes, fresh.edges));
+    hasLocalFlowEdits.current = false;
+    // Only reset save baseline when parent bumps flowDataVersion (external save / campaign switch).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowDataVersion]);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -332,30 +412,43 @@ function CampaignFlowCanvasInner({
     [flushSave]
   );
 
-  // Refresh labels/status and new flow nodes — never reset positions while editing locally.
+  // Refresh task labels/status on nodes — never touch edges or positions.
   useEffect(() => {
     if (isDragging.current) return;
-    if (
-      taskSyncKey === lastSyncKeys.current.task &&
-      flowLayoutKey === lastSyncKeys.current.flow
-    ) {
-      return;
-    }
-    lastSyncKeys.current = { task: taskSyncKey, flow: flowLayoutKey };
+    if (taskSyncKey === lastSyncKeys.current.task) return;
+    lastSyncKeys.current = { task: taskSyncKey, flow: lastSyncKeys.current.flow };
 
-    const fresh = buildFlowGraph(campaign?.flow_data, flowTasks, boards, statusLabelForRef.current);
+    const fresh = buildFlowGraph(
+      campaignFlowDataRef.current,
+      flowTasks,
+      boards,
+      statusLabelForRef.current
+    );
+    setNodes(current => mergeNodeData(current, fresh.nodes));
+  }, [taskSyncKey, flowTasks, boards, setNodes]);
+
+  // New/removed nodes or edges from server — preserve local positions when editing.
+  useEffect(() => {
+    if (isDragging.current) return;
+    if (flowLayoutKey === lastSyncKeys.current.flow) return;
+    lastSyncKeys.current = { flow: flowLayoutKey, task: lastSyncKeys.current.task };
+
+    const fresh = buildFlowGraph(
+      campaignFlowDataRef.current,
+      flowTasks,
+      boards,
+      statusLabelForRef.current
+    );
 
     if (hasLocalFlowEdits.current || saveInFlight.current) {
       setNodes(current => mergeNodeData(current, fresh.nodes));
       setEdges(current => {
         const nodeIds = new Set(fresh.nodes.map(node => node.id));
-        const nextEdges = fresh.edges.filter(
-          edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)
+        const nextEdges = mergeEdgeHandles(
+          current,
+          fresh.edges.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target))
         );
-        if (edgesSame(current, nextEdges)) {
-          return current;
-        }
-        return nextEdges;
+        return edgesSame(current, nextEdges) ? current : nextEdges;
       });
       return;
     }
@@ -363,15 +456,13 @@ function CampaignFlowCanvasInner({
     setNodes(current => mergeNodeData(current, fresh.nodes));
     setEdges(current => {
       const nodeIds = new Set(fresh.nodes.map(node => node.id));
-      const nextEdges = fresh.edges.filter(
-        edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)
+      const nextEdges = mergeEdgeHandles(
+        current,
+        fresh.edges.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target))
       );
-      if (edgesSame(current, nextEdges)) {
-        return current;
-      }
-      return nextEdges;
+      return edgesSame(current, nextEdges) ? current : nextEdges;
     });
-  }, [taskSyncKey, flowLayoutKey, campaign?.flow_data, flowTasks, boards, setNodes, setEdges]);
+  }, [flowLayoutKey, flowTasks, boards, setNodes, setEdges]);
 
   const onConnect = useCallback(
     params => {
@@ -393,6 +484,7 @@ function CampaignFlowCanvasInner({
 
   const onNodeDragStart = useCallback(() => {
     isDragging.current = true;
+    suppressClickRef.current = true;
     if (saveTimer.current) clearTimeout(saveTimer.current);
   }, []);
 
@@ -400,6 +492,9 @@ function CampaignFlowCanvasInner({
     isDragging.current = false;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     flushSave(nodesRef.current, edgesRef.current);
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
   }, [flushSave]);
 
   const handleEdgesDelete = useCallback(
@@ -432,82 +527,45 @@ function CampaignFlowCanvasInner({
     [scheduleSave, setNodes, setEdges]
   );
 
-  const handleNodeClick = useCallback(
-    async (_event, node) => {
-      if (node?.data?.nodeType === 'kanban' && node?.data?.boardId) {
-        onKanbanClick?.(node.data.boardId);
-        return;
-      }
-      const taskId = node?.data?.taskId;
-      if (!taskId) return;
-      const local = tasksRef.current.find(item => item.id === taskId);
-      if (local) {
-        onTaskClick?.(local);
-        return;
-      }
-      try {
-        const res = await fetch(API_V1.internalTask(taskId), { credentials: 'same-origin' });
-        if (!res.ok) return;
-        const body = await res.json();
-        const data = unwrapData(body);
-        const task = data?.task || data;
-        if (task?.id) onTaskClick?.(task);
-      } catch {
-        /* ignore */
-      }
-    },
-    [onKanbanClick, onTaskClick]
-  );
-
   const showBackground = nodes.length <= FLOW_BG_NODE_LIMIT;
 
   return (
-    <div className="campaign-flow-canvas">
-      <ReactFlow
-        colorMode={colorMode}
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeDragStart={onNodeDragStart}
-        onNodeDragStop={handleNodeDragStop}
-        onEdgesDelete={handleEdgesDelete}
-        onNodesDelete={handleNodesDelete}
-        onNodeClick={handleNodeClick}
-        nodeTypes={nodeTypes}
-        defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
-        deleteKeyCode={['Backspace', 'Delete']}
-        minZoom={0.2}
-        maxZoom={1.5}
-        onlyRenderVisibleElements
-        elevateNodesOnSelect={false}
-        autoPanOnNodeDrag={false}
-        selectNodesOnDrag={false}
-        proOptions={{ hideAttribution: true }}
-      >
-        {showBackground ? <Background gap={22} size={1} /> : null}
-        <Controls />
-      </ReactFlow>
-    </div>
+    <FlowCanvasActionsContext.Provider value={flowActionsRef}>
+      <div className="campaign-flow-canvas">
+        <ReactFlow
+          colorMode={colorMode}
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onNodeDragStart={onNodeDragStart}
+          onNodeDragStop={handleNodeDragStop}
+          onEdgesDelete={handleEdgesDelete}
+          onNodesDelete={handleNodesDelete}
+          nodeTypes={nodeTypes}
+          defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+          deleteKeyCode={['Backspace', 'Delete']}
+          minZoom={0.2}
+          maxZoom={1.5}
+          onlyRenderVisibleElements
+          elevateNodesOnSelect={false}
+          autoPanOnNodeDrag={false}
+          selectNodesOnDrag={false}
+          proOptions={{ hideAttribution: true }}
+        >
+          {showBackground ? <Background gap={22} size={1} /> : null}
+          <Controls />
+        </ReactFlow>
+      </div>
+    </FlowCanvasActionsContext.Provider>
   );
 }
-
-const CampaignFlowCanvasInnerMemo = memo(CampaignFlowCanvasInner, (prev, next) => (
-  prev.campaign?.id === next.campaign?.id
-  && prev.flowDataVersion === next.flowDataVersion
-  && flowStructureKey(prev.campaign?.flow_data, prev.boards) === flowStructureKey(next.campaign?.flow_data, next.boards)
-  && flowCanvasTaskSyncKey(prev.tasks, prev.campaign?.flow_data) === flowCanvasTaskSyncKey(next.tasks, next.campaign?.flow_data)
-  && prev.onTaskClick === next.onTaskClick
-  && prev.onKanbanClick === next.onKanbanClick
-  && prev.onSaveFlowData === next.onSaveFlowData
-  && prev.statusLabelFor === next.statusLabelFor
-));
 
 export default function CampaignFlowCanvas(props) {
   return (
     <ReactFlowProvider>
-      <CampaignFlowCanvasInnerMemo {...props} />
+      <CampaignFlowCanvasInner {...props} />
     </ReactFlowProvider>
   );
 }

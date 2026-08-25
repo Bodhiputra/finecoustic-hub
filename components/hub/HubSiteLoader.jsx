@@ -7,6 +7,7 @@ import {
   HUB_LOADER_FONT_WAIT_MS,
   HUB_LOADER_MAX_NAV_MS,
   HUB_LOADER_MIN_VISIBLE_MS,
+  HUB_LOADER_MIN_NAV_MS,
   HUB_LOADER_NAV_EVENT,
   HUB_LOADER_NAV_READY_EVENT,
   HUB_LOADER_SEEN_KEY,
@@ -134,7 +135,7 @@ export default function HubSiteLoader() {
 
     clearExitTimer();
     const elapsed = Date.now() - pending.startedAt;
-    const wait = Math.max(0, HUB_LOADER_MIN_VISIBLE_MS - elapsed);
+    const wait = Math.max(0, HUB_LOADER_MIN_NAV_MS - elapsed);
     const markFirstVisit = pending.markFirstVisit;
     navPendingRef.current = null;
     exitTimerRef.current = window.setTimeout(() => beginExit(markFirstVisit), wait);

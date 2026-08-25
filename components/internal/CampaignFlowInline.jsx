@@ -119,34 +119,6 @@ export default function CampaignFlowInline({
     return ok;
   }, [patchFlowData]);
 
-  const handleSaveFlowData = useCallback(async flowData => {
-    if (!campaign?.id) return false;
-    bumpLocalEditQuiet(localEditQuietUntilRef);
-    try {
-      const res = await fetch(API_V1.internalCampaign(campaign.id), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ flow_data: flowData }),
-      });
-      if (res.ok) {
-        const body = await res.json();
-        const data = unwrapData(body);
-        if (data?.campaign) {
-          setCampaign(data.campaign);
-        } else {
-          setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
-        }
-        return true;
-      }
-      toast.error(t('common.somethingWrong'));
-      return false;
-    } catch {
-      toast.error(t('common.somethingWrong'));
-      return false;
-    }
-  }, [campaign?.id, t, toast]);
-
   const refreshTasks = useCallback(async () => {
     if (!campaignId) return;
     setTasksLoading(true);
@@ -164,11 +136,6 @@ export default function CampaignFlowInline({
     }
   }, [campaignId]);
 
-  useEffect(() => {
-    if (!campaignId) return;
-    refreshTasks();
-  }, [campaignId, refreshTasks, tasksRefreshKey]);
-
   const handleRemoteCampaignUpdate = useCallback(nextCampaign => {
     if (!nextCampaign?.id) return;
     setCampaign(prev => {
@@ -178,13 +145,47 @@ export default function CampaignFlowInline({
     });
   }, []);
 
-  useInternalWorkspacePoll({
+  const { markCampaignSynced } = useInternalWorkspacePoll({
     enabled: Boolean(campaignId),
     campaignId,
     onCampaignUpdate: handleRemoteCampaignUpdate,
     onTasksUpdate: refreshTasks,
     quietUntilRef: localEditQuietUntilRef,
   });
+
+  const handleSaveFlowData = useCallback(async flowData => {
+    if (!campaign?.id) return false;
+    bumpLocalEditQuiet(localEditQuietUntilRef);
+    try {
+      const res = await fetch(API_V1.internalCampaign(campaign.id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ flow_data: flowData }),
+      });
+      if (res.ok) {
+        const body = await res.json();
+        const data = unwrapData(body);
+        if (data?.campaign) {
+          setCampaign(data.campaign);
+          markCampaignSynced(data.campaign.updated_at);
+        } else {
+          setCampaign(prev => (prev ? { ...prev, flow_data: flowData } : prev));
+        }
+        return true;
+      }
+      toast.error(t('common.somethingWrong'));
+      return false;
+    } catch {
+      toast.error(t('common.somethingWrong'));
+      return false;
+    }
+  }, [campaign?.id, markCampaignSynced, t, toast]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    refreshTasks();
+  }, [campaignId, refreshTasks, tasksRefreshKey]);
 
   useEffect(() => {
     if (!tasksRefreshKey) return;

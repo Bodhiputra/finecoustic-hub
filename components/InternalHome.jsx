@@ -31,6 +31,7 @@ import {
   DEPARTMENT_IDS,
   calendarItemMatchesDepartmentFilter,
   calendarItemMatchesKindFilter,
+  collectSubtypesFromTasks,
   isTeamScheduleCalendarItem,
   newTaskDraft,
 } from '@/lib/internal';
@@ -173,6 +174,11 @@ export default function InternalHome({
 
   const scheduleItems = useMemo(
     () => tasks.filter(t => t.status !== 'archived' && isTeamScheduleCalendarItem(t)),
+    [tasks]
+  );
+
+  const subtypeSuggestions = useMemo(
+    () => collectSubtypesFromTasks(tasks.filter(t => t.kind === 'task' && t.status !== 'archived')),
     [tasks]
   );
 
@@ -521,6 +527,7 @@ export default function InternalHome({
           isManager={Boolean(actor?.isManager)}
           isAdmin={Boolean(actor?.isAdmin)}
           saving={saving}
+          subtypeSuggestions={subtypeSuggestions}
         />
       )}
 

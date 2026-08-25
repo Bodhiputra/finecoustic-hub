@@ -9,13 +9,13 @@ import TaskCustomFields from '@/components/internal/TaskCustomFields';
 import TaskDateTimeField from '@/components/internal/TaskDateTimeField';
 import {
   ALL_DEPARTMENTS_ID,
-  DEFAULT_SUBTYPES,
   DEPARTMENTS,
   TASK_PRIORITIES,
   TASK_STATUSES,
   buildTeamAssigneeOptions,
   deptText,
   getDepartment,
+  mergeSubtypeOptionLabels,
 } from '@/lib/internal';
 import { statusColumnLabel } from '@/lib/internal-campaigns';
 import { getAllowedWorkflowStatusOptions, getWorkflowActions, isTaskAssignee } from '@/lib/task-workflow';
@@ -304,6 +304,7 @@ export default function TaskPanel({
   lockAssigneeToSelf = false,
   isManager = false,
   isAdmin = false,
+  subtypeSuggestions = [],
 }) {
   const { locale, t } = useLocale();
   const [draft, setDraft] = useState(task);
@@ -368,10 +369,13 @@ export default function TaskPanel({
     setDraft(normalizeDraftForPanel(task));
   }, [task]);
 
-  const subtypeOptions = useMemo(
-    () => DEFAULT_SUBTYPES[draft?.department] || [],
-    [draft?.department]
-  );
+  const subtypeOptions = useMemo(() => {
+    const dept =
+      lockDepartmentId && lockDepartmentId !== ALL_DEPARTMENTS_ID
+        ? lockDepartmentId
+        : draft?.department;
+    return mergeSubtypeOptionLabels(dept, subtypeSuggestions, [draft?.subtype]);
+  }, [draft?.department, draft?.subtype, lockDepartmentId, subtypeSuggestions]);
 
   const statusOptions = useMemo(() => {
     if (statusColumns?.length) {

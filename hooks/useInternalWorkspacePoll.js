@@ -82,6 +82,12 @@ export function useInternalWorkspacePoll({
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [enabled, campaignId, sync]);
+
+  const markCampaignSynced = useCallback((updatedAt = '') => {
+    lastCampaignUpdatedAtRef.current = String(updatedAt || '');
+  }, []);
+
+  return { markCampaignSynced };
 }
 
 export function bumpLocalEditQuiet(quietUntilRef, ms = LOCAL_EDIT_QUIET_MS) {
