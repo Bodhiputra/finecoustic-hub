@@ -2414,28 +2414,14 @@ button.internal-campaign-card {
 
 .campaign-flow-canvas .react-flow__handle-top {
   top: -5px;
+  left: 50% !important;
   transform: translate(-50%, -50%) !important;
-}
-
-.campaign-flow-canvas .campaign-flow-handle.is-target-top {
-  left: calc(50% - 9px) !important;
-}
-
-.campaign-flow-canvas .campaign-flow-handle.is-source-top {
-  left: calc(50% + 9px) !important;
 }
 
 .campaign-flow-canvas .react-flow__handle-bottom {
   bottom: -5px;
+  left: 50% !important;
   transform: translate(-50%, 50%) !important;
-}
-
-.campaign-flow-canvas .campaign-flow-handle.is-target-bottom {
-  left: calc(50% - 9px) !important;
-}
-
-.campaign-flow-canvas .campaign-flow-handle.is-source-bottom {
-  left: calc(50% + 9px) !important;
 }
 
 .campaign-flow-canvas .react-flow__handle-left {
