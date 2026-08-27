@@ -244,7 +244,6 @@ export default function KolPoolWorkspace({
                 <th>{t('hub.kol.colCollabProducts')}</th>
                 <th>{t('hub.kol.shippingAddress')}</th>
                 <th>{t('hub.kol.colLinks')}</th>
-                <th aria-hidden="true" />
               </tr>
             </thead>
             <tbody>
@@ -322,19 +321,6 @@ export default function KolPoolWorkspace({
                     ) : (
                       '—'
                     )}
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="appdev-btn-ghost kol-pool-edit-btn"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setEditing(row);
-                      }}
-                      aria-label={t('hub.kol.editKol')}
-                    >
-                      <Icon name="edit" size={14} />
-                    </button>
                   </td>
                 </tr>
               ))}

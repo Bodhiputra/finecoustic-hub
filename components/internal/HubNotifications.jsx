@@ -12,7 +12,8 @@ import {
 } from '@/lib/hub-notification-nav';
 import { HUB_NOTIFICATIONS_REFRESH_EVENT } from '@/lib/hub-notifications-ui';
 
-const POLL_MS = 60_000;
+const POLL_MS_VISIBLE = 30_000;
+const BOOT_DELAY_MS = 2_500;
 
 function formatNotificationDate(iso, locale) {
   if (!iso) return '';
@@ -137,37 +138,60 @@ export default function HubNotifications() {
   }, [refreshQuietly]);
 
   useEffect(() => {
-    let intervalId;
+    let intervalId = null;
     const timeoutId = window.setTimeout(() => {
       load();
-      intervalId = window.setInterval(pollUnread, POLL_MS);
-    }, 2500);
+      if (document.visibilityState === 'visible') {
+        intervalId = window.setInterval(pollUnread, POLL_MS_VISIBLE);
+      }
+    }, BOOT_DELAY_MS);
+
+    function startPolling() {
+      if (intervalId) return;
+      intervalId = window.setInterval(pollUnread, POLL_MS_VISIBLE);
+    }
+
+    function stopPolling() {
+      if (!intervalId) return;
+      window.clearInterval(intervalId);
+      intervalId = null;
+    }
 
     function onRefresh() {
       if (document.visibilityState === 'visible') refreshQuietly();
     }
+
     function onVisible() {
       if (document.visibilityState === 'visible') {
         pollUnread();
+        startPolling();
+      } else {
+        stopPolling();
       }
     }
 
+    function onFocus() {
+      if (document.visibilityState === 'visible') pollUnread();
+    }
+
     window.addEventListener(HUB_NOTIFICATIONS_REFRESH_EVENT, onRefresh);
+    window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       window.clearTimeout(timeoutId);
-      if (intervalId) window.clearInterval(intervalId);
+      stopPolling();
       window.removeEventListener(HUB_NOTIFICATIONS_REFRESH_EVENT, onRefresh);
+      window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [load, pollUnread, refreshQuietly]);
 
   useEffect(() => {
     if (!open) return undefined;
-    if (items.length === 0 && !loading) load();
+    refreshQuietly();
     return undefined;
-  }, [open, items.length, loading, load]);
+  }, [open, refreshQuietly]);
 
   useEffect(() => {
     if (!open) return undefined;
