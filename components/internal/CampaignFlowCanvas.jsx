@@ -32,7 +32,7 @@ import {
 const SAVE_DEBOUNCE_MS = 400;
 const FLOW_BG_NODE_LIMIT = 35;
 const ARROW_MARKER = { type: MarkerType.ArrowClosed };
-const DEFAULT_EDGE_OPTIONS = { type: 'smoothstep', markerEnd: ARROW_MARKER };
+const DEFAULT_EDGE_OPTIONS = { type: 'default', markerEnd: ARROW_MARKER };
 const FLOW_NODE_CENTER_OFFSET = { x: 70, y: 28 };
 
 function flowPositionAtCursor(screenToFlowPosition, clientX, clientY) {
@@ -187,6 +187,7 @@ function buildFlowGraph(flowData, tasks, boards = [], statusLabelFor) {
       target: edge.target,
       sourceHandle: edge.sourceHandle || 'source-bottom',
       targetHandle: edge.targetHandle || 'target-top',
+      type: 'default',
       markerEnd: ARROW_MARKER,
     }));
 
@@ -560,7 +561,9 @@ function CampaignFlowCanvasInner({
 
     const selectedCount = currentNodes.filter(n => n.selected).length;
     const followers =
-      selectedCount > 1 ? new Set() : getFlowDragFollowers(node.id, edgesRef.current);
+      selectedCount > 1
+        ? new Set()
+        : getFlowDragFollowers(node.id, edgesRef.current, nodesRef.current);
     dragFollowRef.current = {
       nodeId: node.id,
       lastX: node.position.x,
@@ -582,10 +585,14 @@ function CampaignFlowCanvasInner({
 
     setNodes(current =>
       current.map(n => {
+        if (n.id === node.id) {
+          return { ...n, position: node.position, dragging: true };
+        }
         if (!drag.followers.has(n.id)) return n;
         return {
           ...n,
           position: { x: n.position.x + dx, y: n.position.y + dy },
+          dragging: true,
         };
       })
     );
