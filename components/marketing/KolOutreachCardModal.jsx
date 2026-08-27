@@ -5,7 +5,7 @@ import Icon from '@/components/Icon';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { buildTeamAssigneeOptions } from '@/lib/internal';
-import { KOL_INITIATIVES, KOL_BOARD_PROP } from '@/lib/kol-outreach-shared';
+import { KOL_INITIATIVES, KOL_BOARD_PROP, resolveKolInitiative } from '@/lib/kol-outreach-shared';
 import { taskInitiative } from '@/lib/kol-outreach-utils';
 
 export default function KolOutreachCardModal({
@@ -33,7 +33,7 @@ export default function KolOutreachCardModal({
   useEffect(() => {
     if (!open || !task) return;
     setAssignee(task.assignee || '');
-    setInitiative(taskInitiative(task) || defaultInitiative || 'fbs');
+    setInitiative(resolveKolInitiative(taskInitiative(task) || defaultInitiative));
   }, [open, task, defaultInitiative]);
 
   if (!open || !task) return null;

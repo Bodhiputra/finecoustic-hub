@@ -17,9 +17,12 @@ import {
   KOL_BOARD_PROP,
   KOL_INITIATIVES,
   defaultKolOutreachStatusColumns,
+  kolOutreachBoardUrl,
   kolTransitionSteps,
   initiativeLabel,
   normalizeKolOutreachStatus,
+  resolveKolInitiative,
+  DEFAULT_KOL_INITIATIVE,
 } from '@/lib/kol-outreach-shared';
 import {
   appendProductsToPoolRecord,
@@ -27,6 +30,7 @@ import {
   existingOutreachKeys,
   filterOutreachTasks,
   poolRecordForTask,
+  taskInitiative,
   taskPoolId,
 } from '@/lib/kol-outreach-utils';
 import { buildTeamAssigneeOptions } from '@/lib/internal';
@@ -57,7 +61,7 @@ export default function KolOutreachWorkspace({
 
   const [view, setView] = useState('board');
   const [query, setQuery] = useState('');
-  const [initiativeFilter, setInitiativeFilter] = useState(initiativeFromUrl || 'all');
+  const [initiativeFilter, setInitiativeFilter] = useState(() => resolveKolInitiative(initiativeFromUrl));
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [dealTypeFilter, setDealTypeFilter] = useState('all');
   const [platformFilter, setPlatformFilter] = useState('all');
@@ -70,8 +74,21 @@ export default function KolOutreachWorkspace({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (initiativeFromUrl) setInitiativeFilter(initiativeFromUrl);
+    setInitiativeFilter(resolveKolInitiative(initiativeFromUrl));
   }, [initiativeFromUrl]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || initiativeFromUrl) return;
+    window.history.replaceState(window.history.state, '', kolOutreachBoardUrl(DEFAULT_KOL_INITIATIVE));
+  }, [initiativeFromUrl]);
+
+  const selectInitiative = useCallback((id) => {
+    const next = resolveKolInitiative(id);
+    setInitiativeFilter(next);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(window.history.state, '', kolOutreachBoardUrl(next));
+    }
+  }, []);
 
   useEffect(() => {
     if (initialPoolRecords.length) {
@@ -280,10 +297,16 @@ export default function KolOutreachWorkspace({
     setTransition({ task, steps, stepIndex: 0 });
   }
 
-  const activeTransitionStatus = transition?.steps?.[transition.stepIndex] || null;
+  const initiativeCounts = useMemo(() => {
+    const map = Object.fromEntries(KOL_INITIATIVES.map(item => [item.id, 0]));
+    for (const task of normalizedTasks) {
+      const id = taskInitiative(task);
+      if (id in map) map[id] += 1;
+    }
+    return map;
+  }, [normalizedTasks]);
 
-  const defaultInitiative =
-    initiativeFilter && initiativeFilter !== 'all' ? initiativeFilter : 'fbs';
+  const activeTransitionStatus = transition?.steps?.[transition.stepIndex] || null;
 
   return (
     <>
@@ -298,7 +321,7 @@ export default function KolOutreachWorkspace({
             initialPoolRecords={poolRecords}
             onTasksChanged={onTasksChanged}
             canCreate={canCreate}
-            initiative={defaultInitiative}
+            initiative={initiativeFilter}
             existingKeys={existingOutreachKeys(normalizedTasks)}
           />
         )}
@@ -313,6 +336,26 @@ export default function KolOutreachWorkspace({
         empty={filtered.length === 0 ? t('hub.campaignKol.empty') : null}
       >
         <div className="kol-outreach-toolbar">
+          <div
+            className="kol-outreach-initiative-toggle"
+            role="tablist"
+            aria-label={t('hub.campaignKol.initiative')}
+          >
+            {KOL_INITIATIVES.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                className={initiativeFilter === item.id ? 'is-active' : ''}
+                aria-selected={initiativeFilter === item.id}
+                onClick={() => selectInitiative(item.id)}
+              >
+                {item.label}
+                <span className="kol-outreach-initiative-count">{initiativeCounts[item.id] ?? 0}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="kol-outreach-view-toggle" role="tablist" aria-label={t('hub.campaignKol.viewToggle')}>
             <button
               type="button"
@@ -329,16 +372,6 @@ export default function KolOutreachWorkspace({
               {t('hub.internal.viewList')}
             </button>
           </div>
-
-          <label className="kol-outreach-filter">
-            <span>{t('hub.campaignKol.initiative')}</span>
-            <select value={initiativeFilter} onChange={e => setInitiativeFilter(e.target.value)}>
-              <option value="all">{t('hub.campaignKol.filterAll')}</option>
-              {KOL_INITIATIVES.map(item => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-          </label>
 
           <label className="kol-outreach-filter">
             <span>{t('hub.internal.taskPanel.assignee')}</span>
@@ -431,7 +464,7 @@ export default function KolOutreachWorkspace({
         task={cardTask}
         teamMembers={teamMembers}
         displayName={displayName}
-        defaultInitiative={defaultInitiative}
+        defaultInitiative={initiativeFilter}
         onClose={() => setCardTask(null)}
         onSave={handleCardSave}
         busy={busy}

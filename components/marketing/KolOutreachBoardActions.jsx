@@ -6,7 +6,7 @@ import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey } from '@/lib/kol-outreach-shared';
+import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey, resolveKolInitiative } from '@/lib/kol-outreach-shared';
 import { platformChipClass } from '@/lib/kol-pool';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 
@@ -111,7 +111,7 @@ export default function KolOutreachBoardActions({
   const [newKolOpen, setNewKolOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [poolRecords, setPoolRecords] = useState(initialPoolRecords);
-  const addInitiative = initiative || 'fbs';
+  const addInitiative = resolveKolInitiative(initiative);
 
   useEffect(() => {
     if (initialPoolRecords.length) {
