@@ -55,13 +55,17 @@ export default function KolOutreachCardModal({
   const [shippingDate, setShippingDate] = useState('');
   const [trackingLink, setTrackingLink] = useState('');
   const [mediaKitSent, setMediaKitSent] = useState(false);
+  const [publishUrl, setPublishUrl] = useState('');
+  const [publishPlatform, setPublishPlatform] = useState('');
+  const [publishDate, setPublishDate] = useState('');
   const [catalogProducts, setCatalogProducts] = useState([]);
 
   const showApproach = kolOutreachStatusAtOrPast(status, 'waiting_response');
   const showDeal = kolOutreachStatusAtOrPast(status, 'deal');
   const showNoDeal = status === 'no_deal';
   const showShipping = kolOutreachStatusAtOrPast(status, 'shipping');
-  const wide = showDeal || showShipping;
+  const showPublish = kolOutreachStatusAtOrPast(status, 'publish');
+  const wide = showDeal || showShipping || showPublish;
 
   const assigneeOptions = useMemo(
     () => buildTeamAssigneeOptions(teamMembers, {
@@ -91,6 +95,9 @@ export default function KolOutreachCardModal({
     setShippingDate(cv[KOL_BOARD_PROP.shippingDate] || '');
     setTrackingLink(cv[KOL_BOARD_PROP.trackingLink] || '');
     setMediaKitSent(cv[KOL_BOARD_PROP.mediaKitSent] === 'yes');
+    setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
+    setPublishPlatform(cv[KOL_BOARD_PROP.publishPlatform] || '');
+    setPublishDate(cv[KOL_BOARD_PROP.publishDate] || '');
   }, [open, task, cv, defaultInitiative]);
 
   useEffect(() => {
@@ -117,6 +124,7 @@ export default function KolOutreachCardModal({
     const nextCustom = { ...(task.custom_values || {}) };
 
     nextCustom[KOL_BOARD_PROP.initiative] = initiative;
+    nextCustom[KOL_BOARD_PROP.dealAmount] = dealAmount.trim();
 
     if (showApproach) {
       nextCustom[KOL_BOARD_PROP.socials] = platforms.join(', ');
@@ -125,7 +133,6 @@ export default function KolOutreachCardModal({
     if (showDeal) {
       nextCustom[KOL_BOARD_PROP.dealType] = dealType;
       nextCustom[KOL_BOARD_PROP.dealTerms] = dealTerms.trim();
-      nextCustom[KOL_BOARD_PROP.dealAmount] = dealAmount.trim();
       nextCustom[KOL_BOARD_PROP.dealDeadline] = dealDeadline;
       nextCustom[KOL_BOARD_PROP.dealProducts] = serializeDealProducts(
         productRows.filter(row => row.product?.trim())
@@ -138,6 +145,11 @@ export default function KolOutreachCardModal({
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
       nextCustom[KOL_BOARD_PROP.mediaKitSent] = mediaKitSent ? 'yes' : 'no';
+    }
+    if (showPublish) {
+      nextCustom[KOL_BOARD_PROP.publishUrl] = publishUrl.trim();
+      nextCustom[KOL_BOARD_PROP.publishPlatform] = publishPlatform.trim();
+      nextCustom[KOL_BOARD_PROP.publishDate] = publishDate;
     }
 
     onSave?.({
@@ -178,6 +190,18 @@ export default function KolOutreachCardModal({
                 <option key={item.id} value={item.id}>{item.label}</option>
               ))}
             </select>
+          </label>
+        </Section>
+
+        <Section title={t('hub.campaignKol.cardModalFees')}>
+          <label className="appdev-field">
+            <span>{t('hub.campaignKol.feesAmount')}</span>
+            <input
+              value={dealAmount}
+              onChange={e => setDealAmount(e.target.value)}
+              placeholder={t('hub.campaignKol.feesAmountPlaceholder')}
+              disabled={busy}
+            />
           </label>
         </Section>
 
@@ -226,15 +250,6 @@ export default function KolOutreachCardModal({
               products={catalogProducts}
               t={t}
             />
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.dealAmount')}</span>
-              <input
-                value={dealAmount}
-                onChange={e => setDealAmount(e.target.value)}
-                placeholder={t('hub.campaignKol.dealAmountPlaceholder')}
-                disabled={busy}
-              />
-            </label>
             {dealType === 'Paid' ? (
               <label className="appdev-field">
                 <span>{t('hub.campaignKol.dealDeadline')}</span>
@@ -290,6 +305,37 @@ export default function KolOutreachCardModal({
                 disabled={busy}
               />
               {t('hub.campaignKol.mediaKitSent')}
+            </label>
+          </Section>
+        ) : null}
+
+        {showPublish ? (
+          <Section title={t('hub.campaignKol.cardModalPublish')}>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.publishUrl')}</span>
+              <input
+                type="url"
+                value={publishUrl}
+                onChange={e => setPublishUrl(e.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.publishPlatform')}</span>
+              <input
+                value={publishPlatform}
+                onChange={e => setPublishPlatform(e.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.publishDate')}</span>
+              <input
+                type="date"
+                value={publishDate}
+                onChange={e => setPublishDate(e.target.value)}
+                disabled={busy}
+              />
             </label>
           </Section>
         ) : null}
