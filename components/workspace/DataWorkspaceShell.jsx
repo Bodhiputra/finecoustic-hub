@@ -15,6 +15,7 @@ export default function DataWorkspaceShell({
   tabs = [],
   activeTab,
   onTabChange,
+  tabsInteractive = true,
   tabsAriaLabel,
   searchQuery = '',
   onSearchChange,
@@ -36,21 +37,37 @@ export default function DataWorkspaceShell({
       </header>
 
       {tabs.length > 0 ? (
-        <nav className="kol-pool-tabs wrap-row" aria-label={tabsAriaLabel}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`kol-pool-tab${activeTab === tab.id ? ' active' : ''}`}
-              onClick={() => onTabChange?.(tab.id)}
-            >
-              {tab.label}
-              {typeof tab.count === 'number' ? (
-                <span className="kol-pool-tab-count">{tab.count}</span>
-              ) : null}
-            </button>
-          ))}
-        </nav>
+        tabsInteractive ? (
+          <nav className="kol-pool-tabs wrap-row" aria-label={tabsAriaLabel}>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`kol-pool-tab${activeTab === tab.id ? ' active' : ''}`}
+                onClick={() => onTabChange?.(tab.id)}
+              >
+                {tab.label}
+                {typeof tab.count === 'number' ? (
+                  <span className="kol-pool-tab-count">{tab.count}</span>
+                ) : null}
+              </button>
+            ))}
+          </nav>
+        ) : (
+          <div className="kol-pool-tabs kol-pool-tabs--readonly wrap-row" aria-label={tabsAriaLabel}>
+            {tabs.map(tab => (
+              <span
+                key={tab.id}
+                className={`kol-pool-tab kol-pool-tab--readonly${tab.id !== 'all' ? ` is-${tab.id}` : ''}`}
+              >
+                {tab.label}
+                {typeof tab.count === 'number' ? (
+                  <span className="kol-pool-tab-count">{tab.count}</span>
+                ) : null}
+              </span>
+            ))}
+          </div>
+        )
       ) : null}
 
       {onSearchChange ? (
@@ -74,7 +91,7 @@ export default function DataWorkspaceShell({
       {empty && !children ? (
         <p className="internal-empty personal-hub-hint">{empty}</p>
       ) : (
-        children
+        <div className="data-workspace-body">{children}</div>
       )}
     </div>
   );

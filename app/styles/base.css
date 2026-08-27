@@ -82,6 +82,7 @@ body {
   min-height: 100vh;
   font-size: 15px;
   letter-spacing: -0.01em;
+  text-transform: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -194,8 +195,7 @@ input:focus-visible {
   color: var(--muted);
   font-size: .72rem;
   font-weight: 400;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   margin-top: 3px;
 }
 
@@ -321,7 +321,6 @@ input:focus-visible {
 
 .kpi label {
   font-size: .68rem;
-  text-transform: uppercase;
   letter-spacing: .08em;
   color: var(--muted);
   font-weight: 700;
@@ -479,7 +478,6 @@ input:focus-visible {
 .stock-reconcile-head strong {
   display: block;
   font-size: .8rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--warn);
   margin-bottom: var(--space-2);
@@ -528,7 +526,6 @@ input:focus-visible {
 .stock-reconcile-col h4 {
   font-size: .72rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   margin-bottom: var(--space-3);
@@ -572,7 +569,6 @@ input:focus-visible {
 .stock-reconcile-problem h4 {
   font-size: .72rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--warn);
   margin-bottom: var(--space-2);
@@ -651,7 +647,6 @@ input:focus-visible {
 .note-box strong {
   display: block;
   font-size: .8rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--warn);
   margin-bottom: var(--space-2);
@@ -714,7 +709,6 @@ input:focus-visible {
 
 .data-table thead th {
   font-size: .75rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;
@@ -758,7 +752,6 @@ input:focus-visible {
 .stock-location-label {
   display: block;
   font-size: .78rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;
@@ -840,7 +833,6 @@ input:focus-visible {
 .editor-card label {
   display: block;
   font-size: .78rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;
@@ -968,7 +960,6 @@ input:focus-visible {
 .login-card label {
   display: block;
   font-size: .78rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;

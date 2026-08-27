@@ -53,8 +53,7 @@
   color: var(--muted);
   font-size: .72rem;
   font-weight: 400;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   margin-top: 3px;
 }
 
@@ -160,7 +159,6 @@
 
 .hub-badge {
   font-size: .62rem;
-  text-transform: uppercase;
   letter-spacing: .06em;
   font-weight: 700;
   color: var(--muted);

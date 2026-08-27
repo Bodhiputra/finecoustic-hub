@@ -3,14 +3,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
+import KolPoolShippingModal from '@/components/marketing/KolPoolShippingModal';
 import { useLocale } from '@/components/LocaleProvider';
 import {
   KOL_POOL_SECTIONS,
+  collectKolMainPlatformOptions,
   filterKolBySection,
   hasKolShippingAddress,
   isHubNativeKol,
   kolLinkAriaLabel,
   kolLinkIconName,
+  kolMatchesPlatformFilter,
   kolShippingSummary,
   platformChipClass,
 } from '@/lib/kol-pool';
@@ -51,16 +54,28 @@ export default function KolPoolWorkspace({
   const [counts, setCounts] = useState(initialCounts || {});
   const [configured] = useState(initialConfigured);
   const [query, setQuery] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [shippingRow, setShippingRow] = useState(null);
+
+  const sectionRecords = useMemo(
+    () => filterKolBySection(records, section),
+    [records, section]
+  );
+
+  const platformOptions = useMemo(
+    () => collectKolMainPlatformOptions(sectionRecords),
+    [sectionRecords]
+  );
 
   const filtered = useMemo(() => {
-    const inSection = filterKolBySection(records, section);
     const q = query.trim().toLowerCase();
-    if (!q) return inSection;
-    return inSection.filter(r => {
+    return sectionRecords.filter(r => {
+      if (!kolMatchesPlatformFilter(r, platformFilter)) return false;
+      if (!q) return true;
       const hay = [
         r.channel_name,
         r.country,
@@ -75,7 +90,7 @@ export default function KolPoolWorkspace({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [records, section, query]);
+  }, [sectionRecords, platformFilter, query]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -90,7 +105,14 @@ export default function KolPoolWorkspace({
 
   useEffect(() => {
     setPage(1);
-  }, [section, query, pageSize]);
+  }, [section, query, platformFilter, pageSize]);
+
+  useEffect(() => {
+    if (platformFilter === 'all') return;
+    if (!platformOptions.some(option => option.key === platformFilter)) {
+      setPlatformFilter('all');
+    }
+  }, [platformFilter, platformOptions]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -168,6 +190,21 @@ export default function KolPoolWorkspace({
             aria-label={t('hub.kol.searchPlaceholder')}
           />
         </label>
+        {platformOptions.length ? (
+          <label className="kol-pool-filter">
+            <span>{t('hub.kol.colPlatform')}</span>
+            <select
+              value={platformFilter}
+              onChange={e => setPlatformFilter(e.target.value)}
+              aria-label={t('hub.kol.filterPlatform')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              {platformOptions.map(option => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <span className="kol-pool-result-count">
           {filtered.length
             ? t('hub.kol.showingRange')
@@ -200,7 +237,6 @@ export default function KolPoolWorkspace({
             <thead>
               <tr>
                 <th>{t('hub.kol.colChannel')}</th>
-                <th>{t('hub.kol.colDescription')}</th>
                 <th>{t('hub.kol.colPlatform')}</th>
                 <th>{t('hub.kol.colCountry')}</th>
                 <th>{t('hub.kol.colTier')}</th>
@@ -208,6 +244,7 @@ export default function KolPoolWorkspace({
                 <th>{t('hub.kol.colCollabProducts')}</th>
                 <th>{t('hub.kol.shippingAddress')}</th>
                 <th>{t('hub.kol.colLinks')}</th>
+                <th>{t('hub.kol.colDescription')}</th>
                 <th aria-hidden="true" />
               </tr>
             </thead>
@@ -235,7 +272,6 @@ export default function KolPoolWorkspace({
                       <span className="kol-chip kol-chip-tag kol-pool-source-chip">{t('hub.kol.sourceHub')}</span>
                     ) : null}
                   </td>
-                  <td className="kol-pool-desc-cell">{row.description || '—'}</td>
                   <td>
                     <KolChip className={platformChipClass(row.main_platform)}>
                       {row.main_platform || '—'}
@@ -253,8 +289,23 @@ export default function KolPoolWorkspace({
                       ? row.collaboration_products.join(', ')
                       : '—'}
                   </td>
-                  <td className="kol-pool-shipping" title={kolShippingSummary(row) || undefined}>
-                    {hasKolShippingAddress(row) ? kolShippingSummary(row) : '—'}
+                  <td className="kol-pool-shipping">
+                    {hasKolShippingAddress(row) ? (
+                      <button
+                        type="button"
+                        className="kol-pool-shipping-btn"
+                        aria-label={t('hub.kol.viewShipping')}
+                        title={t('hub.kol.viewShipping')}
+                        onClick={e => {
+                          e.stopPropagation();
+                          setShippingRow(row);
+                        }}
+                      >
+                        <Icon name="box" size={16} />
+                      </button>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                   <td className="kol-pool-links">
                     {row.links ? (
@@ -273,6 +324,7 @@ export default function KolPoolWorkspace({
                       '—'
                     )}
                   </td>
+                  <td className="kol-pool-desc-cell">{row.description || '—'}</td>
                   <td>
                     <button
                       type="button"
@@ -337,6 +389,12 @@ export default function KolPoolWorkspace({
           onSaved={handleSaved}
         />
       ) : null}
+
+      <KolPoolShippingModal
+        open={Boolean(shippingRow)}
+        record={shippingRow}
+        onClose={() => setShippingRow(null)}
+      />
     </div>
   );
 }

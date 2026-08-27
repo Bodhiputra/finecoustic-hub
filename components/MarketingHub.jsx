@@ -9,6 +9,7 @@ import { useLocale } from '@/components/LocaleProvider';
 
 const KolPoolWorkspace = dynamic(() => import('@/components/marketing/KolPoolWorkspace'));
 const KolOutreachWorkspace = dynamic(() => import('@/components/marketing/KolOutreachWorkspace'));
+const KolGuidelinesPage = dynamic(() => import('@/components/marketing/KolGuidelinesPage'));
 const PreorderSurveyDashboard = dynamic(() => import('@/components/PreorderSurveyDashboard'));
 
 export const MARKETING_VIEW_META = {
@@ -19,6 +20,10 @@ export const MARKETING_VIEW_META = {
   'kol-outreach': {
     titleKey: 'hub.campaignKol.title',
     descKey: 'hub.campaignKol.subtitle',
+  },
+  'kol-guidelines': {
+    titleKey: 'hub.kolGuidelines.title',
+    descKey: 'hub.kolGuidelines.subtitle',
   },
   'preorder-survey': {
     titleKey: 'hub.internal.fbsPreorderSurvey',
@@ -64,6 +69,7 @@ export function MarketingHubContent({
           teamMembers={teamMembers}
         />
       ) : null}
+      {view === 'kol-guidelines' ? <KolGuidelinesPage /> : null}
       {view === 'preorder-survey' ? (
         <PreorderSurveyDashboard initialRows={initialRows} />
       ) : null}

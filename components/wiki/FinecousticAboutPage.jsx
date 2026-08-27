@@ -12,7 +12,11 @@ import {
   KNOWLEDGE_PAGES_CHANGED,
   patchKnowledgePagesList,
 } from '@/lib/knowledge';
-import { knowledgeContentToHtml, normalizeKnowledgeHtml } from '@/lib/knowledge-content';
+import {
+  knowledgeContentToHtml,
+  normalizeKnowledgeHtml,
+  wikiPageSummary,
+} from '@/lib/knowledge-content';
 
 function seedDraftsFromPages(list) {
   const nextDrafts = {};
@@ -103,45 +107,28 @@ export default function FinecousticAboutPage({
 
   useEffect(() => {
     if (!sortedPages.length) return;
-    setActiveSectionId(prev => prev || pageId || sortedPages[0].id);
+    setActiveSectionId(prev => {
+      if (pageId && sortedPages.some(page => page.id === pageId)) return pageId;
+      if (prev && sortedPages.some(page => page.id === prev)) return prev;
+      return sortedPages[0].id;
+    });
   }, [sortedPages, pageId]);
 
   useEffect(() => {
-    if (!pageId) return;
-    requestAnimationFrame(() => {
-      document.getElementById(`wiki-section-${pageId}`)
-        ?.scrollIntoView({ behavior: 'auto', block: 'start' });
-    });
-  }, [pageId, sortedPages.length]);
+    if (pageId && pageId !== activeSectionId && sortedPages.some(page => page.id === pageId)) {
+      setActiveSectionId(pageId);
+    }
+  }, [pageId, activeSectionId, sortedPages]);
 
-  useEffect(() => {
-    if (!sortedPages.length) return undefined;
+  const activePage = useMemo(
+    () => sortedPages.find(page => page.id === activeSectionId) || sortedPages[0] || null,
+    [sortedPages, activeSectionId]
+  );
 
-    const sections = sortedPages
-      .map(page => document.getElementById(`wiki-section-${page.id}`))
-      .filter(Boolean);
-    if (!sections.length) return undefined;
-
-    const observer = new IntersectionObserver(
-      entries => {
-        const visible = entries
-          .filter(entry => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (!visible.length) return;
-        const id = visible[0].target.id.replace('wiki-section-', '');
-        setActiveSectionId(id);
-      },
-      { rootMargin: '-20% 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] }
-    );
-
-    sections.forEach(node => observer.observe(node));
-    return () => observer.disconnect();
-  }, [sortedPages, loading]);
-
-  function scrollToSection(sectionId) {
+  function selectSection(sectionId) {
+    if (sectionId === activeSectionId) return;
+    setEditingId(null);
     setActiveSectionId(sectionId);
-    document.getElementById(`wiki-section-${sectionId}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function persistPage(page) {
@@ -277,7 +264,7 @@ export default function FinecousticAboutPage({
 
   if (sortedPages.length === 0) {
     return (
-      <div className="fc-about fc-about--notion">
+      <div className="kol-guidelines-page fc-about-playbook">
         <div className="fc-about-empty">
           <Icon name="book" size={28} />
           <p>{t('hub.wiki.empty')}</p>
@@ -286,43 +273,59 @@ export default function FinecousticAboutPage({
     );
   }
 
+  if (!activePage) return null;
+
+  const activeSummary = wikiPageSummary(activePage.content);
+
   return (
-    <div className="fc-about fc-about--notion">
-      <div className="fc-about-notion-layout">
-        <aside className="fc-about-sections" aria-label={t('hub.wiki.sectionsLabel')}>
-          <p className="fc-about-sections-label">{t('hub.wiki.sectionsLabel')}</p>
-          <nav className="fc-about-sections-nav">
-            {sortedPages.map(page => (
-              <button
-                key={page.id}
-                type="button"
-                className={`fc-about-section-link${activeSectionId === page.id ? ' is-active' : ''}`}
-                aria-current={activeSectionId === page.id ? 'true' : undefined}
-                onClick={() => scrollToSection(page.id)}
-              >
-                {page.title}
-              </button>
-            ))}
+    <div className="kol-guidelines-page fc-about-playbook">
+      <header className="kol-guidelines-header">
+        <p className="kol-guidelines-subtitle">{t('hub.wiki.subtitle')}</p>
+      </header>
+
+      <div className="kol-guidelines-layout">
+        <aside className="kol-guidelines-nav" aria-label={t('hub.wiki.sectionsLabel')}>
+          <p className="kol-guidelines-nav-label">{t('hub.wiki.sectionsLabel')}</p>
+          <nav className="kol-guidelines-nav-list">
+            {sortedPages.map((page, index) => {
+              const summary = wikiPageSummary(page.content);
+              return (
+                <button
+                  key={page.id}
+                  type="button"
+                  className={`kol-guidelines-nav-link${activePage.id === page.id ? ' is-active' : ''}`}
+                  onClick={() => selectSection(page.id)}
+                  aria-current={activePage.id === page.id ? 'page' : undefined}
+                >
+                  <span className="kol-guidelines-nav-num">{index + 1}</span>
+                  <span className="kol-guidelines-nav-copy">
+                    <span className="kol-guidelines-nav-title">{page.title}</span>
+                    {summary ? (
+                      <span className="kol-guidelines-nav-summary">{summary}</span>
+                    ) : null}
+                  </span>
+                </button>
+              );
+            })}
           </nav>
         </aside>
 
-        <div className="fc-about-doc">
-          {sortedPages.map(page => (
-            <section
-              key={page.id}
-              id={`wiki-section-${page.id}`}
-              className="fc-about-doc-section"
-              aria-labelledby={`wiki-section-title-${page.id}`}
-            >
-              <h2 id={`wiki-section-title-${page.id}`} className="fc-about-doc-section-title">
-                {page.title}
-              </h2>
-              <div className="fc-about-doc-section-body">
-                {renderPageBody(page)}
-              </div>
-            </section>
-          ))}
-        </div>
+        <article className="kol-guidelines-panel" aria-labelledby="fc-about-panel-title">
+          <header className="kol-guidelines-panel-head">
+            <h2 id="fc-about-panel-title" className="kol-guidelines-panel-title">
+              {editingId === activePage.id
+                ? drafts[activePage.id]?.title || activePage.title
+                : activePage.title}
+            </h2>
+            {activeSummary && editingId !== activePage.id ? (
+              <p className="kol-guidelines-panel-summary">{activeSummary}</p>
+            ) : null}
+          </header>
+
+          <div className="kol-guidelines-panel-body fc-about-panel-body">
+            {renderPageBody(activePage)}
+          </div>
+        </article>
       </div>
     </div>
   );

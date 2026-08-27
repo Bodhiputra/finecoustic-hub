@@ -16,12 +16,14 @@ import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
 import {
   KOL_BOARD_PROP,
   KOL_INITIATIVES,
-  KOL_OUTREACH_BOARD_ID,
   defaultKolOutreachStatusColumns,
+  kolTransitionSteps,
+  initiativeLabel,
   normalizeKolOutreachStatus,
 } from '@/lib/kol-outreach-shared';
 import {
   appendProductsToPoolRecord,
+  collectOutreachPlatformOptions,
   existingOutreachKeys,
   filterOutreachTasks,
   poolRecordForTask,
@@ -54,11 +56,11 @@ export default function KolOutreachWorkspace({
   const initiativeFromUrl = (searchParams.get('initiative') || '').trim().toLowerCase();
 
   const [view, setView] = useState('board');
-  const [section, setSection] = useState('all');
   const [query, setQuery] = useState('');
   const [initiativeFilter, setInitiativeFilter] = useState(initiativeFromUrl || 'all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [dealTypeFilter, setDealTypeFilter] = useState('all');
+  const [platformFilter, setPlatformFilter] = useState('all');
   const [needsFollowUpOnly, setNeedsFollowUpOnly] = useState(false);
   const [poolRecords, setPoolRecords] = useState(initialPoolRecords);
   const [cardTask, setCardTask] = useState(null);
@@ -93,57 +95,69 @@ export default function KolOutreachWorkspace({
 
   const statusColumns = useMemo(() => defaultKolOutreachStatusColumns(), []);
 
-  const counts = useMemo(() => {
-    const map = { all: normalizedTasks.length };
-    for (const col of statusColumns) {
-      map[col.id] = normalizedTasks.filter(task => task.status === col.id).length;
-    }
-    return map;
-  }, [normalizedTasks, statusColumns]);
-
   const assigneeOptions = useMemo(
     () => buildTeamAssigneeOptions(teamMembers, { displayName }),
     [teamMembers, displayName]
   );
 
+  const platformOptions = useMemo(
+    () => collectOutreachPlatformOptions(normalizedTasks, poolRecords),
+    [normalizedTasks, poolRecords]
+  );
+
+  useEffect(() => {
+    if (platformFilter === 'all') return;
+    if (!platformOptions.some(option => option.key === platformFilter)) {
+      setPlatformFilter('all');
+    }
+  }, [platformFilter, platformOptions]);
+
   const filtered = useMemo(
     () =>
       filterOutreachTasks(normalizedTasks, {
-        section,
         query,
         initiative: initiativeFilter,
         assignee: assigneeFilter,
         dealType: dealTypeFilter,
+        platform: platformFilter,
         needsFollowUpOnly,
         poolRecords,
       }),
     [
       normalizedTasks,
-      section,
       query,
       initiativeFilter,
       assigneeFilter,
       dealTypeFilter,
+      platformFilter,
       needsFollowUpOnly,
       poolRecords,
     ]
   );
+
+  const phaseCounts = useMemo(() => {
+    const map = { all: filtered.length };
+    for (const col of statusColumns) {
+      map[col.id] = filtered.filter(task => task.status === col.id).length;
+    }
+    return map;
+  }, [filtered, statusColumns]);
 
   function statusLabel(statusId) {
     const key = STATUS_LABEL_KEYS[statusId];
     return key ? t(key) : statusId;
   }
 
-  const tabs = useMemo(
+  const phaseHints = useMemo(
     () => [
-      { id: 'all', label: t('hub.campaignKol.filterAll'), count: counts.all },
+      { id: 'all', label: t('hub.campaignKol.filterAll'), count: phaseCounts.all },
       ...statusColumns.map(col => ({
         id: col.id,
         label: statusLabel(col.id),
-        count: counts[col.id] ?? 0,
+        count: phaseCounts[col.id] ?? 0,
       })),
     ],
-    [counts, statusColumns, t]
+    [phaseCounts, statusColumns, t]
   );
 
   const patchTask = useCallback(async (taskId, patch) => {
@@ -200,9 +214,10 @@ export default function KolOutreachWorkspace({
 
   async function handleTransitionConfirm(payload) {
     if (!transition?.task?.id) return;
+    const { steps, stepIndex } = transition;
     setBusy(true);
     try {
-      await patchTask(transition.task.id, {
+      const patched = await patchTask(transition.task.id, {
         status: payload.status,
         custom_values: payload.custom_values,
       });
@@ -212,9 +227,22 @@ export default function KolOutreachWorkspace({
           payload.productRows
         );
       }
-      setTransition(null);
-      await onTasksChanged?.();
-      signalHubNotificationsRefresh();
+
+      const nextTask = {
+        ...transition.task,
+        ...(patched || {}),
+        status: payload.status,
+        custom_values: payload.custom_values,
+      };
+
+      const nextIndex = stepIndex + 1;
+      if (nextIndex < steps.length) {
+        setTransition({ task: nextTask, steps, stepIndex: nextIndex });
+      } else {
+        setTransition(null);
+        await onTasksChanged?.();
+        signalHubNotificationsRefresh();
+      }
     } catch {
       toast.error(t('common.somethingWrong'));
     } finally {
@@ -237,9 +265,22 @@ export default function KolOutreachWorkspace({
     }
   }
 
-  function handleStatusChange(task, toStatus) {
-    setTransition({ task, toStatus });
+  function handleTransitionClose() {
+    const hadProgress = transition?.stepIndex > 0;
+    setTransition(null);
+    if (hadProgress) {
+      onTasksChanged?.();
+      signalHubNotificationsRefresh();
+    }
   }
+
+  function handleStatusChange(task, toStatus) {
+    const steps = kolTransitionSteps(task.status, toStatus);
+    if (!steps.length) return;
+    setTransition({ task, steps, stepIndex: 0 });
+  }
+
+  const activeTransitionStatus = transition?.steps?.[transition.stepIndex] || null;
 
   const defaultInitiative =
     initiativeFilter && initiativeFilter !== 'all' ? initiativeFilter : 'fbs';
@@ -261,10 +302,9 @@ export default function KolOutreachWorkspace({
             existingKeys={existingOutreachKeys(normalizedTasks)}
           />
         )}
-        tabs={tabs}
-        activeTab={section}
-        onTabChange={setSection}
-        tabsAriaLabel={t('hub.campaignKol.colStatus')}
+        tabs={phaseHints}
+        tabsInteractive={false}
+        tabsAriaLabel={t('hub.campaignKol.phaseSummary')}
         searchQuery={query}
         onSearchChange={setQuery}
         searchPlaceholder={t('hub.kol.searchPlaceholder')}
@@ -306,6 +346,20 @@ export default function KolOutreachWorkspace({
               <option value="all">{t('hub.campaignKol.filterAll')}</option>
               {assigneeOptions.map(name => (
                 <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="kol-outreach-filter">
+            <span>{t('hub.kol.colPlatform')}</span>
+            <select
+              value={platformFilter}
+              onChange={e => setPlatformFilter(e.target.value)}
+              aria-label={t('hub.kol.filterPlatform')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              {platformOptions.map(option => (
+                <option key={option.key} value={option.key}>{option.label}</option>
               ))}
             </select>
           </label>
@@ -356,7 +410,7 @@ export default function KolOutreachWorkspace({
                 {filtered.map(task => (
                   <tr key={task.id} className="kol-pool-row-click" onClick={() => setCardTask(task)}>
                     <td className="kol-pool-channel">{task.title}</td>
-                    <td>{task.custom_values?.[KOL_BOARD_PROP.initiative]?.toUpperCase() || '—'}</td>
+                    <td>{initiativeLabel(task.custom_values?.[KOL_BOARD_PROP.initiative])}</td>
                     <td>
                       <span className={`kol-outreach-status is-${task.status}`}>
                         {statusLabel(task.status)}
@@ -408,11 +462,14 @@ export default function KolOutreachWorkspace({
       />
 
       <KolOutreachTransitionModal
+        key={activeTransitionStatus || 'closed'}
         open={Boolean(transition)}
         task={transition?.task}
-        toStatus={transition?.toStatus}
+        toStatus={activeTransitionStatus}
+        stepIndex={transition?.stepIndex ?? 0}
+        stepCount={transition?.steps?.length ?? 0}
         displayName={displayName}
-        onClose={() => setTransition(null)}
+        onClose={handleTransitionClose}
         onConfirm={handleTransitionConfirm}
         busy={busy}
       />

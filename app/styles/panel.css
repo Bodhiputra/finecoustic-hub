@@ -105,7 +105,6 @@
 
 .appdev-field span {
   font-size: .75rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;
@@ -157,7 +156,6 @@
   display: block;
   margin-bottom: var(--space-2);
   font-size: .75rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;
@@ -495,8 +493,7 @@
   margin: 0;
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: var(--muted, #888);
 }
 

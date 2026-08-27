@@ -132,7 +132,6 @@
 
 .appdev-admin-badge {
   font-size: .62rem;
-  text-transform: uppercase;
   letter-spacing: .06em;
   font-weight: 700;
   color: var(--fc-yellow);
@@ -761,7 +760,6 @@
 
 .appdev-column-head h2 {
   font-size: .78rem;
-  text-transform: uppercase;
   letter-spacing: .08em;
   color: var(--muted);
   font-weight: 700;
@@ -831,7 +829,6 @@
 .appdev-issue-type {
   font-size: .62rem;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: .06em;
   color: var(--muted);
 }
@@ -1079,7 +1076,6 @@
   font-size: .65rem;
   font-weight: 700;
   letter-spacing: .02em;
-  text-transform: uppercase;
   color: var(--accent);
 }
 
@@ -1322,7 +1318,6 @@
 
 .appdev-field span {
   font-size: .75rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;
@@ -1478,7 +1473,6 @@
   display: block;
   margin-bottom: var(--space-2);
   font-size: .75rem;
-  text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted);
   font-weight: 600;
@@ -2300,7 +2294,7 @@
   color: var(--text-muted);
   font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   text-align: center;
 }
 
@@ -2763,8 +2757,7 @@ textarea.appdev-input-readonly:disabled {
   padding: 0.2rem 0.55rem;
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--accent-fg, #111);
   background: var(--accent, #f5d547);
   border-radius: 999px;

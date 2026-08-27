@@ -301,7 +301,7 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
           Master admin only — sign in as FCS-建宏 with the master password to create accounts.
           Assign an individual name, password, role, and department access.
           Assign department access for operational areas only (Operations, Marketing, Products, Creatives).
-          All About Finecoustic is company wiki — not a department — visible to everyone; managers can edit.
+          All About Finecoustic is company wiki — not a department — visible to everyone; only FCS-建宏 can edit.
           Master admin is not listed here.
         </p>
 

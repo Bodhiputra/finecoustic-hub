@@ -68,6 +68,8 @@ export default function KolOutreachTransitionModal({
   open,
   task,
   toStatus,
+  stepIndex = 0,
+  stepCount = 0,
   displayName = '',
   onClose,
   onConfirm,
@@ -211,7 +213,16 @@ export default function KolOutreachTransitionModal({
     <KolModal open={open} onClose={onClose} labelledBy="kol-transition-title" wide>
       <form onSubmit={handleSubmit}>
         <header className="kol-modal-head">
-          <h3 id="kol-transition-title">{titleForStatus()}</h3>
+          <div className="kol-modal-head-copy">
+            <h3 id="kol-transition-title">{titleForStatus()}</h3>
+            {stepCount > 1 ? (
+              <p className="kol-modal-sub">
+                {t('hub.campaignKol.transitionStep')
+                  .replace('{current}', String(stepIndex + 1))
+                  .replace('{total}', String(stepCount))}
+              </p>
+            ) : null}
+          </div>
           <button type="button" className="appdev-btn-ghost" onClick={onClose} aria-label={t('common.cancel')}>
             <Icon name="x" size={16} />
           </button>
