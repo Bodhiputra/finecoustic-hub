@@ -214,11 +214,17 @@ export default function KolOutreachWorkspace({
     }
   }
 
-  async function handleCardSave(patch) {
+  async function handleCardSave({ assignee, custom_values, productRows = [] }) {
     if (!cardTask?.id) return;
     setBusy(true);
     try {
-      await patchTask(cardTask.id, patch);
+      await patchTask(cardTask.id, { assignee, custom_values });
+      if (productRows.length) {
+        await syncPoolProducts(
+          { ...cardTask, custom_values },
+          productRows
+        );
+      }
       setCardTask(null);
       await onTasksChanged?.();
       signalHubNotificationsRefresh();

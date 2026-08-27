@@ -5,6 +5,7 @@ import Icon from '@/components/Icon';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
 import {
   KOL_APPROACH_PLATFORMS,
   KOL_BOARD_PROP,
@@ -14,54 +15,6 @@ import {
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function ProductRowsEditor({ rows, onChange, products, t }) {
-  function updateRow(index, patch) {
-    onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
-  }
-
-  function removeRow(index) {
-    onChange(rows.filter((_, i) => i !== index));
-  }
-
-  return (
-    <div className="kol-outreach-product-rows">
-      <span className="appdev-prompt-label">{t('hub.campaignKol.productsGifted')}</span>
-      {rows.map((row, index) => (
-        <div key={`product-row-${index}`} className="kol-outreach-product-row">
-          <input
-            list="kol-outreach-product-options"
-            value={row.product}
-            onChange={e => updateRow(index, { product: e.target.value })}
-            placeholder={t('hub.campaignKol.productPlaceholder')}
-          />
-          <input
-            type="number"
-            min={1}
-            value={row.qty}
-            onChange={e => updateRow(index, { qty: Number(e.target.value) || 1 })}
-            aria-label={t('hub.campaignKol.productQty')}
-          />
-          <button type="button" className="appdev-btn-ghost" onClick={() => removeRow(index)}>
-            <Icon name="x" size={14} />
-          </button>
-        </div>
-      ))}
-      <datalist id="kol-outreach-product-options">
-        {products.map(product => (
-          <option key={product.sku} value={product.name} />
-        ))}
-      </datalist>
-      <button
-        type="button"
-        className="appdev-btn-ghost"
-        onClick={() => onChange([...rows, { product: '', qty: 1 }])}
-      >
-        + {t('hub.campaignKol.addProductRow')}
-      </button>
-    </div>
-  );
 }
 
 export default function KolOutreachTransitionModal({
@@ -83,7 +36,7 @@ export default function KolOutreachTransitionModal({
   const [dealTerms, setDealTerms] = useState('');
   const [dealAmount, setDealAmount] = useState('');
   const [dealDeadline, setDealDeadline] = useState('');
-  const [productRows, setProductRows] = useState([{ product: '', qty: 1 }]);
+  const [productRows, setProductRows] = useState([]);
   const [noDealReason, setNoDealReason] = useState('');
   const [qcDate, setQcDate] = useState(todayIso());
   const [qcCheckedBy, setQcCheckedBy] = useState(displayName);
@@ -106,7 +59,7 @@ export default function KolOutreachTransitionModal({
     setDealDeadline(cv[KOL_BOARD_PROP.dealDeadline] || '');
     setProductRows(parseDealProducts(cv[KOL_BOARD_PROP.dealProducts]).length
       ? parseDealProducts(cv[KOL_BOARD_PROP.dealProducts])
-      : [{ product: '', qty: 1 }]);
+      : []);
     setNoDealReason(cv[KOL_BOARD_PROP.noDealReason] || '');
     setQcDate(cv[KOL_BOARD_PROP.qcDate] || todayIso());
     setQcCheckedBy(cv[KOL_BOARD_PROP.qcCheckedBy] || displayName);
@@ -170,7 +123,6 @@ export default function KolOutreachTransitionModal({
     }
     if (toStatus === 'deal') {
       const products = productRows.filter(row => row.product?.trim());
-      if (!products.length) return;
       nextCustom[KOL_BOARD_PROP.dealType] = dealType;
       nextCustom[KOL_BOARD_PROP.dealTerms] = dealTerms.trim();
       nextCustom[KOL_BOARD_PROP.dealAmount] = dealAmount.trim();
@@ -261,7 +213,7 @@ export default function KolOutreachTransitionModal({
                 <option value="Other">{t('hub.campaignKol.dealOther')}</option>
               </select>
             </label>
-            <ProductRowsEditor rows={productRows} onChange={setProductRows} products={catalogProducts} t={t} />
+            <KolOutreachProductRowsEditor rows={productRows} onChange={setProductRows} products={catalogProducts} t={t} />
             <label className="appdev-field">
               <span>{t('hub.campaignKol.dealAmount')}</span>
               <input value={dealAmount} onChange={e => setDealAmount(e.target.value)} placeholder="Shipping fee, etc." />

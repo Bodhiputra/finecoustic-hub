@@ -4536,10 +4536,41 @@ button.internal-campaign-card {
   letter-spacing: 0.01em;
   color: var(--muted);
 }
+.kol-outreach-product-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
 .kol-outreach-product-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem auto;
   gap: 0.5rem;
-  align-items: center;
+  align-items: end;
+}
+.kol-outreach-product-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.kol-outreach-product-field span {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.kol-outreach-product-field input {
+  width: 100%;
+}
+.kol-outreach-product-field input::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+.kol-outreach-product-remove {
+  align-self: end;
+  margin-bottom: 0.1rem;
+}
+.kol-outreach-product-add {
+  align-self: flex-start;
 }
 .kol-outreach-product-row input[type='text'],
 .kol-outreach-product-row input:not([type='number']) {
@@ -4547,7 +4578,7 @@ button.internal-campaign-card {
   min-width: 0;
 }
 .kol-outreach-product-row input[type='number'] {
-  width: 4rem;
+  width: 100%;
 }
 .kol-outreach-checkbox {
   display: flex;
@@ -4647,6 +4678,31 @@ button.internal-campaign-card {
 .kol-modal-head .kol-modal-sub {
   margin: var(--space-1) 0 0;
   padding: 0;
+}
+.kol-card-modal-form {
+  overflow-y: auto;
+}
+.kol-card-modal-section {
+  padding: var(--space-4) var(--kol-modal-pad);
+  border-bottom: 1px solid var(--line);
+}
+.kol-card-modal-section:last-of-type {
+  border-bottom: none;
+}
+.kol-card-modal-section-title {
+  margin: 0 0 var(--space-3);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.kol-card-modal-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.kol-card-modal-section-body .appdev-field {
+  margin: 0;
 }
 .kol-modal > .kol-modal-sub {
   padding-top: var(--space-3);
