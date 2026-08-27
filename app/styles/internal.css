@@ -3800,12 +3800,22 @@ button.internal-campaign-card {
   min-height: 0;
   overflow: hidden;
 }
+.internal-dept-main > .marketing-tool-panel:not([hidden]) {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.internal-dept-main > .marketing-tool-panel:not([hidden]) > .kol-outreach-workspace,
 .internal-dept-main > .kol-outreach-workspace {
   flex: 1 1 auto;
   min-height: 0;
 }
 .kol-outreach-workspace.kol-pool-workspace {
   gap: var(--space-3);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .kol-outreach-workspace > :not(.data-workspace-body) {
   flex-shrink: 0;
@@ -4196,18 +4206,21 @@ button.internal-campaign-card {
   flex: 1;
   min-height: 0;
 }
-.kol-outreach-kanban .internal-board-scroll {
+.kol-outreach-kanban .internal-board-scroll.h-scroll {
   flex: 1;
   min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 .kol-outreach-kanban .internal-board-cols {
   flex: 1;
   min-height: 0;
-  height: 100%;
   align-items: stretch;
 }
 .kol-outreach-col.internal-board-col {
-  min-height: 100%;
+  flex: 1 1 0;
+  align-self: stretch;
+  min-height: 0;
 }
 .kol-outreach-col.internal-board-col.is-not_started { border-top-color: var(--muted); }
 .kol-outreach-col.internal-board-col.is-waiting_response { border-top-color: #f39c12; }

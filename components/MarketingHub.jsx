@@ -51,7 +51,7 @@ export function MarketingHubContent({
 }) {
   return (
     <>
-      <div hidden={view !== 'kol-pool'} aria-hidden={view !== 'kol-pool'}>
+      <div className="marketing-tool-panel" hidden={view !== 'kol-pool'} aria-hidden={view !== 'kol-pool'}>
         <KolPoolWorkspace
           initialRecords={initialKolPool?.records || []}
           initialMeta={initialKolPool?.meta}
@@ -59,7 +59,7 @@ export function MarketingHubContent({
           initialConfigured={Boolean(initialKolPool?.configured)}
         />
       </div>
-      <div hidden={view !== 'kol-outreach'} aria-hidden={view !== 'kol-outreach'}>
+      <div className="marketing-tool-panel" hidden={view !== 'kol-outreach'} aria-hidden={view !== 'kol-outreach'}>
         <KolOutreachWorkspace
           tasks={outreachTasks}
           onTasksChanged={onOutreachTasksChanged}

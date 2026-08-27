@@ -58,6 +58,8 @@ function notificationText(item, t) {
       return t('hub.notifications.meeting3h').replace('{title}', title);
     case 'meeting_1h':
       return t('hub.notifications.meeting1h').replace('{title}', title);
+    case 'meeting_scheduled':
+      return t('hub.notifications.meetingScheduled').replace('{title}', title).replace('{actor}', actor);
     case 'broadcast':
       return item.title || t('hub.notifications.broadcast');
     case 'kol_sync':
