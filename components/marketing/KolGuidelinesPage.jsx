@@ -125,6 +125,7 @@ function GuideBlock({ block }) {
                     <CopyButton text={step.example} label={step.title} />
                   </figure>
                 ) : null}
+                {step.body3 ? <p className="kol-guide-p">{step.body3}</p> : null}
                 {step.example2 ? (
                   <figure className="kol-guide-example is-nested">
                     <blockquote className="kol-guide-example-text">{step.example2}</blockquote>
@@ -132,6 +133,7 @@ function GuideBlock({ block }) {
                   </figure>
                 ) : null}
                 {step.notesLabel ? <p className="kol-guide-step-label">{step.notesLabel}</p> : null}
+                {step.notesIntro ? <p className="kol-guide-p">{step.notesIntro}</p> : null}
                 {step.notes?.length ? (
                   <ul className="kol-guide-notes">
                     {step.notes.map(note => (
@@ -139,6 +141,7 @@ function GuideBlock({ block }) {
                     ))}
                   </ul>
                 ) : null}
+                {step.notesOutro ? <p className="kol-guide-p">{step.notesOutro}</p> : null}
                 {step.bulletsLabel2 ? <p className="kol-guide-step-label">{step.bulletsLabel2}</p> : null}
                 {step.bullets2?.length ? (
                   <ul className="kol-guide-list">
@@ -147,7 +150,12 @@ function GuideBlock({ block }) {
                     ))}
                   </ul>
                 ) : null}
-                {step.footer ? <p className="kol-guide-footnote">{step.footer}</p> : null}
+                {step.footer ? (
+                  <>
+                    {step.footerLabel ? <p className="kol-guide-step-label">{step.footerLabel}</p> : null}
+                    <p className="kol-guide-footnote">{step.footer}</p>
+                  </>
+                ) : null}
               </li>
             ))}
           </ol>

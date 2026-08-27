@@ -6,9 +6,9 @@ import Link from 'next/link';
 import Icon from '@/components/Icon';
 import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
+import KolPoolWorkspace from '@/components/marketing/KolPoolWorkspace';
+import KolOutreachWorkspace from '@/components/marketing/KolOutreachWorkspace';
 
-const KolPoolWorkspace = dynamic(() => import('@/components/marketing/KolPoolWorkspace'));
-const KolOutreachWorkspace = dynamic(() => import('@/components/marketing/KolOutreachWorkspace'));
 const KolGuidelinesPage = dynamic(() => import('@/components/marketing/KolGuidelinesPage'));
 const PreorderSurveyDashboard = dynamic(() => import('@/components/PreorderSurveyDashboard'));
 
@@ -51,15 +51,15 @@ export function MarketingHubContent({
 }) {
   return (
     <>
-      {view === 'kol-pool' ? (
+      <div hidden={view !== 'kol-pool'} aria-hidden={view !== 'kol-pool'}>
         <KolPoolWorkspace
           initialRecords={initialKolPool?.records || []}
           initialMeta={initialKolPool?.meta}
           initialCounts={initialKolPool?.counts}
           initialConfigured={Boolean(initialKolPool?.configured)}
         />
-      ) : null}
-      {view === 'kol-outreach' ? (
+      </div>
+      <div hidden={view !== 'kol-outreach'} aria-hidden={view !== 'kol-outreach'}>
         <KolOutreachWorkspace
           tasks={outreachTasks}
           onTasksChanged={onOutreachTasksChanged}
@@ -68,7 +68,7 @@ export function MarketingHubContent({
           displayName={displayName}
           teamMembers={teamMembers}
         />
-      ) : null}
+      </div>
       {view === 'kol-guidelines' ? <KolGuidelinesPage /> : null}
       {view === 'preorder-survey' ? (
         <PreorderSurveyDashboard initialRows={initialRows} />

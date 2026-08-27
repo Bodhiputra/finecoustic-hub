@@ -244,7 +244,6 @@ export default function KolPoolWorkspace({
                 <th>{t('hub.kol.colCollabProducts')}</th>
                 <th>{t('hub.kol.shippingAddress')}</th>
                 <th>{t('hub.kol.colLinks')}</th>
-                <th>{t('hub.kol.colDescription')}</th>
                 <th aria-hidden="true" />
               </tr>
             </thead>
@@ -324,7 +323,6 @@ export default function KolPoolWorkspace({
                       '—'
                     )}
                   </td>
-                  <td className="kol-pool-desc-cell">{row.description || '—'}</td>
                   <td>
                     <button
                       type="button"
