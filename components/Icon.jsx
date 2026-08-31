@@ -8,9 +8,11 @@ const ICONS = {
   moon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />,
   x: <path d="M18 6 6 18M6 6l12 12" />,
   xSocial: (
-    <>
-      <path d="M4 4l16 16M20 4 4 20" />
-    </>
+    <path
+      d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
+      fill="currentColor"
+      stroke="none"
+    />
   ),
   chevronRight: <path d="m9 18 6-6-6-6" />,
   chevronLeft: <path d="m15 18-6-6 6-6" />,

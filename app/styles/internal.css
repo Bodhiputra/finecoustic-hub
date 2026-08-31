@@ -4186,6 +4186,9 @@ button.internal-campaign-card {
 .kol-pool-link-icon.is-youtube:hover {
   color: #ff0000;
 }
+.kol-pool-link-icon.is-xSocial:hover {
+  color: var(--text);
+}
 .kol-outreach-status {
   display: inline-flex;
   align-items: center;
