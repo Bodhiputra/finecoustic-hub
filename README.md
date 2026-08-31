@@ -89,7 +89,7 @@ npm run test:auth
      - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (preferred — internal uploads → `finehub/internal`, appdev → `finehub/appdev`)
      - `BLOB_READ_WRITE_TOKEN` (fallback — public Vercel Blob URLs)
      - If neither is set on Vercel, Discussion attachments and task file uploads fail with a clear error.
-   - **Notion KOL sync (Marketing):** `NOTION_API_KEY`, `NOTION_KOL_DATABASE_ID` — connect Finecoustic_Team integration to KOL POOLS in Notion.
+   - **Notion KOL sync (Marketing):** `NOTION_API_KEY`, `NOTION_KOL_DATABASE_ID` — connect Finecoustic_Team integration to **KOL POOLS** in Notion. Database ID (no quotes): `34a38ff78ba480ef8443cb6cf60b9c3c`
 
 ## Appdev field names
 

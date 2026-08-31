@@ -24,6 +24,27 @@ import {
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
 
+function formatSyncError(raw, t) {
+  const code = String(raw || '').trim();
+  if (!code) return '';
+  if (code.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(code);
+      if (parsed?.status === 404 || parsed?.code === 'object_not_found') {
+        return t('hub.kol.errors.notion_database_not_found');
+      }
+      if (parsed?.status === 401 || parsed?.status === 403) {
+        return t('hub.kol.errors.notion_auth_failed');
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  const key = `hub.kol.errors.${code}`;
+  const msg = t(key);
+  return msg !== key ? msg : code;
+}
+
 function formatSyncTime(iso, locale = 'en') {
   if (!iso) return '—';
   try {
@@ -175,7 +196,7 @@ export default function KolPoolWorkspace({
             {t('hub.kol.lastSynced')}: {formatSyncTime(meta.last_synced_at, locale)}
             {meta.last_synced_by ? ` · ${meta.last_synced_by}` : ''}
             {meta.last_error ? (
-              <span className="kol-pool-meta-error"> · {meta.last_error}</span>
+              <span className="kol-pool-meta-error"> · {formatSyncError(meta.last_error, t)}</span>
             ) : null}
           </p>
           <p className="kol-pool-meta kol-pool-meta-hint">{t('hub.kol.syncSafeHint')}</p>
