@@ -1,0 +1,28 @@
+---
+description: Tailwind CSS usage for Fine Hub UI — prefer over raw HTML defaults
+globs:
+  - finecoustic-ops-hub/**/*
+---
+
+# Fine Hub — Tailwind CSS
+
+Tailwind v4 is enabled via `app/globals.css` (`@import 'tailwindcss'`).
+
+## Rules
+
+1. **No raw default link UI** — never ship bare `<Link>text</Link>` without styling. Use `HubBackLink` or Tailwind link/button classes.
+2. **New UI and refactors** — use Tailwind utility classes. Map colors to CSS tokens: `bg-[var(--surface)]`, `text-[var(--muted)]`, `border-[var(--line)]`.
+3. **Legacy CSS** — existing `app/styles/*.css` remains for internal board, panels, modals. Settings/admin pages use `personal-hub-*` + `hub-page` patterns first.
+4. **Buttons** — reuse `.appdev-btn-primary`, `.appdev-btn-ghost`, `.appdev-btn-danger` until migrated.
+5. **Dark theme** — always use `var(--*)` tokens, not hardcoded hex, so `[data-theme="dark"]` keeps working.
+6. **Shared primitives** — put reusable Tailwind components in `components/ui/` (e.g. `HubBackLink`).
+
+## Examples
+
+```jsx
+// Back nav
+<HubBackLink href="/me" label="Personal hub" />
+
+// Card
+<div className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--surface)] p-5" />
+```

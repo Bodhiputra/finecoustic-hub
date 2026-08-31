@@ -74,7 +74,7 @@ export default function KolPoolWorkspace({
   const [section, setSection] = useState(initialSection);
   const [records, setRecords] = useState(initialRecords);
   const [meta, setMeta] = useState(
-    initialMeta || { last_synced_at: null, last_synced_by: '', record_count: 0, last_error: '' }
+    initialMeta || { last_synced_at: null, last_synced_by: '', record_count: 0, last_error: '', sync_status: 'idle' }
   );
   const [counts, setCounts] = useState(initialCounts || {});
   const [configured] = useState(initialConfigured);
@@ -144,23 +144,68 @@ export default function KolPoolWorkspace({
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  async function pollSyncResult(startedAt) {
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const res = await fetch(`${API_V1.marketingKolPool}?section=${encodeURIComponent(section)}`, {
+        credentials: 'same-origin',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) continue;
+      const data = unwrapData(body);
+      const nextMeta = data?.meta || meta;
+      if (nextMeta.sync_status === 'syncing') continue;
+      if (nextMeta.last_synced_at && nextMeta.last_synced_at !== startedAt) {
+        setRecords(Array.isArray(data?.records) ? data.records : []);
+        if (data?.meta) setMeta(data.meta);
+        if (data?.counts) setCounts(data.counts);
+        if (nextMeta.last_error) {
+          toast.error(formatSyncError(nextMeta.last_error, t));
+        } else {
+          toast.success(t('hub.kol.syncSuccess').replace('{count}', String(data?.total ?? data?.records?.length ?? 0)));
+        }
+        return;
+      }
+      if (nextMeta.last_error && nextMeta.last_synced_at === startedAt) {
+        setMeta(nextMeta);
+        toast.error(formatSyncError(nextMeta.last_error, t));
+        return;
+      }
+    }
+    toast.error(t('hub.kol.errors.sync_failed'));
+  }
+
   async function handleSyncFromNotion() {
     if (!configured || syncing) return;
     setSyncing(true);
+    const startedAt = meta.last_synced_at;
     try {
       const res = await fetch(API_V1.marketingKolPoolSync, {
         method: 'POST',
         credentials: 'same-origin',
       });
       const body = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        toast.info(t('hub.kol.errors.sync_in_progress'));
+        await pollSyncResult(startedAt);
+        return;
+      }
       if (!res.ok) {
         const code = body?.error || 'sync_failed';
+        const detail = body?.detail ? ` (${String(body.detail).slice(0, 120)})` : '';
         const key = `hub.kol.errors.${code}`;
         const msg = t(key);
-        toast.error(msg !== key ? msg : t('hub.kol.errors.sync_failed'));
+        toast.error((msg !== key ? msg : t('hub.kol.errors.sync_failed')) + detail);
         return;
       }
       const data = unwrapData(body);
+      if (data?.status === 'syncing' || data?.meta?.sync_status === 'syncing') {
+        if (data?.meta) setMeta(data.meta);
+        toast.info(t('hub.kol.syncStarted'));
+        await pollSyncResult(startedAt);
+        return;
+      }
       const nextRecords = Array.isArray(data?.records) ? data.records : [];
       setRecords(nextRecords);
       if (data?.meta) setMeta(data.meta);

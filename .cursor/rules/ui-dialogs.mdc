@@ -1,0 +1,35 @@
+# UI feedback — no native browser dialogs
+
+**Never use** `window.alert`, `window.confirm`, `window.prompt`, or bare `alert` / `confirm` / `prompt` in Fine Hub UI code.
+
+## Modal components (always centered via portal)
+
+| Component | Use for |
+|---|---|
+| `HubModal` | Generic centered dialog shell (confirm, prompt, admin, board fields) |
+| `KolModal` | Marketing/Ops wide dialogs (KOL forms, expense create, pool picker) |
+| `ConfirmModal` | Yes / No — wraps `HubModal` |
+| `PromptModal` | Text input — wraps `HubModal` |
+| `KanbanCreateModal` | Board name + optional department picker |
+
+All modals **must** use `HubModal`, `KolModal`, or `ModalPortal` so they render on `document.body` — never inside the sidebar (sidebar `transform` breaks `position: fixed`).
+
+**Slide-out panels** (`TaskPanel`, `ProductIssuePanel`, `IssuePanel`) stay as right-side panels with overlay — not centered modals.
+
+## Toasts
+
+| Need | Hook |
+|---|---|
+| Brief success/error/info | `useToast()` → render `{toastStack}` in the same component |
+
+## i18n labels in data
+
+**Never show raw keys** like `hub.internal.statusTodo` in inputs or UI.
+
+- Board status columns: use `statusColumnLabel()` / `columnEditLabel()` from `lib/internal-campaigns.js`
+- Store plain user text in `label` fields; default statuses resolve from `id` + `t()` at display time
+- Field type labels: use `boardFieldTypeLabel(type, t)`
+
+## Exceptions
+
+- **`beforeunload`** only for tab-close with unsaved edits (browser chrome). In-app navigation uses `useConfirm()`.
