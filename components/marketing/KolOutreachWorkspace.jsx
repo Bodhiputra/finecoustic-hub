@@ -65,7 +65,6 @@ export default function KolOutreachWorkspace({
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [dealTypeFilter, setDealTypeFilter] = useState('all');
   const [platformFilter, setPlatformFilter] = useState('all');
-  const [needsFollowUpOnly, setNeedsFollowUpOnly] = useState(false);
   const [poolRecords, setPoolRecords] = useState(initialPoolRecords);
   const [cardTask, setCardTask] = useState(null);
   const [moreInfoTask, setMoreInfoTask] = useState(null);
@@ -137,7 +136,6 @@ export default function KolOutreachWorkspace({
         assignee: assigneeFilter,
         dealType: dealTypeFilter,
         platform: platformFilter,
-        needsFollowUpOnly,
         poolRecords,
       }),
     [
@@ -147,7 +145,6 @@ export default function KolOutreachWorkspace({
       assigneeFilter,
       dealTypeFilter,
       platformFilter,
-      needsFollowUpOnly,
       poolRecords,
     ]
   );
@@ -411,15 +408,6 @@ export default function KolOutreachWorkspace({
               <option value="Paid">{t('hub.campaignKol.dealPaid')}</option>
               <option value="Hybrid">{t('hub.campaignKol.dealHybrid')}</option>
             </select>
-          </label>
-
-          <label className="kol-outreach-filter kol-outreach-filter-check">
-            <input
-              type="checkbox"
-              checked={needsFollowUpOnly}
-              onChange={e => setNeedsFollowUpOnly(e.target.checked)}
-            />
-            {t('hub.campaignKol.filterNeedsFollowUp')}
           </label>
         </div>
 

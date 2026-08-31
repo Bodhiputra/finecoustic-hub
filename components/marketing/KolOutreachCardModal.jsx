@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
+import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolModal from '@/components/KolModal';
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
 import { useLocale } from '@/components/LocaleProvider';
@@ -11,7 +12,8 @@ import {
   KOL_APPROACH_PLATFORMS,
   KOL_BOARD_PROP,
   KOL_INITIATIVES,
-  kolOutreachStatusAtOrPast,
+  kolCardModalSections,
+  normalizeApproachDirection,
   normalizeKolOutreachStatus,
   parseDealProducts,
   resolveKolInitiative,
@@ -41,10 +43,12 @@ export default function KolOutreachCardModal({
   const { t } = useLocale();
   const cv = task?.custom_values || {};
   const status = normalizeKolOutreachStatus(task?.status);
+  const sections = useMemo(() => kolCardModalSections(status), [status]);
 
   const [assignee, setAssignee] = useState('');
   const [initiative, setInitiative] = useState('');
   const [platforms, setPlatforms] = useState([]);
+  const [approachDirection, setApproachDirection] = useState('outbound');
   const [approachDate, setApproachDate] = useState('');
   const [dealType, setDealType] = useState('Product barter');
   const [dealTerms, setDealTerms] = useState('');
@@ -52,20 +56,20 @@ export default function KolOutreachCardModal({
   const [dealDeadline, setDealDeadline] = useState('');
   const [productRows, setProductRows] = useState([]);
   const [noDealReason, setNoDealReason] = useState('');
+  const [qcDate, setQcDate] = useState('');
+  const [qcCheckedBy, setQcCheckedBy] = useState('');
+  const [qcNotes, setQcNotes] = useState('');
   const [shippingDate, setShippingDate] = useState('');
   const [trackingLink, setTrackingLink] = useState('');
   const [mediaKitSent, setMediaKitSent] = useState(false);
+  const [arrivalDate, setArrivalDate] = useState('');
+  const [productArrived, setProductArrived] = useState(false);
   const [publishUrl, setPublishUrl] = useState('');
   const [publishPlatform, setPublishPlatform] = useState('');
   const [publishDate, setPublishDate] = useState('');
   const [catalogProducts, setCatalogProducts] = useState([]);
 
-  const showApproach = kolOutreachStatusAtOrPast(status, 'waiting_response');
-  const showDeal = kolOutreachStatusAtOrPast(status, 'deal');
-  const showNoDeal = status === 'no_deal';
-  const showShipping = kolOutreachStatusAtOrPast(status, 'shipping');
-  const showPublish = kolOutreachStatusAtOrPast(status, 'publish');
-  const wide = showDeal || showShipping || showPublish;
+  const hasPipelineSections = Object.values(sections).some(Boolean);
 
   const assigneeOptions = useMemo(
     () => buildTeamAssigneeOptions(teamMembers, {
@@ -86,22 +90,28 @@ export default function KolOutreachCardModal({
         .filter(Boolean)
     );
     setApproachDate(cv[KOL_BOARD_PROP.approachDate] || '');
+    setApproachDirection(normalizeApproachDirection(cv[KOL_BOARD_PROP.approachDirection]));
     setDealType(cv[KOL_BOARD_PROP.dealType] || 'Product barter');
     setDealTerms(cv[KOL_BOARD_PROP.dealTerms] || '');
     setDealAmount(cv[KOL_BOARD_PROP.dealAmount] || '');
     setDealDeadline(cv[KOL_BOARD_PROP.dealDeadline] || '');
     setProductRows(parseDealProducts(cv[KOL_BOARD_PROP.dealProducts]));
     setNoDealReason(cv[KOL_BOARD_PROP.noDealReason] || '');
+    setQcDate(cv[KOL_BOARD_PROP.qcDate] || '');
+    setQcCheckedBy(cv[KOL_BOARD_PROP.qcCheckedBy] || displayName);
+    setQcNotes(cv[KOL_BOARD_PROP.qcNotes] || '');
     setShippingDate(cv[KOL_BOARD_PROP.shippingDate] || '');
     setTrackingLink(cv[KOL_BOARD_PROP.trackingLink] || '');
     setMediaKitSent(cv[KOL_BOARD_PROP.mediaKitSent] === 'yes');
+    setArrivalDate(cv[KOL_BOARD_PROP.arrivalDate] || '');
+    setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
     setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
     setPublishPlatform(cv[KOL_BOARD_PROP.publishPlatform] || '');
     setPublishDate(cv[KOL_BOARD_PROP.publishDate] || '');
-  }, [open, task, cv, defaultInitiative]);
+  }, [open, task, cv, defaultInitiative, displayName]);
 
   useEffect(() => {
-    if (!open || !showDeal) return;
+    if (!open || !sections.deal) return;
     fetch(API_V1.products, { credentials: 'same-origin' })
       .then(res => (res.ok ? res.json() : null))
       .then(body => {
@@ -109,7 +119,7 @@ export default function KolOutreachCardModal({
         setCatalogProducts(Array.isArray(data?.products) ? data.products : []);
       })
       .catch(() => setCatalogProducts([]));
-  }, [open, showDeal]);
+  }, [open, sections.deal]);
 
   if (!open || !task) return null;
 
@@ -126,11 +136,12 @@ export default function KolOutreachCardModal({
     nextCustom[KOL_BOARD_PROP.initiative] = initiative;
     nextCustom[KOL_BOARD_PROP.dealAmount] = dealAmount.trim();
 
-    if (showApproach) {
+    if (sections.approach) {
+      nextCustom[KOL_BOARD_PROP.approachDirection] = approachDirection;
       nextCustom[KOL_BOARD_PROP.socials] = platforms.join(', ');
       nextCustom[KOL_BOARD_PROP.approachDate] = approachDate;
     }
-    if (showDeal) {
+    if (sections.deal) {
       nextCustom[KOL_BOARD_PROP.dealType] = dealType;
       nextCustom[KOL_BOARD_PROP.dealTerms] = dealTerms.trim();
       nextCustom[KOL_BOARD_PROP.dealDeadline] = dealDeadline;
@@ -138,15 +149,24 @@ export default function KolOutreachCardModal({
         productRows.filter(row => row.product?.trim())
       );
     }
-    if (showNoDeal) {
+    if (sections.noDeal) {
       nextCustom[KOL_BOARD_PROP.noDealReason] = noDealReason.trim();
     }
-    if (showShipping) {
+    if (sections.qualityControl) {
+      nextCustom[KOL_BOARD_PROP.qcDate] = qcDate;
+      nextCustom[KOL_BOARD_PROP.qcCheckedBy] = qcCheckedBy.trim();
+      nextCustom[KOL_BOARD_PROP.qcNotes] = qcNotes.trim();
+    }
+    if (sections.shipping) {
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
       nextCustom[KOL_BOARD_PROP.mediaKitSent] = mediaKitSent ? 'yes' : 'no';
     }
-    if (showPublish) {
+    if (sections.arrived) {
+      nextCustom[KOL_BOARD_PROP.arrivalDate] = arrivalDate;
+      nextCustom[KOL_BOARD_PROP.productArrived] = productArrived ? 'yes' : 'no';
+    }
+    if (sections.publish) {
       nextCustom[KOL_BOARD_PROP.publishUrl] = publishUrl.trim();
       nextCustom[KOL_BOARD_PROP.publishPlatform] = publishPlatform.trim();
       nextCustom[KOL_BOARD_PROP.publishDate] = publishDate;
@@ -155,12 +175,12 @@ export default function KolOutreachCardModal({
     onSave?.({
       assignee: assignee.trim(),
       custom_values: nextCustom,
-      productRows: showDeal ? productRows.filter(row => row.product?.trim()) : [],
+      productRows: sections.deal ? productRows.filter(row => row.product?.trim()) : [],
     });
   }
 
   return (
-    <KolModal open={open} onClose={onClose} labelledBy="kol-card-modal-title" wide={wide}>
+    <KolModal open={open} onClose={onClose} labelledBy="kol-card-modal-title" wide={hasPipelineSections}>
       <form onSubmit={handleSubmit} className="kol-card-modal-form">
         <header className="kol-modal-head">
           <div className="kol-modal-head-copy">
@@ -205,8 +225,19 @@ export default function KolOutreachCardModal({
           </label>
         </Section>
 
-        {showApproach ? (
+        {sections.approach ? (
           <Section title={t('hub.campaignKol.cardModalApproach')}>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.approachDirection')}</span>
+              <select
+                value={approachDirection}
+                onChange={e => setApproachDirection(e.target.value)}
+                disabled={busy}
+              >
+                <option value="outbound">{t('hub.campaignKol.approachOutbound')}</option>
+                <option value="inbound">{t('hub.campaignKol.approachInbound')}</option>
+              </select>
+            </label>
             <fieldset className="kol-outreach-platform-pick">
               <legend>{t('hub.campaignKol.platformsApproached')}</legend>
               {KOL_APPROACH_PLATFORMS.map(name => (
@@ -233,7 +264,7 @@ export default function KolOutreachCardModal({
           </Section>
         ) : null}
 
-        {showDeal ? (
+        {sections.deal ? (
           <Section title={t('hub.campaignKol.cardModalDeal')}>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.colDealType')}</span>
@@ -268,7 +299,33 @@ export default function KolOutreachCardModal({
           </Section>
         ) : null}
 
-        {showNoDeal ? (
+        {sections.qualityControl ? (
+          <Section title={t('hub.campaignKol.cardModalQc')}>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.qcDate')}</span>
+              <input
+                type="date"
+                value={qcDate}
+                onChange={e => setQcDate(e.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.qcCheckedBy')}</span>
+              <input
+                value={qcCheckedBy}
+                onChange={e => setQcCheckedBy(e.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.qcNotes')}</span>
+              <textarea rows={3} value={qcNotes} onChange={e => setQcNotes(e.target.value)} disabled={busy} />
+            </label>
+          </Section>
+        ) : null}
+
+        {sections.noDeal ? (
           <Section title={t('hub.campaignKol.cardModalNoDeal')}>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.noDealReason')}</span>
@@ -277,7 +334,7 @@ export default function KolOutreachCardModal({
           </Section>
         ) : null}
 
-        {showShipping ? (
+        {sections.shipping ? (
           <Section title={t('hub.campaignKol.cardModalShipping')}>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.colShipping')}</span>
@@ -294,6 +351,7 @@ export default function KolOutreachCardModal({
                 type="url"
                 value={trackingLink}
                 onChange={e => setTrackingLink(e.target.value)}
+                placeholder={t('hub.campaignKol.trackingLinkPlaceholder')}
                 disabled={busy}
               />
             </label>
@@ -309,7 +367,30 @@ export default function KolOutreachCardModal({
           </Section>
         ) : null}
 
-        {showPublish ? (
+        {sections.arrived ? (
+          <Section title={t('hub.campaignKol.cardModalArrived')}>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.arrivalDate')}</span>
+              <input
+                type="date"
+                value={arrivalDate}
+                onChange={e => setArrivalDate(e.target.value)}
+                disabled={busy}
+              />
+            </label>
+            <label className="kol-outreach-checkbox">
+              <input
+                type="checkbox"
+                checked={productArrived}
+                onChange={e => setProductArrived(e.target.checked)}
+                disabled={busy}
+              />
+              {t('hub.campaignKol.productArrivedConfirm')}
+            </label>
+          </Section>
+        ) : null}
+
+        {sections.publish ? (
           <Section title={t('hub.campaignKol.cardModalPublish')}>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.publishUrl')}</span>
@@ -343,7 +424,9 @@ export default function KolOutreachCardModal({
         <footer className="kol-modal-foot">
           <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
           <button type="submit" className="appdev-btn-primary" disabled={busy}>
-            {t('common.save')}
+            <ButtonBusyContent busy={busy} busyLabel={t('common.saving')}>
+              {t('common.save')}
+            </ButtonBusyContent>
           </button>
         </footer>
       </form>

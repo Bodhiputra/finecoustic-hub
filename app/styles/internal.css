@@ -3856,6 +3856,20 @@ button.internal-campaign-card {
 .kol-pool-meta-error {
   color: var(--danger, #dc2626);
 }
+.kol-pool-meta-hint {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+.kol-pool-header-actions .hub-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.kol-pool-header-actions .hub-btn:disabled {
+  cursor: wait;
+  opacity: 0.85;
+}
 .kol-pool-header-actions {
   display: flex;
   gap: 0.5rem;
@@ -4118,6 +4132,21 @@ button.internal-campaign-card {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+}
+.kol-modal-foot .appdev-btn-primary:disabled,
+.kol-modal-foot .appdev-btn-ghost:disabled {
+  cursor: wait;
+  opacity: 0.85;
+}
+.appdev-btn-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: hub-btn-spin 0.65s linear infinite;
+  flex-shrink: 0;
 }
 .kol-pool-edit-btn {
   padding: 0.35rem 0.5rem;
@@ -4768,6 +4797,10 @@ button.internal-campaign-card {
 .kol-modal-empty {
   padding: var(--space-4) var(--kol-modal-pad);
   margin: 0;
+}
+.kol-modal-list.is-busy {
+  pointer-events: none;
+  opacity: 0.65;
 }
 .kol-modal-foot {
   display: flex;

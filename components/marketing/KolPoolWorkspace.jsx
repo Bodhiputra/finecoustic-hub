@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
+import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 import KolPoolShippingModal from '@/components/marketing/KolPoolShippingModal';
 import { useLocale } from '@/components/LocaleProvider';
+import { useToast } from '@/hooks/useToast';
+import { API_V1, unwrapData } from '@/lib/api/routes';
 import {
   KOL_POOL_SECTIONS,
   collectKolMainPlatformOptions,
@@ -46,6 +49,7 @@ export default function KolPoolWorkspace({
   initialSection = 'masterlist',
 }) {
   const { t, locale } = useLocale();
+  const { toast } = useToast();
   const [section, setSection] = useState(initialSection);
   const [records, setRecords] = useState(initialRecords);
   const [meta, setMeta] = useState(
@@ -60,6 +64,7 @@ export default function KolPoolWorkspace({
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [shippingRow, setShippingRow] = useState(null);
+  const [syncing, setSyncing] = useState(false);
 
   const sectionRecords = useMemo(
     () => filterKolBySection(records, section),
@@ -118,6 +123,35 @@ export default function KolPoolWorkspace({
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  async function handleSyncFromNotion() {
+    if (!configured || syncing) return;
+    setSyncing(true);
+    try {
+      const res = await fetch(API_V1.marketingKolPoolSync, {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const code = body?.error || 'sync_failed';
+        const key = `hub.kol.errors.${code}`;
+        const msg = t(key);
+        toast.error(msg !== key ? msg : t('hub.kol.errors.sync_failed'));
+        return;
+      }
+      const data = unwrapData(body);
+      const nextRecords = Array.isArray(data?.records) ? data.records : [];
+      setRecords(nextRecords);
+      if (data?.meta) setMeta(data.meta);
+      if (data?.counts) setCounts(data.counts);
+      toast.success(t('hub.kol.syncSuccess').replace('{count}', String(data?.total ?? nextRecords.length)));
+    } catch {
+      toast.error(t('hub.kol.errors.sync_failed'));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   function handleSaved(record) {
     if (!record) return;
     setRecords(prev => {
@@ -144,8 +178,23 @@ export default function KolPoolWorkspace({
               <span className="kol-pool-meta-error"> · {meta.last_error}</span>
             ) : null}
           </p>
+          <p className="kol-pool-meta kol-pool-meta-hint">{t('hub.kol.syncSafeHint')}</p>
         </div>
         <div className="kol-pool-header-actions wrap-row">
+          {configured ? (
+            <button
+              type="button"
+              className="hub-btn hub-btn--ghost"
+              onClick={handleSyncFromNotion}
+              disabled={syncing}
+              title={t('hub.kol.notionEditHint')}
+            >
+              <Icon name="refresh" size={16} />
+              <ButtonBusyContent busy={syncing} busyLabel={t('hub.kol.syncing')}>
+                {t('hub.kol.syncButton')}
+              </ButtonBusyContent>
+            </button>
+          ) : null}
           <button
             type="button"
             className="hub-btn hub-btn--ghost"

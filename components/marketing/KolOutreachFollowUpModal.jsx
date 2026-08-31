@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Icon from '@/components/Icon';
+import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { KOL_BOARD_PROP } from '@/lib/kol-outreach-shared';
@@ -60,7 +61,9 @@ export default function KolOutreachFollowUpModal({ open, task, onClose, onSave, 
         <footer className="kol-modal-foot">
           <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
           <button type="submit" className="appdev-btn-primary" disabled={busy}>
-            {t('hub.campaignKol.followUpSave')}
+            <ButtonBusyContent busy={busy} busyLabel={t('common.saving')}>
+              {t('hub.campaignKol.followUpSave')}
+            </ButtonBusyContent>
           </button>
         </footer>
       </form>

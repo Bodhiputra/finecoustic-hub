@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
+import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
@@ -42,10 +43,10 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
   }
 
   return (
-    <KolModal open={open} onClose={onClose} labelledBy="kol-picker-title">
+    <KolModal open={open} onClose={busy ? () => {} : onClose} labelledBy="kol-picker-title">
       <header className="kol-modal-head">
         <h3 id="kol-picker-title">{t('hub.campaignKol.addFromPool')}</h3>
-        <button type="button" className="appdev-btn-ghost" onClick={onClose} aria-label={t('common.cancel')}>
+        <button type="button" className="appdev-btn-ghost" onClick={onClose} disabled={busy} aria-label={t('common.cancel')}>
           <Icon name="x" size={16} />
         </button>
       </header>
@@ -61,8 +62,9 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
         placeholder={t('hub.kol.searchPlaceholder')}
         value={query}
         onChange={e => setQuery(e.target.value)}
+        disabled={busy}
       />
-      <ul className="kol-modal-list">
+      <ul className={`kol-modal-list${busy ? ' is-busy' : ''}`}>
         {filtered.length === 0 ? (
           <li className="kol-modal-empty">{t('hub.campaignKol.noPoolMatches')}</li>
         ) : (
@@ -73,6 +75,7 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
                   type="checkbox"
                   checked={selected.has(r.notion_page_id)}
                   onChange={() => toggle(r.notion_page_id)}
+                  disabled={busy}
                 />
                 <span className="kol-modal-row-name">{r.channel_name}</span>
                 <span className={`kol-chip ${platformChipClass(r.main_platform)}`}>{r.main_platform || '—'}</span>
@@ -83,14 +86,19 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
         )}
       </ul>
       <footer className="kol-modal-foot">
-        <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+        <button type="button" className="appdev-btn-ghost" onClick={onClose} disabled={busy}>{t('common.cancel')}</button>
         <button
           type="button"
           className="appdev-btn-primary"
           disabled={busy || selected.size === 0}
           onClick={() => onAdd([...selected])}
         >
-          {t('hub.campaignKol.addSelected').replace('{count}', String(selected.size))}
+          <ButtonBusyContent
+            busy={busy}
+            busyLabel={t('hub.campaignKol.addingSelected').replace('{count}', String(selected.size))}
+          >
+            {t('hub.campaignKol.addSelected').replace('{count}', String(selected.size))}
+          </ButtonBusyContent>
         </button>
       </footer>
     </KolModal>
@@ -162,17 +170,19 @@ export default function KolOutreachBoardActions({
   async function addFromPool(ids) {
     setBusy(true);
     try {
-      let created = 0;
-      for (const id of ids) {
-        const kol = poolRecords.find(r => r.notion_page_id === id);
-        if (!kol || outreachKeys.has(outreachRowKey(id, addInitiative))) continue;
-        await createTaskForKol(kol);
-        created += 1;
-      }
-      setPickerOpen(false);
+      const kols = ids
+        .map(id => poolRecords.find(r => r.notion_page_id === id))
+        .filter(kol => kol && !outreachKeys.has(outreachRowKey(kol.notion_page_id, addInitiative)));
+
+      const results = await Promise.allSettled(kols.map(kol => createTaskForKol(kol)));
+      const created = results.filter(result => result.status === 'fulfilled').length;
+
       if (created) {
+        setPickerOpen(false);
         toast.success(t('hub.campaignKol.added').replace('{count}', String(created)));
         await onTasksChanged?.();
+      } else if (results.some(result => result.status === 'rejected')) {
+        toast.error(t('common.somethingWrong'));
       }
     } catch {
       toast.error(t('common.somethingWrong'));

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Icon from '@/components/Icon';
+import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
@@ -9,6 +10,7 @@ import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProd
 import {
   KOL_APPROACH_PLATFORMS,
   KOL_BOARD_PROP,
+  normalizeApproachDirection,
   parseDealProducts,
   serializeDealProducts,
 } from '@/lib/kol-outreach-shared';
@@ -31,6 +33,7 @@ export default function KolOutreachTransitionModal({
   const { t } = useLocale();
   const cv = task?.custom_values || {};
   const [platforms, setPlatforms] = useState([]);
+  const [approachDirection, setApproachDirection] = useState('outbound');
   const [approachDate, setApproachDate] = useState(todayIso());
   const [dealType, setDealType] = useState('Product barter');
   const [dealTerms, setDealTerms] = useState('');
@@ -53,6 +56,7 @@ export default function KolOutreachTransitionModal({
   useEffect(() => {
     if (!open) return;
     setApproachDate(cv[KOL_BOARD_PROP.approachDate] || todayIso());
+    setApproachDirection(normalizeApproachDirection(cv[KOL_BOARD_PROP.approachDirection]));
     setDealType(cv[KOL_BOARD_PROP.dealType] || 'Product barter');
     setDealTerms(cv[KOL_BOARD_PROP.dealTerms] || '');
     setDealAmount(cv[KOL_BOARD_PROP.dealAmount] || '');
@@ -118,6 +122,7 @@ export default function KolOutreachTransitionModal({
 
     if (toStatus === 'waiting_response') {
       if (!platforms.length) return;
+      nextCustom[KOL_BOARD_PROP.approachDirection] = approachDirection;
       nextCustom[KOL_BOARD_PROP.socials] = platforms.join(', ');
       nextCustom[KOL_BOARD_PROP.approachDate] = approachDate;
     }
@@ -138,7 +143,6 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.qcNotes] = qcNotes.trim();
     }
     if (toStatus === 'shipping') {
-      if (!trackingLink.trim()) return;
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
       nextCustom[KOL_BOARD_PROP.mediaKitSent] = mediaKitSent ? 'yes' : 'no';
@@ -182,6 +186,13 @@ export default function KolOutreachTransitionModal({
 
         {toStatus === 'waiting_response' ? (
           <>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.approachDirection')}</span>
+              <select value={approachDirection} onChange={e => setApproachDirection(e.target.value)}>
+                <option value="outbound">{t('hub.campaignKol.approachOutbound')}</option>
+                <option value="inbound">{t('hub.campaignKol.approachInbound')}</option>
+              </select>
+            </label>
             <fieldset className="kol-outreach-platform-pick">
               <legend>{t('hub.campaignKol.platformsApproached')}</legend>
               {KOL_APPROACH_PLATFORMS.map(name => (
@@ -263,7 +274,12 @@ export default function KolOutreachTransitionModal({
             </label>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.trackingLink')}</span>
-              <input type="url" value={trackingLink} onChange={e => setTrackingLink(e.target.value)} required />
+              <input
+                type="url"
+                value={trackingLink}
+                onChange={e => setTrackingLink(e.target.value)}
+                placeholder={t('hub.campaignKol.trackingLinkPlaceholder')}
+              />
             </label>
             <label className="kol-outreach-checkbox">
               <input type="checkbox" checked={mediaKitSent} onChange={e => setMediaKitSent(e.target.checked)} />
@@ -299,7 +315,9 @@ export default function KolOutreachTransitionModal({
         <footer className="kol-modal-foot">
           <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
           <button type="submit" className="appdev-btn-primary" disabled={busy}>
-            {t('common.confirm')}
+            <ButtonBusyContent busy={busy} busyLabel={t('common.saving')}>
+              {t('common.confirm')}
+            </ButtonBusyContent>
           </button>
         </footer>
       </form>
