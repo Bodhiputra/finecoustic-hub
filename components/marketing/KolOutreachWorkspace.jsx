@@ -6,7 +6,6 @@ import DataWorkspaceShell from '@/components/workspace/DataWorkspaceShell';
 import KolOutreachBoardActions from '@/components/marketing/KolOutreachBoardActions';
 import KolOutreachKanban from '@/components/marketing/KolOutreachKanban';
 import KolOutreachCardModal from '@/components/marketing/KolOutreachCardModal';
-import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
 import KolOutreachMoreInfoModal from '@/components/marketing/KolOutreachMoreInfoModal';
 import KolOutreachFollowUpModal from '@/components/marketing/KolOutreachFollowUpModal';
 import KolOutreachTransitionModal from '@/components/marketing/KolOutreachTransitionModal';
@@ -548,36 +547,37 @@ export default function KolOutreachWorkspace({
             </select>
           </label>
 
-          <div className="kol-outreach-filter-group">
-            <span className="kol-outreach-filter-label">{t('hub.campaignKol.approachDirection')}</span>
-            <KolSegmentPicker
-              options={[
-                { id: 'all', label: t('hub.campaignKol.filterAll') },
-                ...KOL_APPROACH_DIRECTIONS.map(item => ({
-                  id: item.id,
-                  label: item.id === 'outbound'
-                    ? t('hub.campaignKol.approachOutbound')
-                    : t('hub.campaignKol.approachInbound'),
-                })),
-              ]}
+          <label className="kol-outreach-filter">
+            <span>{t('hub.campaignKol.approachDirection')}</span>
+            <select
               value={approachDirectionFilter}
-              onChange={setApproachDirectionFilter}
-              ariaLabel={t('hub.campaignKol.filterApproachDirection')}
-            />
-          </div>
+              onChange={e => setApproachDirectionFilter(e.target.value)}
+              aria-label={t('hub.campaignKol.filterApproachDirection')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              {KOL_APPROACH_DIRECTIONS.map(item => (
+                <option key={item.id} value={item.id}>
+                  {item.id === 'outbound'
+                    ? t('hub.campaignKol.approachOutbound')
+                    : t('hub.campaignKol.approachInbound')}
+                </option>
+              ))}
+            </select>
+          </label>
 
-          <div className="kol-outreach-filter-group">
-            <span className="kol-outreach-filter-label">{t('hub.campaignKol.colDealType')}</span>
-            <KolSegmentPicker
-              options={[
-                { id: 'all', label: t('hub.campaignKol.filterAll') },
-                ...KOL_DEAL_TYPES.map(item => ({ id: item.id, label: t(item.labelKey) })),
-              ]}
+          <label className="kol-outreach-filter">
+            <span>{t('hub.campaignKol.colDealType')}</span>
+            <select
               value={dealTypeFilter}
-              onChange={setDealTypeFilter}
-              ariaLabel={t('hub.campaignKol.colDealType')}
-            />
-          </div>
+              onChange={e => setDealTypeFilter(e.target.value)}
+              aria-label={t('hub.campaignKol.colDealType')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              {KOL_DEAL_TYPES.map(item => (
+                <option key={item.id} value={item.id}>{t(item.labelKey)}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {(selectedIds.size > 0 || selectMode) ? (
