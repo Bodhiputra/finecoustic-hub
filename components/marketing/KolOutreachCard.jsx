@@ -44,30 +44,31 @@ export default function KolOutreachCard({
       onDragStart={canDrag ? onDragStart : undefined}
       onDragEnd={onDragEnd}
     >
-      {onToggleSelect ? (
-        <label className="kol-outreach-card-select" onClick={e => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggleSelect(task.id)}
+      <div className="kol-outreach-card-body">
+        {onToggleSelect ? (
+          <button
+            type="button"
+            className={`kol-outreach-card-pick${selected ? ' is-on' : ''}`}
             aria-label={t('hub.campaignKol.selectCard')}
+            aria-pressed={selected}
+            onClick={() => onToggleSelect(task.id)}
           />
-        </label>
-      ) : null}
-      <button type="button" className="kol-outreach-card-open" onClick={() => onOpenCard?.(task)}>
-        <span className="kol-outreach-card-title">{task.title || '—'}</span>
-        {chips.length ? (
-          <div className="kol-outreach-card-chips">
-            {chips.map(chip => (
-              <span key={chip.key} className={`internal-hint-chip ${chip.className}`}>
-                {chip.label}
-              </span>
-            ))}
-          </div>
         ) : null}
-      </button>
+        <div className="kol-outreach-card-content">
+          <button type="button" className="kol-outreach-card-open" onClick={() => onOpenCard?.(task)}>
+            <span className="kol-outreach-card-title">{task.title || '—'}</span>
+            {chips.length ? (
+              <div className="kol-outreach-card-chips">
+                {chips.map(chip => (
+                  <span key={chip.key} className={`internal-hint-chip ${chip.className}`}>
+                    {chip.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </button>
 
-      <footer className="kol-outreach-card-foot">
+          <footer className="kol-outreach-card-foot">
         <div className="kol-outreach-card-foot-main">
           {assignee ? (
             <span className="kol-outreach-card-assignee">
@@ -105,7 +106,9 @@ export default function KolOutreachCard({
               : t('hub.campaignKol.assignBeforeDrag')}
           </p>
         ) : null}
-      </footer>
+          </footer>
+        </div>
+      </div>
     </article>
   );
 }

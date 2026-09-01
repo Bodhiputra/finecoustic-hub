@@ -83,6 +83,7 @@ export default function KolOutreachWorkspace({
   const [busy, setBusy] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkAssignee, setBulkAssignee] = useState('');
+  const [selectMode, setSelectMode] = useState(false);
 
   useEffect(() => {
     setInitiativeFilter(resolveKolInitiative(initiativeFromUrl));
@@ -239,6 +240,7 @@ export default function KolOutreachWorkspace({
   function clearSelection() {
     setSelectedIds(new Set());
     setBulkAssignee('');
+    setSelectMode(false);
   }
 
   async function handleBulkAssign() {
@@ -483,6 +485,15 @@ export default function KolOutreachWorkspace({
           </div>
 
           <div className="kol-outreach-view-toggle" role="tablist" aria-label={t('hub.campaignKol.viewToggle')}>
+            {!selectMode ? (
+              <button
+                type="button"
+                className="kol-outreach-select-toggle"
+                onClick={() => setSelectMode(true)}
+              >
+                {t('hub.campaignKol.enterSelectMode')}
+              </button>
+            ) : null}
             <button
               type="button"
               className={view === 'board' ? 'is-active' : ''}
@@ -569,11 +580,16 @@ export default function KolOutreachWorkspace({
           </div>
         </div>
 
-        {selectedIds.size > 0 ? (
+        {(selectedIds.size > 0 || selectMode) ? (
           <div className="kol-outreach-bulk-bar">
-            <span className="kol-outreach-bulk-count">
-              {t('hub.campaignKol.selectedCount').replace('{count}', String(selectedIds.size))}
-            </span>
+            {selectedIds.size > 0 ? (
+              <span className="kol-outreach-bulk-count">
+                {t('hub.campaignKol.selectedCount').replace('{count}', String(selectedIds.size))}
+              </span>
+            ) : (
+              <span className="kol-outreach-bulk-count is-hint">{t('hub.campaignKol.selectModeHint')}</span>
+            )}
+            {selectedIds.size > 0 ? (
             <label className="kol-outreach-bulk-assign">
               <span>{t('hub.internal.taskPanel.assignee')}</span>
               <select
@@ -587,21 +603,26 @@ export default function KolOutreachWorkspace({
                 ))}
               </select>
             </label>
+            ) : null}
+            {selectedIds.size > 0 ? (
             <button
               type="button"
               className="appdev-btn-primary"
               onClick={handleBulkAssign}
-              disabled={busy || !bulkAssignee.trim()}
+              disabled={busy || !bulkAssignee.trim() || selectedIds.size === 0}
             >
               {t('hub.campaignKol.bulkAssign')}
             </button>
-            {selectedIds.size < filtered.length ? (
+            ) : null}
+            {selectMode && selectedIds.size < filtered.length ? (
               <button type="button" className="appdev-btn-ghost" onClick={selectAllFiltered} disabled={busy}>
                 {t('hub.campaignKol.selectAllVisible')}
               </button>
             ) : null}
             <button type="button" className="appdev-btn-ghost" onClick={clearSelection} disabled={busy}>
-              {t('hub.campaignKol.clearSelection')}
+              {selectMode && selectedIds.size === 0
+                ? t('hub.campaignKol.exitSelectMode')
+                : t('hub.campaignKol.clearSelection')}
             </button>
           </div>
         ) : null}
@@ -613,7 +634,7 @@ export default function KolOutreachWorkspace({
             displayName={displayName}
             initiativeFilter={initiativeFilter}
             selectedIds={selectedIds}
-            onToggleSelect={toggleSelect}
+            onToggleSelect={selectMode ? toggleSelect : undefined}
             onStatusChange={handleStatusChange}
             onOpenCard={setCardTask}
             onMoreInfo={setMoreInfoTask}
@@ -624,14 +645,24 @@ export default function KolOutreachWorkspace({
             <table className="kol-pool-table kol-outreach-table">
               <thead>
                 <tr>
-                  <th className="kol-outreach-select-col">
-                    <input
-                      type="checkbox"
-                      checked={filtered.length > 0 && filtered.every(task => selectedIds.has(task.id))}
-                      onChange={e => (e.target.checked ? selectAllFiltered() : clearSelection())}
-                      aria-label={t('hub.campaignKol.selectAllVisible')}
-                    />
-                  </th>
+                  {selectMode ? (
+                    <th className="kol-outreach-select-col">
+                      <button
+                        type="button"
+                        className={`kol-outreach-card-pick is-table${filtered.length > 0 && filtered.every(task => selectedIds.has(task.id)) ? ' is-on' : ''}`}
+                        aria-label={t('hub.campaignKol.selectAllVisible')}
+                        aria-pressed={filtered.length > 0 && filtered.every(task => selectedIds.has(task.id))}
+                        onClick={() => {
+                          if (filtered.length > 0 && filtered.every(task => selectedIds.has(task.id))) {
+                            setSelectedIds(new Set());
+                            setBulkAssignee('');
+                          } else {
+                            selectAllFiltered();
+                          }
+                        }}
+                      />
+                    </th>
+                  ) : null}
                   <th>{t('hub.kol.colChannel')}</th>
                   <th>{t('hub.campaignKol.initiative')}</th>
                   <th>{t('hub.campaignKol.colStatus')}</th>
@@ -646,14 +677,17 @@ export default function KolOutreachWorkspace({
                     className={`kol-pool-row-click${selectedIds.has(task.id) ? ' is-selected' : ''}`}
                     onClick={() => setCardTask(task)}
                   >
-                    <td className="kol-outreach-select-col" onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(task.id)}
-                        onChange={() => toggleSelect(task.id)}
-                        aria-label={t('hub.campaignKol.selectCard')}
-                      />
-                    </td>
+                    {selectMode ? (
+                      <td className="kol-outreach-select-col" onClick={e => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className={`kol-outreach-card-pick is-table${selectedIds.has(task.id) ? ' is-on' : ''}`}
+                          aria-label={t('hub.campaignKol.selectCard')}
+                          aria-pressed={selectedIds.has(task.id)}
+                          onClick={() => toggleSelect(task.id)}
+                        />
+                      </td>
+                    ) : null}
                     <td className="kol-pool-channel">{task.title}</td>
                     <td>{initiativeLabel(task.custom_values?.[KOL_BOARD_PROP.initiative])}</td>
                     <td>

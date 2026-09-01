@@ -85,7 +85,10 @@ export default function KolOutreachKanban({
   }
 
   return (
-    <section className="internal-board kol-outreach-kanban" aria-label={t('hub.campaignKol.kanbanLabel')}>
+    <section
+      className={`internal-board kol-outreach-kanban${onToggleSelect ? ' is-select-mode' : ''}`}
+      aria-label={t('hub.campaignKol.kanbanLabel')}
+    >
       <div className="internal-board-scroll h-scroll h-scroll--hint h-scroll--bleed" tabIndex={0}>
         <div className="internal-board-cols">
           {columns.map(col => {
