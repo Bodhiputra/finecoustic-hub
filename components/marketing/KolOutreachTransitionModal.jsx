@@ -19,8 +19,12 @@ import {
   KOL_APPROACH_PLATFORMS,
   KOL_BOARD_PROP,
   KOL_DEAL_TYPES,
+  KOL_NO_DEAL_REASON_NO_REPLY,
+  KOL_NO_DEAL_REASON_PRESET_NO_REPLY,
+  KOL_NO_DEAL_REASON_PRESET_OTHER,
   normalizeApproachDirection,
   parseDealProducts,
+  resolveNoDealReasonPreset,
   serializeDealProducts,
   suggestWeibinBatchCode,
 } from '@/lib/kol-outreach-shared';
@@ -53,7 +57,8 @@ export default function KolOutreachTransitionModal({
   const [dealDeadline, setDealDeadline] = useState('');
   const [productRows, setProductRows] = useState([]);
   const [shippingForm, setShippingForm] = useState(emptyShippingForm());
-  const [noDealReason, setNoDealReason] = useState('');
+  const [noDealReasonPreset, setNoDealReasonPreset] = useState(KOL_NO_DEAL_REASON_PRESET_NO_REPLY);
+  const [noDealReasonCustom, setNoDealReasonCustom] = useState('');
   const [qcPassed, setQcPassed] = useState(false);
   const [weibinBatchCode, setWeibinBatchCode] = useState('');
   const [weibinHandoffDate, setWeibinHandoffDate] = useState(todayIso());
@@ -84,6 +89,14 @@ export default function KolOutreachTransitionModal({
     [t]
   );
 
+  const noDealReasonOptions = useMemo(
+    () => [
+      { id: KOL_NO_DEAL_REASON_PRESET_NO_REPLY, label: t('hub.campaignKol.statusNoReply') },
+      { id: KOL_NO_DEAL_REASON_PRESET_OTHER, label: t('hub.campaignKol.noDealReasonOther') },
+    ],
+    [t]
+  );
+
   useEffect(() => {
     if (!open) return;
     setApproachDate(cv[KOL_BOARD_PROP.approachDate] || todayIso());
@@ -96,7 +109,13 @@ export default function KolOutreachTransitionModal({
       ? parseDealProducts(cv[KOL_BOARD_PROP.dealProducts])
       : []);
     setShippingForm(shippingFormFromRecord(poolRecord));
-    setNoDealReason(cv[KOL_BOARD_PROP.noDealReason] || '');
+    const existingNoDealReason = cv[KOL_BOARD_PROP.noDealReason] || '';
+    setNoDealReasonPreset(resolveNoDealReasonPreset(existingNoDealReason));
+    setNoDealReasonCustom(
+      resolveNoDealReasonPreset(existingNoDealReason) === KOL_NO_DEAL_REASON_PRESET_OTHER
+        ? existingNoDealReason
+        : ''
+    );
     setQcPassed(cv[KOL_BOARD_PROP.qcPassed] === 'yes');
     setWeibinBatchCode(suggestWeibinBatchCode(task, poolRecord));
     setWeibinHandoffDate(cv[KOL_BOARD_PROP.weibinHandoffDate] || todayIso());
@@ -172,7 +191,10 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.dealProducts] = serializeDealProducts(products);
     }
     if (toStatus === 'no_deal') {
-      nextCustom[KOL_BOARD_PROP.noDealReason] = noDealReason.trim();
+      if (noDealReasonPreset === KOL_NO_DEAL_REASON_PRESET_OTHER && !noDealReasonCustom.trim()) return;
+      nextCustom[KOL_BOARD_PROP.noDealReason] = noDealReasonPreset === KOL_NO_DEAL_REASON_PRESET_NO_REPLY
+        ? KOL_NO_DEAL_REASON_NO_REPLY
+        : noDealReasonCustom.trim();
     }
     if (toStatus === 'quality_control') {
       nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
@@ -299,10 +321,28 @@ export default function KolOutreachTransitionModal({
         ) : null}
 
         {toStatus === 'no_deal' ? (
-          <label className="appdev-field">
-            <span>{t('hub.campaignKol.noDealReason')}</span>
-            <textarea rows={4} value={noDealReason} onChange={e => setNoDealReason(e.target.value)} required />
-          </label>
+          <>
+            <div className="appdev-field">
+              <span>{t('hub.campaignKol.noDealReason')}</span>
+              <KolSegmentPicker
+                options={noDealReasonOptions}
+                value={noDealReasonPreset}
+                onChange={setNoDealReasonPreset}
+                ariaLabel={t('hub.campaignKol.noDealReason')}
+              />
+            </div>
+            {noDealReasonPreset === KOL_NO_DEAL_REASON_PRESET_OTHER ? (
+              <label className="appdev-field">
+                <span>{t('hub.campaignKol.noDealReasonOther')}</span>
+                <textarea
+                  rows={4}
+                  value={noDealReasonCustom}
+                  onChange={e => setNoDealReasonCustom(e.target.value)}
+                  required
+                />
+              </label>
+            ) : null}
+          </>
         ) : null}
 
         {toStatus === 'quality_control' ? (

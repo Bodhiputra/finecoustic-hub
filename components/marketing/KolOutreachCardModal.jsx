@@ -16,11 +16,15 @@ import {
   KOL_BOARD_PROP,
   KOL_DEAL_TYPES,
   KOL_INITIATIVES,
+  KOL_NO_DEAL_REASON_NO_REPLY,
+  KOL_NO_DEAL_REASON_PRESET_NO_REPLY,
+  KOL_NO_DEAL_REASON_PRESET_OTHER,
   kolCardModalSections,
   normalizeApproachDirection,
   normalizeKolOutreachStatus,
   parseDealProducts,
   resolveKolInitiative,
+  resolveNoDealReasonPreset,
   serializeDealProducts,
 } from '@/lib/kol-outreach-shared';
 import { taskInitiative } from '@/lib/kol-outreach-utils';
@@ -60,7 +64,8 @@ export default function KolOutreachCardModal({
   const [dealAmount, setDealAmount] = useState('');
   const [dealDeadline, setDealDeadline] = useState('');
   const [productRows, setProductRows] = useState([]);
-  const [noDealReason, setNoDealReason] = useState('');
+  const [noDealReasonPreset, setNoDealReasonPreset] = useState(KOL_NO_DEAL_REASON_PRESET_NO_REPLY);
+  const [noDealReasonCustom, setNoDealReasonCustom] = useState('');
   const [qcPassed, setQcPassed] = useState(false);
   const [weibinBatchCode, setWeibinBatchCode] = useState('');
   const [weibinHandoffDate, setWeibinHandoffDate] = useState('');
@@ -105,6 +110,14 @@ export default function KolOutreachCardModal({
     []
   );
 
+  const noDealReasonOptions = useMemo(
+    () => [
+      { id: KOL_NO_DEAL_REASON_PRESET_NO_REPLY, label: t('hub.campaignKol.statusNoReply') },
+      { id: KOL_NO_DEAL_REASON_PRESET_OTHER, label: t('hub.campaignKol.noDealReasonOther') },
+    ],
+    [t]
+  );
+
   useEffect(() => {
     if (!open || !task) return;
     setAssignee(task.assignee || '');
@@ -122,7 +135,13 @@ export default function KolOutreachCardModal({
     setDealAmount(cv[KOL_BOARD_PROP.dealAmount] || '');
     setDealDeadline(cv[KOL_BOARD_PROP.dealDeadline] || '');
     setProductRows(parseDealProducts(cv[KOL_BOARD_PROP.dealProducts]));
-    setNoDealReason(cv[KOL_BOARD_PROP.noDealReason] || '');
+    const existingNoDealReason = cv[KOL_BOARD_PROP.noDealReason] || '';
+    setNoDealReasonPreset(resolveNoDealReasonPreset(existingNoDealReason));
+    setNoDealReasonCustom(
+      resolveNoDealReasonPreset(existingNoDealReason) === KOL_NO_DEAL_REASON_PRESET_OTHER
+        ? existingNoDealReason
+        : ''
+    );
     setQcPassed(cv[KOL_BOARD_PROP.qcPassed] === 'yes');
     setWeibinBatchCode(cv[KOL_BOARD_PROP.weibinBatchCode] || '');
     setWeibinHandoffDate(cv[KOL_BOARD_PROP.weibinHandoffDate] || '');
@@ -179,7 +198,9 @@ export default function KolOutreachCardModal({
       );
     }
     if (sections.noDeal) {
-      nextCustom[KOL_BOARD_PROP.noDealReason] = noDealReason.trim();
+      nextCustom[KOL_BOARD_PROP.noDealReason] = noDealReasonPreset === KOL_NO_DEAL_REASON_PRESET_NO_REPLY
+        ? KOL_NO_DEAL_REASON_NO_REPLY
+        : noDealReasonCustom.trim();
     }
     if (sections.qualityControl) {
       nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
@@ -377,10 +398,27 @@ export default function KolOutreachCardModal({
 
         {sections.noDeal ? (
           <Section title={t('hub.campaignKol.cardModalNoDeal')}>
-            <label className="appdev-field">
+            <div className="appdev-field">
               <span>{t('hub.campaignKol.noDealReason')}</span>
-              <textarea rows={3} value={noDealReason} onChange={e => setNoDealReason(e.target.value)} disabled={busy} />
-            </label>
+              <KolSegmentPicker
+                options={noDealReasonOptions}
+                value={noDealReasonPreset}
+                onChange={setNoDealReasonPreset}
+                ariaLabel={t('hub.campaignKol.noDealReason')}
+                disabled={busy}
+              />
+            </div>
+            {noDealReasonPreset === KOL_NO_DEAL_REASON_PRESET_OTHER ? (
+              <label className="appdev-field">
+                <span>{t('hub.campaignKol.noDealReasonOther')}</span>
+                <textarea
+                  rows={3}
+                  value={noDealReasonCustom}
+                  onChange={e => setNoDealReasonCustom(e.target.value)}
+                  disabled={busy}
+                />
+              </label>
+            ) : null}
           </Section>
         ) : null}
 
