@@ -39,6 +39,8 @@ export default function DepartmentJotDownWorkspace({
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
   const saveTimer = useRef(null);
+  const editingJotIdRef = useRef('');
+  const draftRef = useRef({ title: '', content: '' });
 
   const activeJot = useMemo(
     () => jots.find(j => j.id === activeId) || null,
@@ -46,24 +48,28 @@ export default function DepartmentJotDownWorkspace({
   );
 
   useEffect(() => {
-    setJots(initialJots.map(pageToJot));
-  }, [initialJots]);
-
-  useEffect(() => {
     if (activeJotId && jots.some(j => j.id === activeJotId)) {
+      if (activeJotId !== activeId) flushSave();
       setActiveId(activeJotId);
     }
-  }, [activeJotId, jots]);
+  }, [activeJotId, jots, activeId]);
 
   useEffect(() => {
     if (!activeJot) {
+      editingJotIdRef.current = '';
       setTitle('');
       setContent('');
+      draftRef.current = { title: '', content: '' };
       return;
     }
-    setTitle(activeJot.title || '');
-    setContent(activeJot.content || '');
-  }, [activeJot?.id, activeJot?.title, activeJot?.content]);
+    if (activeJot.id === editingJotIdRef.current) return;
+    editingJotIdRef.current = activeJot.id;
+    const nextTitle = activeJot.title || '';
+    const nextContent = activeJot.content || '';
+    setTitle(nextTitle);
+    setContent(nextContent);
+    draftRef.current = { title: nextTitle, content: nextContent };
+  }, [activeJot?.id, activeJot]);
 
   const reloadPages = useCallback(async () => {
     const res = await fetch(knowledgePagesQuery({ department: departmentId }), {
@@ -83,7 +89,6 @@ export default function DepartmentJotDownWorkspace({
 
   const persist = useCallback(async (id, patch) => {
     if (!id) return;
-    setBusy(true);
     try {
       const res = await fetch(API_V1.knowledgePage(id), {
         method: 'PATCH',
@@ -105,10 +110,9 @@ export default function DepartmentJotDownWorkspace({
             (a, b) => (b.updated_at || '').localeCompare(a.updated_at || '') || a.title.localeCompare(b.title)
           );
         });
-        window.dispatchEvent(new CustomEvent(KNOWLEDGE_PAGES_CHANGED));
       }
-    } finally {
-      setBusy(false);
+    } catch {
+      toast.error(t('common.somethingWrong'));
     }
   }, [t, toast]);
 
@@ -116,11 +120,20 @@ export default function DepartmentJotDownWorkspace({
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       persist(id, { title: draftTitle, content: draftContent });
-    }, 500);
+    }, 1500);
+  }
+
+  function flushSave() {
+    const id = editingJotIdRef.current;
+    if (!id || saveTimer.current == null) return;
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    persist(id, draftRef.current);
   }
 
   function selectJot(id) {
     if (id === activeId) return;
+    flushSave();
     router.push(departmentJotDownUrl(deptBase, { jotId: id }));
   }
 
@@ -156,6 +169,7 @@ export default function DepartmentJotDownWorkspace({
 
   async function removeJot(id) {
     if (!id) return;
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
     setBusy(true);
     try {
       const res = await fetch(API_V1.knowledgePage(id), {
@@ -223,10 +237,11 @@ export default function DepartmentJotDownWorkspace({
                   onChange={e => {
                     const next = e.target.value;
                     setTitle(next);
+                    draftRef.current = { title: next, content };
                     scheduleSave(activeJot.id, next, content);
                   }}
+                  onBlur={flushSave}
                   placeholder={t('hub.jotDown.titlePlaceholder')}
-                  disabled={busy}
                 />
                 <button
                   type="button"
@@ -244,10 +259,11 @@ export default function DepartmentJotDownWorkspace({
                 onChange={e => {
                   const next = e.target.value;
                   setContent(next);
+                  draftRef.current = { title, content: next };
                   scheduleSave(activeJot.id, title, next);
                 }}
+                onBlur={flushSave}
                 placeholder={t('hub.jotDown.bodyPlaceholder')}
-                disabled={busy}
               />
             </>
           )}
