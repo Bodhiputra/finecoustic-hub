@@ -10,12 +10,16 @@ import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import {
   KOL_POOL_SECTIONS,
+  collectKolCollabInitiativeOptions,
+  collectKolCountryOptions,
   collectKolMainPlatformOptions,
   filterKolBySection,
   hasKolShippingAddress,
   isHubNativeKol,
   kolLinkAriaLabel,
   kolLinkIconName,
+  kolMatchesCollabInitiativeFilter,
+  kolMatchesCountryFilter,
   kolMatchesPlatformFilter,
   kolShippingSummary,
   platformChipClass,
@@ -80,6 +84,8 @@ export default function KolPoolWorkspace({
   const [configured] = useState(initialConfigured);
   const [query, setQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState('all');
+  const [countryFilter, setCountryFilter] = useState('all');
+  const [collabInitiativeFilter, setCollabInitiativeFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [editing, setEditing] = useState(null);
@@ -97,10 +103,22 @@ export default function KolPoolWorkspace({
     [sectionRecords]
   );
 
+  const countryOptions = useMemo(
+    () => collectKolCountryOptions(sectionRecords),
+    [sectionRecords]
+  );
+
+  const collabInitiativeOptions = useMemo(
+    () => collectKolCollabInitiativeOptions(sectionRecords),
+    [sectionRecords]
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return sectionRecords.filter(r => {
       if (!kolMatchesPlatformFilter(r, platformFilter)) return false;
+      if (!kolMatchesCountryFilter(r, countryFilter)) return false;
+      if (!kolMatchesCollabInitiativeFilter(r, collabInitiativeFilter)) return false;
       if (!q) return true;
       const hay = [
         r.channel_name,
@@ -116,7 +134,7 @@ export default function KolPoolWorkspace({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [sectionRecords, platformFilter, query]);
+  }, [sectionRecords, platformFilter, countryFilter, collabInitiativeFilter, query]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -131,7 +149,7 @@ export default function KolPoolWorkspace({
 
   useEffect(() => {
     setPage(1);
-  }, [section, query, platformFilter, pageSize]);
+  }, [section, query, platformFilter, countryFilter, collabInitiativeFilter, pageSize]);
 
   useEffect(() => {
     if (platformFilter === 'all') return;
@@ -139,6 +157,20 @@ export default function KolPoolWorkspace({
       setPlatformFilter('all');
     }
   }, [platformFilter, platformOptions]);
+
+  useEffect(() => {
+    if (countryFilter === 'all') return;
+    if (!countryOptions.some(option => option.key === countryFilter)) {
+      setCountryFilter('all');
+    }
+  }, [countryFilter, countryOptions]);
+
+  useEffect(() => {
+    if (collabInitiativeFilter === 'all') return;
+    if (!collabInitiativeOptions.some(option => option.id === collabInitiativeFilter)) {
+      setCollabInitiativeFilter('all');
+    }
+  }, [collabInitiativeFilter, collabInitiativeOptions]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -231,6 +263,16 @@ export default function KolPoolWorkspace({
     });
   }
 
+  function handleDeleted(notionPageId) {
+    if (!notionPageId) return;
+    setRecords(prev => {
+      const next = prev.filter(r => r.notion_page_id !== notionPageId);
+      setCounts(countKolBySection(next));
+      return next;
+    });
+    setEditing(null);
+  }
+
   return (
     <div className="kol-pool-workspace">
       <header className="kol-pool-header wrap-row">
@@ -316,6 +358,36 @@ export default function KolPoolWorkspace({
               <option value="all">{t('hub.campaignKol.filterAll')}</option>
               {platformOptions.map(option => (
                 <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {countryOptions.length ? (
+          <label className="kol-pool-filter">
+            <span>{t('hub.kol.colCountry')}</span>
+            <select
+              value={countryFilter}
+              onChange={e => setCountryFilter(e.target.value)}
+              aria-label={t('hub.kol.filterCountry')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              {countryOptions.map(option => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {collabInitiativeOptions.length ? (
+          <label className="kol-pool-filter">
+            <span>{t('hub.kol.filterCollabInitiative')}</span>
+            <select
+              value={collabInitiativeFilter}
+              onChange={e => setCollabInitiativeFilter(e.target.value)}
+              aria-label={t('hub.kol.filterCollabInitiative')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              {collabInitiativeOptions.map(option => (
+                <option key={option.id} value={option.id}>{option.label}</option>
               ))}
             </select>
           </label>
@@ -478,6 +550,7 @@ export default function KolPoolWorkspace({
           record={editing}
           onClose={() => setEditing(null)}
           onSaved={handleSaved}
+          onDeleted={handleDeleted}
         />
       ) : null}
 

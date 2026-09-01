@@ -55,6 +55,7 @@ export default function KolPoolFormPanel({
   compact = false,
   onClose,
   onSaved,
+  onDeleted,
   onCreateAndAdd = null,
 }) {
   const { t } = useLocale();
@@ -99,6 +100,31 @@ export default function KolPoolFormPanel({
       const result = unwrapData(await res.json());
       toast.success(isCreate ? t('hub.kol.created') : t('hub.kol.saved'));
       onSaved?.(result?.record || null);
+      onClose?.();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (isCreate || !data?.notion_page_id) return;
+    const message = isHubNativeKol(data)
+      ? t('hub.kol.deleteConfirm')
+      : `${t('hub.kol.deleteConfirm')}\n\n${t('hub.kol.deleteNotionHint')}`;
+    if (!window.confirm(message)) return;
+
+    setBusy(true);
+    try {
+      const res = await fetch(API_V1.marketingKolPoolRecord(data.notion_page_id), {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      toast.success(t('hub.kol.deleted'));
+      onDeleted?.(data.notion_page_id);
       onClose?.();
     } finally {
       setBusy(false);
@@ -242,14 +268,26 @@ export default function KolPoolFormPanel({
         </datalist>
 
         <footer className="kol-modal-foot">
-          <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-          <button type="submit" className="appdev-btn-primary" disabled={busy}>
-            {onCreateAndAdd
-              ? t('hub.campaignKol.addNewKol')
-              : isCreate
-                ? t('hub.kol.saveToPool')
-                : t('hub.internal.taskPanel.save')}
-          </button>
+          {!isCreate ? (
+            <button
+              type="button"
+              className="appdev-btn-danger kol-modal-foot-danger"
+              onClick={handleDelete}
+              disabled={busy}
+            >
+              {t('hub.kol.deleteKol')}
+            </button>
+          ) : null}
+          <div className="kol-modal-foot-actions">
+            <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="appdev-btn-primary" disabled={busy}>
+              {onCreateAndAdd
+                ? t('hub.campaignKol.addNewKol')
+                : isCreate
+                  ? t('hub.kol.saveToPool')
+                  : t('hub.internal.taskPanel.save')}
+            </button>
+          </div>
         </footer>
       </form>
     </KolModal>

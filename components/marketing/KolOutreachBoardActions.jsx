@@ -8,18 +8,20 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey, resolveKolInitiative } from '@/lib/kol-outreach-shared';
-import { platformChipClass } from '@/lib/kol-pool';
+import { collectKolCountryOptions, kolMatchesCountryFilter, platformChipClass } from '@/lib/kol-pool';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 
 function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, onAdd, busy }) {
   const { t } = useLocale();
   const [selected, setSelected] = useState(new Set());
   const [query, setQuery] = useState('');
+  const [countryFilter, setCountryFilter] = useState('all');
 
   useEffect(() => {
     if (open) {
       setSelected(new Set());
       setQuery('');
+      setCountryFilter('all');
     }
   }, [open]);
 
@@ -28,10 +30,13 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
   const available = poolRecords.filter(
     r => !existingKeys.has(outreachRowKey(r.notion_page_id, initiative))
   );
+  const countryOptions = collectKolCountryOptions(available);
   const q = query.trim().toLowerCase();
-  const filtered = q
-    ? available.filter(r => [r.channel_name, r.main_platform, r.country].join(' ').toLowerCase().includes(q))
-    : available;
+  const filtered = available.filter(r => {
+    if (!kolMatchesCountryFilter(r, countryFilter)) return false;
+    if (!q) return true;
+    return [r.channel_name, r.main_platform, r.country].join(' ').toLowerCase().includes(q);
+  });
 
   function toggle(id) {
     setSelected(prev => {
@@ -64,6 +69,22 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
         onChange={e => setQuery(e.target.value)}
         disabled={busy}
       />
+      {countryOptions.length ? (
+        <label className="kol-modal-filter">
+          <span>{t('hub.kol.colCountry')}</span>
+          <select
+            value={countryFilter}
+            onChange={e => setCountryFilter(e.target.value)}
+            disabled={busy}
+            aria-label={t('hub.kol.filterCountry')}
+          >
+            <option value="all">{t('hub.campaignKol.filterAll')}</option>
+            {countryOptions.map(option => (
+              <option key={option.key} value={option.key}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <ul className={`kol-modal-list${busy ? ' is-busy' : ''}`}>
         {filtered.length === 0 ? (
           <li className="kol-modal-empty">{t('hub.campaignKol.noPoolMatches')}</li>

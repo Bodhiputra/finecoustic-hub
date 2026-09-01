@@ -38,6 +38,7 @@ export default function KolOutreachCardModal({
   defaultInitiative = '',
   onClose,
   onSave,
+  onDelete,
   busy = false,
 }) {
   const { t } = useLocale();
@@ -422,12 +423,24 @@ export default function KolOutreachCardModal({
         ) : null}
 
         <footer className="kol-modal-foot">
-          <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-          <button type="submit" className="appdev-btn-primary" disabled={busy}>
-            <ButtonBusyContent busy={busy} busyLabel={t('common.saving')}>
-              {t('common.save')}
-            </ButtonBusyContent>
-          </button>
+          {onDelete ? (
+            <button
+              type="button"
+              className="appdev-btn-danger kol-modal-foot-danger"
+              onClick={onDelete}
+              disabled={busy}
+            >
+              {t('hub.campaignKol.removeCard')}
+            </button>
+          ) : null}
+          <div className="kol-modal-foot-actions">
+            <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
+            <button type="submit" className="appdev-btn-primary" disabled={busy}>
+              <ButtonBusyContent busy={busy} busyLabel={t('common.saving')}>
+                {t('common.save')}
+              </ButtonBusyContent>
+            </button>
+          </div>
         </footer>
       </form>
     </KolModal>

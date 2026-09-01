@@ -11,6 +11,7 @@ import KolOutreachFollowUpModal from '@/components/marketing/KolOutreachFollowUp
 import KolOutreachTransitionModal from '@/components/marketing/KolOutreachTransitionModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
+import { useHubPermissions } from '@/hooks/useHubPermissions';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
 import {
@@ -20,12 +21,14 @@ import {
   kolOutreachBoardUrl,
   kolTransitionSteps,
   initiativeLabel,
+  normalizeApproachDirection,
   normalizeKolOutreachStatus,
   resolveKolInitiative,
   DEFAULT_KOL_INITIATIVE,
 } from '@/lib/kol-outreach-shared';
 import {
   appendProductsToPoolRecord,
+  collectOutreachCountryOptions,
   collectOutreachPlatformOptions,
   existingOutreachKeys,
   filterOutreachTasks,
@@ -56,6 +59,7 @@ export default function KolOutreachWorkspace({
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
+  const { canDeleteTaskFor } = useHubPermissions();
   const searchParams = useSearchParams();
   const initiativeFromUrl = (searchParams.get('initiative') || '').trim().toLowerCase();
 
@@ -65,6 +69,8 @@ export default function KolOutreachWorkspace({
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [dealTypeFilter, setDealTypeFilter] = useState('all');
   const [platformFilter, setPlatformFilter] = useState('all');
+  const [countryFilter, setCountryFilter] = useState('all');
+  const [approachDirectionFilter, setApproachDirectionFilter] = useState('all');
   const [poolRecords, setPoolRecords] = useState(initialPoolRecords);
   const [cardTask, setCardTask] = useState(null);
   const [moreInfoTask, setMoreInfoTask] = useState(null);
@@ -121,12 +127,24 @@ export default function KolOutreachWorkspace({
     [normalizedTasks, poolRecords]
   );
 
+  const countryOptions = useMemo(
+    () => collectOutreachCountryOptions(normalizedTasks, poolRecords),
+    [normalizedTasks, poolRecords]
+  );
+
   useEffect(() => {
     if (platformFilter === 'all') return;
     if (!platformOptions.some(option => option.key === platformFilter)) {
       setPlatformFilter('all');
     }
   }, [platformFilter, platformOptions]);
+
+  useEffect(() => {
+    if (countryFilter === 'all') return;
+    if (!countryOptions.some(option => option.key === countryFilter)) {
+      setCountryFilter('all');
+    }
+  }, [countryFilter, countryOptions]);
 
   const filtered = useMemo(
     () =>
@@ -136,6 +154,8 @@ export default function KolOutreachWorkspace({
         assignee: assigneeFilter,
         dealType: dealTypeFilter,
         platform: platformFilter,
+        country: countryFilter,
+        approachDirection: approachDirectionFilter,
         poolRecords,
       }),
     [
@@ -145,6 +165,8 @@ export default function KolOutreachWorkspace({
       assigneeFilter,
       dealTypeFilter,
       platformFilter,
+      countryFilter,
+      approachDirectionFilter,
       poolRecords,
     ]
   );
@@ -285,6 +307,30 @@ export default function KolOutreachWorkspace({
     }
   }
 
+  async function handleCardDelete() {
+    if (!cardTask?.id) return;
+    if (!window.confirm(t('hub.campaignKol.removeCardConfirm'))) return;
+    setBusy(true);
+    try {
+      const res = await fetch(API_V1.internalTask(cardTask.id), {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      setCardTask(null);
+      toast.success(t('hub.campaignKol.removed'));
+      await onTasksChanged?.();
+      signalHubNotificationsRefresh();
+    } catch {
+      toast.error(t('common.somethingWrong'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function handleTransitionClose() {
     const hadProgress = transition?.stepIndex > 0;
     setTransition(null);
@@ -387,6 +433,20 @@ export default function KolOutreachWorkspace({
           </label>
 
           <label className="kol-outreach-filter">
+            <span>{t('hub.kol.colCountry')}</span>
+            <select
+              value={countryFilter}
+              onChange={e => setCountryFilter(e.target.value)}
+              aria-label={t('hub.kol.filterCountry')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              {countryOptions.map(option => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="kol-outreach-filter">
             <span>{t('hub.kol.colPlatform')}</span>
             <select
               value={platformFilter}
@@ -397,6 +457,19 @@ export default function KolOutreachWorkspace({
               {platformOptions.map(option => (
                 <option key={option.key} value={option.key}>{option.label}</option>
               ))}
+            </select>
+          </label>
+
+          <label className="kol-outreach-filter">
+            <span>{t('hub.campaignKol.approachDirection')}</span>
+            <select
+              value={approachDirectionFilter}
+              onChange={e => setApproachDirectionFilter(e.target.value)}
+              aria-label={t('hub.campaignKol.filterApproachDirection')}
+            >
+              <option value="all">{t('hub.campaignKol.filterAll')}</option>
+              <option value="outbound">{t('hub.campaignKol.approachOutbound')}</option>
+              <option value="inbound">{t('hub.campaignKol.approachInbound')}</option>
             </select>
           </label>
 
@@ -461,6 +534,7 @@ export default function KolOutreachWorkspace({
         defaultInitiative={initiativeFilter}
         onClose={() => setCardTask(null)}
         onSave={handleCardSave}
+        onDelete={cardTask && canDeleteTaskFor(cardTask) ? handleCardDelete : undefined}
         busy={busy}
       />
 

@@ -4774,6 +4774,22 @@ button.internal-campaign-card {
   border-radius: 8px;
   background: var(--bg);
 }
+.kol-modal-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--kol-modal-pad) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.kol-modal-filter select {
+  min-width: 9rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
 .kol-modal-list {
   list-style: none;
   margin: 0;
@@ -4813,6 +4829,15 @@ button.internal-campaign-card {
   padding: var(--space-4) var(--kol-modal-pad) var(--kol-modal-pad);
   border-top: 1px solid var(--line);
   margin-top: var(--space-4);
+}
+.kol-modal-foot-danger {
+  margin-right: auto;
+}
+.kol-modal-foot-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
 }
 .kol-pool-edit-form .kol-modal-foot {
   grid-column: auto;
