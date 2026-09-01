@@ -1264,7 +1264,7 @@ export default function InternalDepartment({
                 </Link>
               ))}
             </div>
-            {canEditBoard ? (
+            {flowCview !== 'flow' && canEditBoard ? (
             <button
               type="button"
               className="appdev-btn-ghost"
@@ -1275,7 +1275,7 @@ export default function InternalDepartment({
               {t('hub.internal.addKanbanNode')}
             </button>
             ) : null}
-            {canCreate ? (
+            {flowCview !== 'flow' && canCreate ? (
             <>
             <button
               type="button"

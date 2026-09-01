@@ -13,6 +13,8 @@ export default function KolOutreachCard({
   onDragStart,
   onDragEnd,
   isDragging = false,
+  selected = false,
+  onToggleSelect,
   onOpenCard,
   onMoreInfo,
   onFollowUp,
@@ -34,6 +36,7 @@ export default function KolOutreachCard({
         isDragging && 'is-dragging',
         canDrag && 'is-draggable',
         !canDrag && draggable && 'is-drag-locked',
+        selected && 'is-selected',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -41,6 +44,16 @@ export default function KolOutreachCard({
       onDragStart={canDrag ? onDragStart : undefined}
       onDragEnd={onDragEnd}
     >
+      {onToggleSelect ? (
+        <label className="kol-outreach-card-select" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(task.id)}
+            aria-label={t('hub.campaignKol.selectCard')}
+          />
+        </label>
+      ) : null}
       <button type="button" className="kol-outreach-card-open" onClick={() => onOpenCard?.(task)}>
         <span className="kol-outreach-card-title">{task.title || '—'}</span>
         {chips.length ? (

@@ -670,7 +670,11 @@ function CampaignFlowCanvasInner({
           selectNodesOnDrag={false}
           selectionOnDrag
           selectionMode={SelectionMode.Partial}
-          panOnDrag={[1]}
+          panOnScroll
+          panOnScrollMode="free"
+          panOnDrag={false}
+          zoomOnScroll={false}
+          zoomOnPinch
           multiSelectionKeyCode="Shift"
           proOptions={{ hideAttribution: true }}
         >

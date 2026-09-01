@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
 import KolOutreachCard from '@/components/marketing/KolOutreachCard';
 import {
@@ -16,6 +17,7 @@ const STATUS_LABEL_KEYS = {
   deal: 'hub.campaignKol.statusDeal',
   no_deal: 'hub.campaignKol.statusNoDeal',
   quality_control: 'hub.campaignKol.statusQualityControl',
+  weibin: 'hub.campaignKol.statusWeibin',
   shipping: 'hub.campaignKol.statusShipping',
   arrived: 'hub.campaignKol.statusArrived',
   publish: 'hub.campaignKol.statusPublish',
@@ -25,6 +27,9 @@ export default function KolOutreachKanban({
   tasks,
   poolRecords = [],
   displayName = '',
+  initiativeFilter = '',
+  selectedIds = null,
+  onToggleSelect,
   onStatusChange,
   onOpenCard,
   onMoreInfo,
@@ -35,6 +40,11 @@ export default function KolOutreachKanban({
   const [overCol, setOverCol] = useState(null);
 
   const columns = useMemo(() => defaultKolOutreachStatusColumns(), []);
+
+  const weibinCount = useMemo(
+    () => tasks.filter(task => normalizeKolOutreachStatus(task.status) === 'weibin').length,
+    [tasks]
+  );
 
   function columnLabel(col) {
     const key = STATUS_LABEL_KEYS[col.id];
@@ -67,6 +77,13 @@ export default function KolOutreachKanban({
     onStatusChange?.(task, to);
   }
 
+  function exportWeibinExcel() {
+    const params = new URLSearchParams();
+    if (initiativeFilter) params.set('initiative', initiativeFilter);
+    const qs = params.toString();
+    window.open(`/api/v1/marketing/kol-outreach/weibin-export${qs ? `?${qs}` : ''}`, '_blank', 'noopener,noreferrer');
+  }
+
   return (
     <section className="internal-board kol-outreach-kanban" aria-label={t('hub.campaignKol.kanbanLabel')}>
       <div className="internal-board-scroll h-scroll h-scroll--hint h-scroll--bleed" tabIndex={0}>
@@ -85,6 +102,17 @@ export default function KolOutreachKanban({
                   <span className={`internal-board-col-bar is-${col.id}`} aria-hidden="true" />
                   <h3>{columnLabel(col)}</h3>
                   <span className="internal-board-col-count">{colTasks.length}</span>
+                  {col.id === 'weibin' && weibinCount > 0 ? (
+                    <button
+                      type="button"
+                      className="kol-weibin-export-btn"
+                      onClick={exportWeibinExcel}
+                      title={t('hub.campaignKol.weibinExport')}
+                    >
+                      <Icon name="download" size={14} />
+                      <span>{t('hub.campaignKol.weibinExport')}</span>
+                    </button>
+                  ) : null}
                 </header>
                 <div className="internal-board-col-body">
                   {colTasks.length === 0 ? (
@@ -98,6 +126,8 @@ export default function KolOutreachKanban({
                       displayName={displayName}
                       draggable
                       isDragging={dragId === task.id}
+                      selected={selectedIds?.has(task.id)}
+                      onToggleSelect={onToggleSelect}
                       onDragStart={e => onDragStart(e, task.id)}
                       onDragEnd={() => {
                         setDragId(null);

@@ -4,13 +4,17 @@ import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolModal from '@/components/KolModal';
+import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
+import KolOutreachShipKitFields from '@/components/marketing/KolOutreachShipKitFields';
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { buildTeamAssigneeOptions } from '@/lib/internal';
 import {
+  KOL_APPROACH_DIRECTIONS,
   KOL_APPROACH_PLATFORMS,
   KOL_BOARD_PROP,
+  KOL_DEAL_TYPES,
   KOL_INITIATIVES,
   kolCardModalSections,
   normalizeApproachDirection,
@@ -57,11 +61,14 @@ export default function KolOutreachCardModal({
   const [dealDeadline, setDealDeadline] = useState('');
   const [productRows, setProductRows] = useState([]);
   const [noDealReason, setNoDealReason] = useState('');
-  const [qcDate, setQcDate] = useState('');
-  const [qcCheckedBy, setQcCheckedBy] = useState('');
-  const [qcNotes, setQcNotes] = useState('');
+  const [qcPassed, setQcPassed] = useState(false);
+  const [weibinBatchCode, setWeibinBatchCode] = useState('');
+  const [weibinHandoffDate, setWeibinHandoffDate] = useState('');
   const [shippingDate, setShippingDate] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
   const [trackingLink, setTrackingLink] = useState('');
+  const [trackingSent, setTrackingSent] = useState(false);
+  const [mediaKitLink, setMediaKitLink] = useState('');
   const [mediaKitSent, setMediaKitSent] = useState(false);
   const [arrivalDate, setArrivalDate] = useState('');
   const [productArrived, setProductArrived] = useState(false);
@@ -78,6 +85,24 @@ export default function KolOutreachCardModal({
       extraNames: [task?.assignee],
     }),
     [teamMembers, displayName, task?.assignee]
+  );
+
+  const approachOptions = useMemo(
+    () => KOL_APPROACH_DIRECTIONS.map(item => ({
+      id: item.id,
+      label: item.id === 'outbound' ? t('hub.campaignKol.approachOutbound') : t('hub.campaignKol.approachInbound'),
+    })),
+    [t]
+  );
+
+  const dealTypeOptions = useMemo(
+    () => KOL_DEAL_TYPES.map(item => ({ id: item.id, label: t(item.labelKey) })),
+    [t]
+  );
+
+  const initiativeOptions = useMemo(
+    () => KOL_INITIATIVES.map(item => ({ id: item.id, label: item.label })),
+    []
   );
 
   useEffect(() => {
@@ -98,11 +123,14 @@ export default function KolOutreachCardModal({
     setDealDeadline(cv[KOL_BOARD_PROP.dealDeadline] || '');
     setProductRows(parseDealProducts(cv[KOL_BOARD_PROP.dealProducts]));
     setNoDealReason(cv[KOL_BOARD_PROP.noDealReason] || '');
-    setQcDate(cv[KOL_BOARD_PROP.qcDate] || '');
-    setQcCheckedBy(cv[KOL_BOARD_PROP.qcCheckedBy] || displayName);
-    setQcNotes(cv[KOL_BOARD_PROP.qcNotes] || '');
+    setQcPassed(cv[KOL_BOARD_PROP.qcPassed] === 'yes');
+    setWeibinBatchCode(cv[KOL_BOARD_PROP.weibinBatchCode] || '');
+    setWeibinHandoffDate(cv[KOL_BOARD_PROP.weibinHandoffDate] || '');
     setShippingDate(cv[KOL_BOARD_PROP.shippingDate] || '');
+    setOrderNumber(cv[KOL_BOARD_PROP.orderNumber] || '');
     setTrackingLink(cv[KOL_BOARD_PROP.trackingLink] || '');
+    setTrackingSent(cv[KOL_BOARD_PROP.trackingSent] === 'yes');
+    setMediaKitLink(cv[KOL_BOARD_PROP.mediaKitLink] || '');
     setMediaKitSent(cv[KOL_BOARD_PROP.mediaKitSent] === 'yes');
     setArrivalDate(cv[KOL_BOARD_PROP.arrivalDate] || '');
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
@@ -154,13 +182,18 @@ export default function KolOutreachCardModal({
       nextCustom[KOL_BOARD_PROP.noDealReason] = noDealReason.trim();
     }
     if (sections.qualityControl) {
-      nextCustom[KOL_BOARD_PROP.qcDate] = qcDate;
-      nextCustom[KOL_BOARD_PROP.qcCheckedBy] = qcCheckedBy.trim();
-      nextCustom[KOL_BOARD_PROP.qcNotes] = qcNotes.trim();
+      nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
+    }
+    if (sections.weibin) {
+      nextCustom[KOL_BOARD_PROP.weibinBatchCode] = weibinBatchCode.trim();
+      nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
     }
     if (sections.shipping) {
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
+      nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
+      nextCustom[KOL_BOARD_PROP.trackingSent] = trackingSent ? 'yes' : 'no';
+      nextCustom[KOL_BOARD_PROP.mediaKitLink] = mediaKitLink.trim();
       nextCustom[KOL_BOARD_PROP.mediaKitSent] = mediaKitSent ? 'yes' : 'no';
     }
     if (sections.arrived) {
@@ -203,15 +236,16 @@ export default function KolOutreachCardModal({
               ))}
             </select>
           </label>
-
-          <label className="appdev-field">
+          <div className="appdev-field">
             <span>{t('hub.campaignKol.initiative')}</span>
-            <select value={initiative} onChange={e => setInitiative(e.target.value)} disabled={busy}>
-              {KOL_INITIATIVES.map(item => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-          </label>
+            <KolSegmentPicker
+              options={initiativeOptions}
+              value={initiative}
+              onChange={setInitiative}
+              disabled={busy}
+              ariaLabel={t('hub.campaignKol.initiative')}
+            />
+          </div>
         </Section>
 
         <Section title={t('hub.campaignKol.cardModalFees')}>
@@ -228,17 +262,16 @@ export default function KolOutreachCardModal({
 
         {sections.approach ? (
           <Section title={t('hub.campaignKol.cardModalApproach')}>
-            <label className="appdev-field">
+            <div className="appdev-field">
               <span>{t('hub.campaignKol.approachDirection')}</span>
-              <select
+              <KolSegmentPicker
+                options={approachOptions}
                 value={approachDirection}
-                onChange={e => setApproachDirection(e.target.value)}
+                onChange={setApproachDirection}
                 disabled={busy}
-              >
-                <option value="outbound">{t('hub.campaignKol.approachOutbound')}</option>
-                <option value="inbound">{t('hub.campaignKol.approachInbound')}</option>
-              </select>
-            </label>
+                ariaLabel={t('hub.campaignKol.approachDirection')}
+              />
+            </div>
             <fieldset className="kol-outreach-platform-pick">
               <legend>{t('hub.campaignKol.platformsApproached')}</legend>
               {KOL_APPROACH_PLATFORMS.map(name => (
@@ -267,15 +300,16 @@ export default function KolOutreachCardModal({
 
         {sections.deal ? (
           <Section title={t('hub.campaignKol.cardModalDeal')}>
-            <label className="appdev-field">
+            <div className="appdev-field">
               <span>{t('hub.campaignKol.colDealType')}</span>
-              <select value={dealType} onChange={e => setDealType(e.target.value)} disabled={busy}>
-                <option value="Product barter">{t('hub.campaignKol.dealBarter')}</option>
-                <option value="Paid">{t('hub.campaignKol.dealPaid')}</option>
-                <option value="Hybrid">{t('hub.campaignKol.dealHybrid')}</option>
-                <option value="Other">{t('hub.campaignKol.dealOther')}</option>
-              </select>
-            </label>
+              <KolSegmentPicker
+                options={dealTypeOptions}
+                value={dealType}
+                onChange={setDealType}
+                disabled={busy}
+                ariaLabel={t('hub.campaignKol.colDealType')}
+              />
+            </div>
             <KolOutreachProductRowsEditor
               rows={productRows}
               onChange={setProductRows}
@@ -302,26 +336,41 @@ export default function KolOutreachCardModal({
 
         {sections.qualityControl ? (
           <Section title={t('hub.campaignKol.cardModalQc')}>
+            <label className="kol-toggle-row kol-toggle-row--block">
+              <span>{t('hub.campaignKol.qcPassed')}</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={qcPassed}
+                className={`kol-toggle${qcPassed ? ' is-on' : ''}`}
+                onClick={() => setQcPassed(v => !v)}
+                disabled={busy}
+              >
+                <span className="kol-toggle-thumb" aria-hidden="true" />
+              </button>
+            </label>
+          </Section>
+        ) : null}
+
+        {sections.weibin ? (
+          <Section title={t('hub.campaignKol.cardModalWeibin')}>
             <label className="appdev-field">
-              <span>{t('hub.campaignKol.qcDate')}</span>
+              <span>{t('hub.campaignKol.weibinBatchCode')}</span>
+              <input
+                value={weibinBatchCode}
+                onChange={e => setWeibinBatchCode(e.target.value)}
+                placeholder={t('hub.campaignKol.weibinBatchPlaceholder')}
+                disabled={busy}
+              />
+            </label>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
               <input
                 type="date"
-                value={qcDate}
-                onChange={e => setQcDate(e.target.value)}
+                value={weibinHandoffDate}
+                onChange={e => setWeibinHandoffDate(e.target.value)}
                 disabled={busy}
               />
-            </label>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.qcCheckedBy')}</span>
-              <input
-                value={qcCheckedBy}
-                onChange={e => setQcCheckedBy(e.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.qcNotes')}</span>
-              <textarea rows={3} value={qcNotes} onChange={e => setQcNotes(e.target.value)} disabled={busy} />
             </label>
           </Section>
         ) : null}
@@ -337,34 +386,21 @@ export default function KolOutreachCardModal({
 
         {sections.shipping ? (
           <Section title={t('hub.campaignKol.cardModalShipping')}>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.colShipping')}</span>
-              <input
-                type="date"
-                value={shippingDate}
-                onChange={e => setShippingDate(e.target.value)}
-                disabled={busy}
-              />
-            </label>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.trackingLink')}</span>
-              <input
-                type="url"
-                value={trackingLink}
-                onChange={e => setTrackingLink(e.target.value)}
-                placeholder={t('hub.campaignKol.trackingLinkPlaceholder')}
-                disabled={busy}
-              />
-            </label>
-            <label className="kol-outreach-checkbox">
-              <input
-                type="checkbox"
-                checked={mediaKitSent}
-                onChange={e => setMediaKitSent(e.target.checked)}
-                disabled={busy}
-              />
-              {t('hub.campaignKol.mediaKitSent')}
-            </label>
+            <KolOutreachShipKitFields
+              shippingDate={shippingDate}
+              onShippingDateChange={setShippingDate}
+              orderNumber={orderNumber}
+              onOrderNumberChange={setOrderNumber}
+              mediaKitLink={mediaKitLink}
+              onMediaKitLinkChange={setMediaKitLink}
+              mediaKitSent={mediaKitSent}
+              onMediaKitSentChange={setMediaKitSent}
+              trackingLink={trackingLink}
+              onTrackingLinkChange={setTrackingLink}
+              trackingSent={trackingSent}
+              onTrackingSentChange={setTrackingSent}
+              disabled={busy}
+            />
           </Section>
         ) : null}
 
@@ -379,14 +415,18 @@ export default function KolOutreachCardModal({
                 disabled={busy}
               />
             </label>
-            <label className="kol-outreach-checkbox">
-              <input
-                type="checkbox"
-                checked={productArrived}
-                onChange={e => setProductArrived(e.target.checked)}
+            <label className="kol-toggle-row kol-toggle-row--block">
+              <span>{t('hub.campaignKol.productArrivedConfirm')}</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={productArrived}
+                className={`kol-toggle${productArrived ? ' is-on' : ''}`}
+                onClick={() => setProductArrived(v => !v)}
                 disabled={busy}
-              />
-              {t('hub.campaignKol.productArrivedConfirm')}
+              >
+                <span className="kol-toggle-thumb" aria-hidden="true" />
+              </button>
             </label>
           </Section>
         ) : null}
@@ -395,29 +435,15 @@ export default function KolOutreachCardModal({
           <Section title={t('hub.campaignKol.cardModalPublish')}>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.publishUrl')}</span>
-              <input
-                type="url"
-                value={publishUrl}
-                onChange={e => setPublishUrl(e.target.value)}
-                disabled={busy}
-              />
+              <input type="url" value={publishUrl} onChange={e => setPublishUrl(e.target.value)} disabled={busy} />
             </label>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.publishPlatform')}</span>
-              <input
-                value={publishPlatform}
-                onChange={e => setPublishPlatform(e.target.value)}
-                disabled={busy}
-              />
+              <input value={publishPlatform} onChange={e => setPublishPlatform(e.target.value)} disabled={busy} />
             </label>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.publishDate')}</span>
-              <input
-                type="date"
-                value={publishDate}
-                onChange={e => setPublishDate(e.target.value)}
-                disabled={busy}
-              />
+              <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} disabled={busy} />
             </label>
           </Section>
         ) : null}

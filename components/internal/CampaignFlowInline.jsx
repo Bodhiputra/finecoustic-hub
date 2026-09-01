@@ -372,52 +372,17 @@ export default function CampaignFlowInline({
         </div>
       </header>
 
-      {(canCreate || canEditBoard || canDeleteCampaignFor(campaign)) ? (
+      {canDeleteCampaignFor(campaign) ? (
         <div className="internal-dept-toolbar internal-dept-toolbar--board internal-campaign-flow-toolbar">
-          {canDeleteCampaignFor(campaign) ? (
-            <button
-              type="button"
-              className="appdev-btn-ghost"
-              onClick={handleRenameCampaign}
-              disabled={busy}
-            >
-              <Icon name="edit" size={16} />
-              {t('hub.internal.renameCampaign')}
-            </button>
-          ) : null}
-          {canEditBoard ? (
-            <button
-              type="button"
-              className="appdev-btn-ghost"
-              onClick={() => setKanbanCreateOpen(true)}
-              disabled={busy}
-            >
-              <Icon name="kanban" size={16} />
-              {t('hub.internal.addKanbanNode')}
-            </button>
-          ) : null}
-          {canCreate ? (
-            <>
-              <button
-                type="button"
-                className="appdev-btn-ghost"
-                onClick={() => onOpenNewTask?.('milestone')}
-                disabled={busy}
-              >
-                <Icon name="calendar" size={16} />
-                {t('hub.internal.addMilestone')}
-              </button>
-              <button
-                type="button"
-                className="appdev-btn-primary internal-add-btn"
-                onClick={() => onOpenNewTask?.('task')}
-                disabled={busy}
-              >
-                <Icon name="plus" size={16} />
-                {t('hub.internal.addTaskIssue')}
-              </button>
-            </>
-          ) : null}
+          <button
+            type="button"
+            className="appdev-btn-ghost"
+            onClick={handleRenameCampaign}
+            disabled={busy}
+          >
+            <Icon name="edit" size={16} />
+            {t('hub.internal.renameCampaign')}
+          </button>
         </div>
       ) : null}
 

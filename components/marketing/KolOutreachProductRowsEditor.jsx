@@ -3,8 +3,23 @@
 import Icon from '@/components/Icon';
 
 export default function KolOutreachProductRowsEditor({ rows, onChange, products, t }) {
-  function updateRow(index, patch) {
-    onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  function addProduct(name) {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return;
+    const existing = rows.find(row => row.product.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      onChange(rows.map(row =>
+        row.product.toLowerCase() === trimmed.toLowerCase()
+          ? { ...row, qty: row.qty + 1 }
+          : row
+      ));
+      return;
+    }
+    onChange([...rows, { product: trimmed, qty: 1 }]);
+  }
+
+  function updateQty(index, qty) {
+    onChange(rows.map((row, i) => (i === index ? { ...row, qty: Math.max(1, qty) } : row)));
   }
 
   function removeRow(index) {
@@ -12,55 +27,84 @@ export default function KolOutreachProductRowsEditor({ rows, onChange, products,
   }
 
   return (
-    <div className="kol-outreach-product-rows">
+    <div className="kol-deal-products">
       <span className="appdev-prompt-label">{t('hub.campaignKol.productsGifted')}</span>
-      {rows.length === 0 ? (
-        <p className="kol-outreach-product-empty">{t('hub.campaignKol.productRowsEmpty')}</p>
-      ) : (
-        rows.map((row, index) => (
-          <div key={`product-row-${index}`} className="kol-outreach-product-row">
-            <label className="kol-outreach-product-field kol-outreach-product-field--name">
-              <span>{t('hub.campaignKol.productNameLabel')}</span>
-              <input
-                list="kol-outreach-product-options"
-                value={row.product}
-                onChange={e => updateRow(index, { product: e.target.value })}
-                placeholder={t('hub.campaignKol.productPlaceholderExample')}
-                autoComplete="off"
-              />
-            </label>
-            <label className="kol-outreach-product-field kol-outreach-product-field--qty">
-              <span>{t('hub.campaignKol.productQty')}</span>
-              <input
-                type="number"
-                min={1}
-                value={row.qty}
-                onChange={e => updateRow(index, { qty: Number(e.target.value) || 1 })}
-              />
-            </label>
+
+      {products.length ? (
+        <div className="kol-deal-products-catalog" role="list" aria-label={t('hub.campaignKol.productsGifted')}>
+          {products.map(product => (
             <button
+              key={product.sku}
               type="button"
-              className="appdev-btn-ghost kol-outreach-product-remove"
-              onClick={() => removeRow(index)}
-              aria-label={t('hub.campaignKol.removeProductRow')}
+              className="kol-deal-products-chip"
+              onClick={() => addProduct(product.name)}
             >
-              <Icon name="x" size={14} />
+              + {product.name}
             </button>
-          </div>
-        ))
+          ))}
+        </div>
+      ) : null}
+
+      {rows.length === 0 ? (
+        <p className="kol-deal-products-empty">{t('hub.campaignKol.productRowsEmpty')}</p>
+      ) : (
+        <ul className="kol-deal-products-list">
+          {rows.map((row, index) => (
+            <li key={`${row.product}-${index}`} className="kol-deal-products-item">
+              <span className="kol-deal-products-name">{row.product}</span>
+              <label className="kol-deal-products-qty">
+                <span className="sr-only">{t('hub.campaignKol.productQty')}</span>
+                <button
+                  type="button"
+                  className="kol-deal-products-step"
+                  onClick={() => updateQty(index, row.qty - 1)}
+                  aria-label="-"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  value={row.qty}
+                  onChange={e => updateQty(index, Number(e.target.value) || 1)}
+                  aria-label={t('hub.campaignKol.productQty')}
+                />
+                <button
+                  type="button"
+                  className="kol-deal-products-step"
+                  onClick={() => updateQty(index, row.qty + 1)}
+                  aria-label="+"
+                >
+                  +
+                </button>
+              </label>
+              <button
+                type="button"
+                className="hub-icon-btn kol-deal-products-remove"
+                onClick={() => removeRow(index)}
+                aria-label={t('hub.campaignKol.removeProductRow')}
+              >
+                <Icon name="x" size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-      <datalist id="kol-outreach-product-options">
-        {products.map(product => (
-          <option key={product.sku} value={product.name} />
-        ))}
-      </datalist>
-      <button
-        type="button"
-        className="appdev-btn-ghost kol-outreach-product-add"
-        onClick={() => onChange([...rows, { product: '', qty: 1 }])}
-      >
-        + {t('hub.campaignKol.addProductRow')}
-      </button>
+
+      <label className="kol-deal-products-custom">
+        <span className="sr-only">{t('hub.campaignKol.productPlaceholder')}</span>
+        <input
+          type="text"
+          placeholder={t('hub.campaignKol.productPlaceholderExample')}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addProduct(e.currentTarget.value);
+              e.currentTarget.value = '';
+            }
+          }}
+        />
+      </label>
     </div>
   );
 }

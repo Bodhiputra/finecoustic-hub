@@ -6,6 +6,7 @@ import DataWorkspaceShell from '@/components/workspace/DataWorkspaceShell';
 import KolOutreachBoardActions from '@/components/marketing/KolOutreachBoardActions';
 import KolOutreachKanban from '@/components/marketing/KolOutreachKanban';
 import KolOutreachCardModal from '@/components/marketing/KolOutreachCardModal';
+import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
 import KolOutreachMoreInfoModal from '@/components/marketing/KolOutreachMoreInfoModal';
 import KolOutreachFollowUpModal from '@/components/marketing/KolOutreachFollowUpModal';
 import KolOutreachTransitionModal from '@/components/marketing/KolOutreachTransitionModal';
@@ -15,7 +16,9 @@ import { useHubPermissions } from '@/hooks/useHubPermissions';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
 import {
+  KOL_APPROACH_DIRECTIONS,
   KOL_BOARD_PROP,
+  KOL_DEAL_TYPES,
   KOL_INITIATIVES,
   defaultKolOutreachStatusColumns,
   kolOutreachBoardUrl,
@@ -44,6 +47,7 @@ const STATUS_LABEL_KEYS = {
   deal: 'hub.campaignKol.statusDeal',
   no_deal: 'hub.campaignKol.statusNoDeal',
   quality_control: 'hub.campaignKol.statusQualityControl',
+  weibin: 'hub.campaignKol.statusWeibin',
   shipping: 'hub.campaignKol.statusShipping',
   arrived: 'hub.campaignKol.statusArrived',
   publish: 'hub.campaignKol.statusPublish',
@@ -77,6 +81,8 @@ export default function KolOutreachWorkspace({
   const [followUpTask, setFollowUpTask] = useState(null);
   const [transition, setTransition] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkAssignee, setBulkAssignee] = useState('');
 
   useEffect(() => {
     setInitiativeFilter(resolveKolInitiative(initiativeFromUrl));
@@ -207,6 +213,58 @@ export default function KolOutreachWorkspace({
     return unwrapData(await res.json(), 'task')?.task;
   }, []);
 
+  const filteredIds = useMemo(() => new Set(filtered.map(task => task.id)), [filtered]);
+
+  useEffect(() => {
+    setSelectedIds(prev => {
+      const next = new Set([...prev].filter(id => filteredIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filteredIds]);
+
+  function toggleSelect(taskId) {
+    if (!taskId) return;
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }
+
+  function selectAllFiltered() {
+    setSelectedIds(new Set(filtered.map(task => task.id)));
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+    setBulkAssignee('');
+  }
+
+  async function handleBulkAssign() {
+    const assignee = bulkAssignee.trim();
+    if (!assignee || selectedIds.size === 0) return;
+    setBusy(true);
+    try {
+      const ids = [...selectedIds];
+      const results = await Promise.allSettled(
+        ids.map(id => patchTask(id, { assignee }))
+      );
+      const ok = results.filter(r => r.status === 'fulfilled').length;
+      if (ok) {
+        toast.success(t('hub.campaignKol.bulkAssignSuccess').replace('{count}', String(ok)));
+        clearSelection();
+        await onTasksChanged?.();
+        signalHubNotificationsRefresh();
+      }
+      if (ok < ids.length) toast.error(t('common.somethingWrong'));
+    } catch {
+      toast.error(t('common.somethingWrong'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function syncPoolProducts(task, productRows) {
     const poolId = taskPoolId(task);
     if (!poolId || !productRows?.length) return;
@@ -259,6 +317,25 @@ export default function KolOutreachWorkspace({
     const { steps, stepIndex } = transition;
     setBusy(true);
     try {
+      const poolId = taskPoolId(transition.task);
+      if (payload.poolShippingPatch && poolId) {
+        const res = await fetch(API_V1.marketingKolPoolRecord(poolId), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload.poolShippingPatch),
+        });
+        if (res.ok) {
+          const data = unwrapData(await res.json());
+          const record = data?.record || data;
+          if (record?.notion_page_id) {
+            setPoolRecords(current =>
+              current.map(row => (row.notion_page_id === record.notion_page_id ? record : row))
+            );
+          }
+        }
+      }
+
       const patched = await patchTask(transition.task.id, {
         status: payload.status,
         custom_values: payload.custom_values,
@@ -460,35 +537,83 @@ export default function KolOutreachWorkspace({
             </select>
           </label>
 
-          <label className="kol-outreach-filter">
-            <span>{t('hub.campaignKol.approachDirection')}</span>
-            <select
+          <div className="kol-outreach-filter-group">
+            <span className="kol-outreach-filter-label">{t('hub.campaignKol.approachDirection')}</span>
+            <KolSegmentPicker
+              options={[
+                { id: 'all', label: t('hub.campaignKol.filterAll') },
+                ...KOL_APPROACH_DIRECTIONS.map(item => ({
+                  id: item.id,
+                  label: item.id === 'outbound'
+                    ? t('hub.campaignKol.approachOutbound')
+                    : t('hub.campaignKol.approachInbound'),
+                })),
+              ]}
               value={approachDirectionFilter}
-              onChange={e => setApproachDirectionFilter(e.target.value)}
-              aria-label={t('hub.campaignKol.filterApproachDirection')}
-            >
-              <option value="all">{t('hub.campaignKol.filterAll')}</option>
-              <option value="outbound">{t('hub.campaignKol.approachOutbound')}</option>
-              <option value="inbound">{t('hub.campaignKol.approachInbound')}</option>
-            </select>
-          </label>
+              onChange={setApproachDirectionFilter}
+              ariaLabel={t('hub.campaignKol.filterApproachDirection')}
+            />
+          </div>
 
-          <label className="kol-outreach-filter">
-            <span>{t('hub.campaignKol.colDealType')}</span>
-            <select value={dealTypeFilter} onChange={e => setDealTypeFilter(e.target.value)}>
-              <option value="all">{t('hub.campaignKol.filterAll')}</option>
-              <option value="Product barter">{t('hub.campaignKol.dealBarter')}</option>
-              <option value="Paid">{t('hub.campaignKol.dealPaid')}</option>
-              <option value="Hybrid">{t('hub.campaignKol.dealHybrid')}</option>
-            </select>
-          </label>
+          <div className="kol-outreach-filter-group">
+            <span className="kol-outreach-filter-label">{t('hub.campaignKol.colDealType')}</span>
+            <KolSegmentPicker
+              options={[
+                { id: 'all', label: t('hub.campaignKol.filterAll') },
+                ...KOL_DEAL_TYPES.map(item => ({ id: item.id, label: t(item.labelKey) })),
+              ]}
+              value={dealTypeFilter}
+              onChange={setDealTypeFilter}
+              ariaLabel={t('hub.campaignKol.colDealType')}
+            />
+          </div>
         </div>
+
+        {selectedIds.size > 0 ? (
+          <div className="kol-outreach-bulk-bar">
+            <span className="kol-outreach-bulk-count">
+              {t('hub.campaignKol.selectedCount').replace('{count}', String(selectedIds.size))}
+            </span>
+            <label className="kol-outreach-bulk-assign">
+              <span>{t('hub.internal.taskPanel.assignee')}</span>
+              <select
+                value={bulkAssignee}
+                onChange={e => setBulkAssignee(e.target.value)}
+                disabled={busy}
+              >
+                <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
+                {assigneeOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="appdev-btn-primary"
+              onClick={handleBulkAssign}
+              disabled={busy || !bulkAssignee.trim()}
+            >
+              {t('hub.campaignKol.bulkAssign')}
+            </button>
+            {selectedIds.size < filtered.length ? (
+              <button type="button" className="appdev-btn-ghost" onClick={selectAllFiltered} disabled={busy}>
+                {t('hub.campaignKol.selectAllVisible')}
+              </button>
+            ) : null}
+            <button type="button" className="appdev-btn-ghost" onClick={clearSelection} disabled={busy}>
+              {t('hub.campaignKol.clearSelection')}
+            </button>
+          </div>
+        ) : null}
 
         {view === 'board' ? (
           <KolOutreachKanban
             tasks={filtered}
             poolRecords={poolRecords}
             displayName={displayName}
+            initiativeFilter={initiativeFilter}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
             onStatusChange={handleStatusChange}
             onOpenCard={setCardTask}
             onMoreInfo={setMoreInfoTask}
@@ -499,6 +624,14 @@ export default function KolOutreachWorkspace({
             <table className="kol-pool-table kol-outreach-table">
               <thead>
                 <tr>
+                  <th className="kol-outreach-select-col">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && filtered.every(task => selectedIds.has(task.id))}
+                      onChange={e => (e.target.checked ? selectAllFiltered() : clearSelection())}
+                      aria-label={t('hub.campaignKol.selectAllVisible')}
+                    />
+                  </th>
                   <th>{t('hub.kol.colChannel')}</th>
                   <th>{t('hub.campaignKol.initiative')}</th>
                   <th>{t('hub.campaignKol.colStatus')}</th>
@@ -508,7 +641,19 @@ export default function KolOutreachWorkspace({
               </thead>
               <tbody>
                 {filtered.map(task => (
-                  <tr key={task.id} className="kol-pool-row-click" onClick={() => setCardTask(task)}>
+                  <tr
+                    key={task.id}
+                    className={`kol-pool-row-click${selectedIds.has(task.id) ? ' is-selected' : ''}`}
+                    onClick={() => setCardTask(task)}
+                  >
+                    <td className="kol-outreach-select-col" onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(task.id)}
+                        onChange={() => toggleSelect(task.id)}
+                        aria-label={t('hub.campaignKol.selectCard')}
+                      />
+                    </td>
                     <td className="kol-pool-channel">{task.title}</td>
                     <td>{initiativeLabel(task.custom_values?.[KOL_BOARD_PROP.initiative])}</td>
                     <td>
@@ -570,6 +715,7 @@ export default function KolOutreachWorkspace({
         stepIndex={transition?.stepIndex ?? 0}
         stepCount={transition?.steps?.length ?? 0}
         displayName={displayName}
+        poolRecord={transition?.task ? poolRecordForTask(transition.task, poolRecords) : null}
         onClose={handleTransitionClose}
         onConfirm={handleTransitionConfirm}
         busy={busy}

@@ -1,19 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolModal from '@/components/KolModal';
+import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
+import KolOutreachShipKitFields from '@/components/marketing/KolOutreachShipKitFields';
+import KolOutreachShippingAddressForm, {
+  emptyShippingForm,
+  isShippingFormComplete,
+  shippingFormFromRecord,
+} from '@/components/marketing/KolOutreachShippingAddressForm';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
 import {
+  KOL_APPROACH_DIRECTIONS,
   KOL_APPROACH_PLATFORMS,
   KOL_BOARD_PROP,
+  KOL_DEAL_TYPES,
   normalizeApproachDirection,
   parseDealProducts,
   serializeDealProducts,
+  suggestWeibinBatchCode,
 } from '@/lib/kol-outreach-shared';
+import { hasKolShippingAddress } from '@/lib/kol-pool';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -26,6 +37,7 @@ export default function KolOutreachTransitionModal({
   stepIndex = 0,
   stepCount = 0,
   displayName = '',
+  poolRecord = null,
   onClose,
   onConfirm,
   busy = false,
@@ -40,18 +52,37 @@ export default function KolOutreachTransitionModal({
   const [dealAmount, setDealAmount] = useState('');
   const [dealDeadline, setDealDeadline] = useState('');
   const [productRows, setProductRows] = useState([]);
+  const [shippingForm, setShippingForm] = useState(emptyShippingForm());
   const [noDealReason, setNoDealReason] = useState('');
-  const [qcDate, setQcDate] = useState(todayIso());
-  const [qcCheckedBy, setQcCheckedBy] = useState(displayName);
-  const [qcNotes, setQcNotes] = useState('');
+  const [qcPassed, setQcPassed] = useState(false);
+  const [weibinBatchCode, setWeibinBatchCode] = useState('');
+  const [weibinHandoffDate, setWeibinHandoffDate] = useState(todayIso());
   const [shippingDate, setShippingDate] = useState(todayIso());
+  const [orderNumber, setOrderNumber] = useState('');
   const [trackingLink, setTrackingLink] = useState('');
+  const [trackingSent, setTrackingSent] = useState(false);
+  const [mediaKitLink, setMediaKitLink] = useState('');
   const [mediaKitSent, setMediaKitSent] = useState(false);
   const [productArrived, setProductArrived] = useState(false);
   const [publishUrl, setPublishUrl] = useState('');
   const [publishPlatform, setPublishPlatform] = useState('');
   const [publishDate, setPublishDate] = useState(todayIso());
   const [catalogProducts, setCatalogProducts] = useState([]);
+
+  const needsShippingAddress = toStatus === 'deal' && !hasKolShippingAddress(poolRecord);
+
+  const approachOptions = useMemo(
+    () => KOL_APPROACH_DIRECTIONS.map(item => ({
+      id: item.id,
+      label: item.id === 'outbound' ? t('hub.campaignKol.approachOutbound') : t('hub.campaignKol.approachInbound'),
+    })),
+    [t]
+  );
+
+  const dealTypeOptions = useMemo(
+    () => KOL_DEAL_TYPES.map(item => ({ id: item.id, label: t(item.labelKey) })),
+    [t]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -64,12 +95,16 @@ export default function KolOutreachTransitionModal({
     setProductRows(parseDealProducts(cv[KOL_BOARD_PROP.dealProducts]).length
       ? parseDealProducts(cv[KOL_BOARD_PROP.dealProducts])
       : []);
+    setShippingForm(shippingFormFromRecord(poolRecord));
     setNoDealReason(cv[KOL_BOARD_PROP.noDealReason] || '');
-    setQcDate(cv[KOL_BOARD_PROP.qcDate] || todayIso());
-    setQcCheckedBy(cv[KOL_BOARD_PROP.qcCheckedBy] || displayName);
-    setQcNotes(cv[KOL_BOARD_PROP.qcNotes] || '');
+    setQcPassed(cv[KOL_BOARD_PROP.qcPassed] === 'yes');
+    setWeibinBatchCode(suggestWeibinBatchCode(task, poolRecord));
+    setWeibinHandoffDate(cv[KOL_BOARD_PROP.weibinHandoffDate] || todayIso());
     setShippingDate(cv[KOL_BOARD_PROP.shippingDate] || todayIso());
+    setOrderNumber(cv[KOL_BOARD_PROP.orderNumber] || '');
     setTrackingLink(cv[KOL_BOARD_PROP.trackingLink] || '');
+    setTrackingSent(cv[KOL_BOARD_PROP.trackingSent] === 'yes');
+    setMediaKitLink(cv[KOL_BOARD_PROP.mediaKitLink] || '');
     setMediaKitSent(cv[KOL_BOARD_PROP.mediaKitSent] === 'yes');
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
     setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
@@ -81,7 +116,7 @@ export default function KolOutreachTransitionModal({
         .map(item => item.trim())
         .filter(Boolean)
     );
-  }, [open, task, cv, displayName]);
+  }, [open, task, cv, poolRecord, displayName]);
 
   useEffect(() => {
     if (!open || toStatus !== 'deal') return;
@@ -108,6 +143,7 @@ export default function KolOutreachTransitionModal({
       deal: 'hub.campaignKol.modalDealTitle',
       no_deal: 'hub.campaignKol.modalNoDealTitle',
       quality_control: 'hub.campaignKol.modalQcTitle',
+      weibin: 'hub.campaignKol.modalWeibinTitle',
       shipping: 'hub.campaignKol.modalShippingTitle',
       arrived: 'hub.campaignKol.modalArrivedTitle',
       publish: 'hub.campaignKol.modalPublishTitle',
@@ -127,6 +163,7 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.approachDate] = approachDate;
     }
     if (toStatus === 'deal') {
+      if (needsShippingAddress && !isShippingFormComplete(shippingForm)) return;
       const products = productRows.filter(row => row.product?.trim());
       nextCustom[KOL_BOARD_PROP.dealType] = dealType;
       nextCustom[KOL_BOARD_PROP.dealTerms] = dealTerms.trim();
@@ -138,14 +175,27 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.noDealReason] = noDealReason.trim();
     }
     if (toStatus === 'quality_control') {
-      nextCustom[KOL_BOARD_PROP.qcDate] = qcDate;
-      nextCustom[KOL_BOARD_PROP.qcCheckedBy] = qcCheckedBy.trim();
-      nextCustom[KOL_BOARD_PROP.qcNotes] = qcNotes.trim();
+      nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
+      nextCustom[KOL_BOARD_PROP.qcDate] = todayIso();
+      nextCustom[KOL_BOARD_PROP.qcCheckedBy] = displayName;
+    }
+    if (toStatus === 'weibin') {
+      nextCustom[KOL_BOARD_PROP.weibinBatchCode] = weibinBatchCode.trim();
+      nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
     }
     if (toStatus === 'shipping') {
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
+      nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
+      nextCustom[KOL_BOARD_PROP.trackingSent] = trackingSent ? 'yes' : 'no';
+      if (trackingSent && !cv[KOL_BOARD_PROP.trackingSentAt]) {
+        nextCustom[KOL_BOARD_PROP.trackingSentAt] = todayIso();
+      }
+      nextCustom[KOL_BOARD_PROP.mediaKitLink] = mediaKitLink.trim();
       nextCustom[KOL_BOARD_PROP.mediaKitSent] = mediaKitSent ? 'yes' : 'no';
+      if (mediaKitSent && !cv[KOL_BOARD_PROP.mediaKitSentAt]) {
+        nextCustom[KOL_BOARD_PROP.mediaKitSentAt] = todayIso();
+      }
     }
     if (toStatus === 'arrived') {
       nextCustom[KOL_BOARD_PROP.arrivalDate] = todayIso();
@@ -162,6 +212,7 @@ export default function KolOutreachTransitionModal({
       status: toStatus,
       custom_values: nextCustom,
       productRows: toStatus === 'deal' ? productRows.filter(row => row.product?.trim()) : [],
+      poolShippingPatch: toStatus === 'deal' && needsShippingAddress ? shippingForm : null,
     });
   }
 
@@ -186,13 +237,15 @@ export default function KolOutreachTransitionModal({
 
         {toStatus === 'waiting_response' ? (
           <>
-            <label className="appdev-field">
+            <div className="appdev-field">
               <span>{t('hub.campaignKol.approachDirection')}</span>
-              <select value={approachDirection} onChange={e => setApproachDirection(e.target.value)}>
-                <option value="outbound">{t('hub.campaignKol.approachOutbound')}</option>
-                <option value="inbound">{t('hub.campaignKol.approachInbound')}</option>
-              </select>
-            </label>
+              <KolSegmentPicker
+                options={approachOptions}
+                value={approachDirection}
+                onChange={setApproachDirection}
+                ariaLabel={t('hub.campaignKol.approachDirection')}
+              />
+            </div>
             <fieldset className="kol-outreach-platform-pick">
               <legend>{t('hub.campaignKol.platformsApproached')}</legend>
               {KOL_APPROACH_PLATFORMS.map(name => (
@@ -215,15 +268,18 @@ export default function KolOutreachTransitionModal({
 
         {toStatus === 'deal' ? (
           <>
-            <label className="appdev-field">
+            <div className="appdev-field">
               <span>{t('hub.campaignKol.colDealType')}</span>
-              <select value={dealType} onChange={e => setDealType(e.target.value)}>
-                <option value="Product barter">{t('hub.campaignKol.dealBarter')}</option>
-                <option value="Paid">{t('hub.campaignKol.dealPaid')}</option>
-                <option value="Hybrid">{t('hub.campaignKol.dealHybrid')}</option>
-                <option value="Other">{t('hub.campaignKol.dealOther')}</option>
-              </select>
-            </label>
+              <KolSegmentPicker
+                options={dealTypeOptions}
+                value={dealType}
+                onChange={setDealType}
+                ariaLabel={t('hub.campaignKol.colDealType')}
+              />
+            </div>
+            {needsShippingAddress ? (
+              <KolOutreachShippingAddressForm value={shippingForm} onChange={setShippingForm} disabled={busy} />
+            ) : null}
             <KolOutreachProductRowsEditor rows={productRows} onChange={setProductRows} products={catalogProducts} t={t} />
             <label className="appdev-field">
               <span>{t('hub.campaignKol.dealAmount')}</span>
@@ -250,48 +306,70 @@ export default function KolOutreachTransitionModal({
         ) : null}
 
         {toStatus === 'quality_control' ? (
+          <label className="kol-toggle-row kol-toggle-row--block">
+            <span>{t('hub.campaignKol.qcPassed')}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={qcPassed}
+              className={`kol-toggle${qcPassed ? ' is-on' : ''}`}
+              onClick={() => setQcPassed(v => !v)}
+            >
+              <span className="kol-toggle-thumb" aria-hidden="true" />
+            </button>
+          </label>
+        ) : null}
+
+        {toStatus === 'weibin' ? (
           <>
+            <p className="kol-modal-sub">{t('hub.campaignKol.weibinHint')}</p>
             <label className="appdev-field">
-              <span>{t('hub.campaignKol.qcDate')}</span>
-              <input type="date" value={qcDate} onChange={e => setQcDate(e.target.value)} required />
+              <span>{t('hub.campaignKol.weibinBatchCode')}</span>
+              <input
+                value={weibinBatchCode}
+                onChange={e => setWeibinBatchCode(e.target.value)}
+                placeholder={t('hub.campaignKol.weibinBatchPlaceholder')}
+                required
+              />
             </label>
             <label className="appdev-field">
-              <span>{t('hub.campaignKol.qcCheckedBy')}</span>
-              <input value={qcCheckedBy} onChange={e => setQcCheckedBy(e.target.value)} required />
-            </label>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.qcNotes')}</span>
-              <textarea rows={3} value={qcNotes} onChange={e => setQcNotes(e.target.value)} />
+              <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
+              <input type="date" value={weibinHandoffDate} onChange={e => setWeibinHandoffDate(e.target.value)} required />
             </label>
           </>
         ) : null}
 
         {toStatus === 'shipping' ? (
-          <>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.colShipping')}</span>
-              <input type="date" value={shippingDate} onChange={e => setShippingDate(e.target.value)} required />
-            </label>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.trackingLink')}</span>
-              <input
-                type="url"
-                value={trackingLink}
-                onChange={e => setTrackingLink(e.target.value)}
-                placeholder={t('hub.campaignKol.trackingLinkPlaceholder')}
-              />
-            </label>
-            <label className="kol-outreach-checkbox">
-              <input type="checkbox" checked={mediaKitSent} onChange={e => setMediaKitSent(e.target.checked)} />
-              {t('hub.campaignKol.mediaKitSent')}
-            </label>
-          </>
+          <KolOutreachShipKitFields
+            shippingDate={shippingDate}
+            onShippingDateChange={setShippingDate}
+            requireShippingDate
+            orderNumber={orderNumber}
+            onOrderNumberChange={setOrderNumber}
+            mediaKitLink={mediaKitLink}
+            onMediaKitLinkChange={setMediaKitLink}
+            mediaKitSent={mediaKitSent}
+            onMediaKitSentChange={setMediaKitSent}
+            trackingLink={trackingLink}
+            onTrackingLinkChange={setTrackingLink}
+            trackingSent={trackingSent}
+            onTrackingSentChange={setTrackingSent}
+            disabled={busy}
+          />
         ) : null}
 
         {toStatus === 'arrived' ? (
-          <label className="kol-outreach-checkbox">
-            <input type="checkbox" checked={productArrived} onChange={e => setProductArrived(e.target.checked)} />
-            {t('hub.campaignKol.productArrivedConfirm')}
+          <label className="kol-toggle-row kol-toggle-row--block">
+            <span>{t('hub.campaignKol.productArrivedConfirm')}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={productArrived}
+              className={`kol-toggle${productArrived ? ' is-on' : ''}`}
+              onClick={() => setProductArrived(v => !v)}
+            >
+              <span className="kol-toggle-thumb" aria-hidden="true" />
+            </button>
           </label>
         ) : null}
 

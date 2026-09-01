@@ -27,6 +27,7 @@
     "@vercel/blob": "^2.4.1",
     "@xyflow/react": "^12.11.2",
     "cloudinary": "^2.10.0",
+    "exceljs": "^4.4.0",
     "next": "^15.3.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

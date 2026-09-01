@@ -4217,6 +4217,10 @@ button.internal-campaign-card {
   background: color-mix(in srgb, #9b59b6 14%, transparent);
   color: #9b59b6;
 }
+.kol-outreach-status.is-weibin {
+  background: color-mix(in srgb, #16a085 14%, transparent);
+  color: #16a085;
+}
 .kol-outreach-status.is-shipping {
   background: color-mix(in srgb, #3498db 14%, transparent);
   color: #3498db;
@@ -4259,6 +4263,7 @@ button.internal-campaign-card {
 .kol-outreach-col.internal-board-col.is-deal { border-top-color: var(--accent); }
 .kol-outreach-col.internal-board-col.is-no_deal { border-top-color: #e74c3c; }
 .kol-outreach-col.internal-board-col.is-quality_control { border-top-color: #9b59b6; }
+.kol-outreach-col.internal-board-col.is-weibin { border-top-color: #16a085; }
 .kol-outreach-col.internal-board-col.is-shipping { border-top-color: #3498db; }
 .kol-outreach-col.internal-board-col.is-arrived { border-top-color: var(--ok); }
 .kol-outreach-col.internal-board-col.is-publish { border-top-color: var(--fc-yellow); }
@@ -4342,6 +4347,196 @@ button.internal-campaign-card {
   cursor: pointer;
   user-select: none;
 }
+.kol-outreach-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.kol-outreach-filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.kol-segment-picker {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.kol-segment-option {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.78rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.kol-segment-option.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  color: var(--accent);
+}
+.kol-segment-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.kol-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0.35rem 0;
+}
+.kol-toggle-row--block {
+  margin: 0.25rem 0;
+}
+.kol-toggle {
+  position: relative;
+  width: 2.5rem;
+  height: 1.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  cursor: pointer;
+  padding: 0;
+}
+.kol-toggle.is-on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg));
+}
+.kol-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1rem;
+  height: calc(100% - 4px);
+  border-radius: 999px;
+  background: var(--muted);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.kol-toggle.is-on .kol-toggle-thumb {
+  transform: translateX(1.1rem);
+  background: var(--accent);
+}
+.kol-deal-products {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.kol-deal-products-catalog {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.kol-deal-products-chip {
+  padding: 0.3rem 0.55rem;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.kol-deal-products-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.kol-deal-products-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.kol-deal-products-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.kol-deal-products-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.kol-deal-products-name {
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+.kol-deal-products-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.kol-deal-products-qty input {
+  width: 2.5rem;
+  text-align: center;
+  padding: 0.2rem;
+}
+.kol-deal-products-step {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  cursor: pointer;
+  line-height: 1;
+}
+.kol-deal-products-custom input {
+  width: 100%;
+}
+.kol-shipping-address-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg));
+}
+.kol-shipping-address-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.kol-shipping-address-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.kol-shipping-span-2 {
+  grid-column: span 2;
+}
+.kol-ship-kit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.kol-weibin-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.kol-weibin-export-btn:hover {
+  border-color: #16a085;
+  color: #16a085;
+}
+.kol-outreach-col .internal-board-col-head {
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
 .kol-outreach-initiative-pick {
   display: inline-flex;
   align-items: center;
@@ -4357,6 +4552,7 @@ button.internal-campaign-card {
 }
 
 .kol-outreach-card {
+  position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -4365,6 +4561,64 @@ button.internal-campaign-card {
   background: var(--surface);
   overflow: hidden;
   transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+.kol-outreach-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.kol-outreach-card-select {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.45rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.kol-outreach-card-select input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  cursor: pointer;
+}
+.kol-outreach-card.is-selected .kol-outreach-card-open,
+.kol-outreach-card-select + .kol-outreach-card-open {
+  padding-left: 1.35rem;
+}
+.kol-outreach-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+.kol-outreach-bulk-count {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.kol-outreach-bulk-assign {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+.kol-outreach-bulk-assign select {
+  min-width: 10rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+}
+.kol-outreach-select-col {
+  width: 2.25rem;
+  text-align: center;
+}
+.kol-outreach-table tr.is-selected {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
 }
 .kol-outreach-card.is-draggable {
   cursor: grab;
