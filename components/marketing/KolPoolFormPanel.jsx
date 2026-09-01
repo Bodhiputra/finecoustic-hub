@@ -93,6 +93,10 @@ export default function KolPoolFormPanel({
           toast.error(t('hub.kol.channelRequired'));
           return;
         }
+        if (body?.error === 'channel_name_duplicate') {
+          toast.error(t('hub.kol.channelDuplicate'));
+          return;
+        }
         toast.error(t('common.somethingWrong'));
         return;
       }
