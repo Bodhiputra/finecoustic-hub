@@ -8,7 +8,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey, resolveKolInitiative } from '@/lib/kol-outreach-shared';
-import { collectKolCountryOptions, kolMatchesCountryFilter, platformChipClass } from '@/lib/kol-pool';
+import { collectKolCountryOptions, isKolSelectableForOutreach, kolMatchesCountryFilter, platformChipClass } from '@/lib/kol-pool';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 
 function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, onAdd, busy }) {
@@ -28,7 +28,7 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
   if (!open) return null;
 
   const available = poolRecords.filter(
-    r => !existingKeys.has(outreachRowKey(r.notion_page_id, initiative))
+    r => isKolSelectableForOutreach(r) && !existingKeys.has(outreachRowKey(r.notion_page_id, initiative))
   );
   const countryOptions = collectKolCountryOptions(available);
   const q = query.trim().toLowerCase();
