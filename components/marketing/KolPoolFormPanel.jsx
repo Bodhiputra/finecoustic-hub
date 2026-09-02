@@ -27,6 +27,7 @@ function formPayload(fd, { links, collaboration_products }) {
     country: fd.get('country'),
     kol_category: fd.get('kol_category'),
     tags: fd.get('tags'),
+    shipping_name: fd.get('shipping_name'),
     shipping_line1: fd.get('shipping_line1'),
     shipping_line2: fd.get('shipping_line2'),
     shipping_city: fd.get('shipping_city'),
@@ -36,18 +37,20 @@ function formPayload(fd, { links, collaboration_products }) {
     shipping_country_code: fd.get('shipping_country_code'),
     shipping_phone: fd.get('shipping_phone'),
     shipping_email: fd.get('shipping_email'),
+    shipping_tax_id: fd.get('shipping_tax_id'),
     shipping_notes: fd.get('shipping_notes'),
     collaboration_products,
   };
 }
 
-function FormField({ label, required = false, span = 1, children }) {
+function FormField({ label, hint, required = false, span = 1, children }) {
   return (
     <label className={span === 2 ? 'kol-edit-span-2' : undefined}>
       <span className="kol-edit-label">
         {label}
         {required ? ' *' : null}
       </span>
+      {hint ? <span className="kol-shipping-field-hint">{hint}</span> : null}
       {children}
     </label>
   );
@@ -332,6 +335,13 @@ export default function KolPoolFormPanel({
               <section className="kol-edit-section" aria-labelledby="kol-edit-shipping-title">
                 <h4 id="kol-edit-shipping-title" className="kol-edit-section-title">{t('hub.kol.shippingAddress')}</h4>
                 <div className="kol-edit-grid">
+                  <FormField label={t('hub.kol.shippingName')} required span={2}>
+                    <input
+                      name="shipping_name"
+                      defaultValue={data.shipping_name || data.channel_name || ''}
+                      placeholder={t('hub.kol.shippingNamePlaceholder')}
+                    />
+                  </FormField>
                   <FormField label={t('hub.kol.shippingLine1')} span={2}>
                     <input name="shipping_line1" defaultValue={data.shipping_line1 || ''} />
                   </FormField>
@@ -365,6 +375,13 @@ export default function KolPoolFormPanel({
                   </FormField>
                   <FormField label={t('hub.kol.shippingEmail')}>
                     <input name="shipping_email" type="email" defaultValue={data.shipping_email || ''} />
+                  </FormField>
+                  <FormField label={t('hub.kol.shippingTaxId')} hint={t('hub.kol.shippingTaxIdHint')} span={2}>
+                    <input
+                      name="shipping_tax_id"
+                      defaultValue={data.shipping_tax_id || ''}
+                      placeholder={t('hub.kol.shippingTaxIdPlaceholder')}
+                    />
                   </FormField>
                   <FormField label={t('hub.kol.shippingNotes')} span={2}>
                     <textarea name="shipping_notes" rows={3} defaultValue={data.shipping_notes || ''} />

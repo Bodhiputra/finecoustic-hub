@@ -4,6 +4,13 @@ import { useLocale } from '@/components/LocaleProvider';
 import { isValidShippingCountryCode, normalizeShippingCountryCode } from '@/lib/kol-pool';
 
 const FIELDS = [
+  {
+    key: 'shipping_name',
+    labelKey: 'hub.kol.shippingName',
+    required: true,
+    span: 2,
+    placeholderKey: 'hub.kol.shippingNamePlaceholder',
+  },
   { key: 'shipping_line1', labelKey: 'hub.kol.shippingLine1', required: true },
   { key: 'shipping_line2', labelKey: 'hub.kol.shippingLine2' },
   { key: 'shipping_city', labelKey: 'hub.kol.shippingCity', required: true },
@@ -19,6 +26,13 @@ const FIELDS = [
   },
   { key: 'shipping_phone', labelKey: 'hub.kol.shippingPhone' },
   { key: 'shipping_email', labelKey: 'hub.kol.shippingEmail', type: 'email' },
+  {
+    key: 'shipping_tax_id',
+    labelKey: 'hub.kol.shippingTaxId',
+    hintKey: 'hub.kol.shippingTaxIdHint',
+    span: 2,
+    placeholderKey: 'hub.kol.shippingTaxIdPlaceholder',
+  },
   { key: 'shipping_notes', labelKey: 'hub.kol.shippingNotes', span: 2, textarea: true },
 ];
 
@@ -26,8 +40,8 @@ export function emptyShippingForm() {
   return Object.fromEntries(FIELDS.map(({ key }) => [key, '']));
 }
 
-export function shippingFormFromRecord(record = {}) {
-  return Object.fromEntries(
+export function shippingFormFromRecord(record = {}, { fallbackName = '' } = {}) {
+  const form = Object.fromEntries(
     FIELDS.map(({ key, countryCode }) => [
       key,
       countryCode
@@ -35,11 +49,16 @@ export function shippingFormFromRecord(record = {}) {
         : String(record?.[key] || '').trim(),
     ])
   );
+  if (!form.shipping_name) {
+    form.shipping_name = String(record?.channel_name || fallbackName || '').trim();
+  }
+  return form;
 }
 
 export function isShippingFormComplete(form = {}) {
   return Boolean(
-    String(form.shipping_line1 || '').trim()
+    String(form.shipping_name || '').trim()
+    && String(form.shipping_line1 || '').trim()
     && String(form.shipping_city || '').trim()
     && String(form.shipping_country || '').trim()
     && isValidShippingCountryCode(form.shipping_country_code)
@@ -60,7 +79,7 @@ export default function KolOutreachShippingAddressForm({ value, onChange, disabl
     <div className="kol-shipping-address-form">
       <p className="kol-shipping-address-hint">{t('hub.campaignKol.shippingAddressRequired')}</p>
       <div className="kol-shipping-address-grid">
-        {FIELDS.map(({ key, labelKey, required, type, span, textarea, countryCode, placeholderKey }) => (
+        {FIELDS.map(({ key, labelKey, required, type, span, textarea, countryCode, placeholderKey, hintKey }) => (
           <label
             key={key}
             className={`appdev-field${span === 2 ? ' kol-shipping-span-2' : ''}${countryCode ? ' kol-shipping-country-code' : ''}`}
@@ -68,6 +87,7 @@ export default function KolOutreachShippingAddressForm({ value, onChange, disabl
             <span>
               {t(labelKey)}
               {required ? ' *' : null}
+              {hintKey ? <span className="kol-shipping-field-hint">{t(hintKey)}</span> : null}
             </span>
             {textarea ? (
               <textarea

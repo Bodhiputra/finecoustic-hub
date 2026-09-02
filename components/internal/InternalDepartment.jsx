@@ -58,7 +58,7 @@ import {
   isJotDownTool,
   KNOWLEDGE_BANK_TOOL,
 } from '@/lib/knowledge';
-import { canCreateTaskInDepartment, canDeleteTask, canDeleteBoard, canDeleteCampaign, hubActorFromClient } from '@/lib/hub-permissions';
+import { canCreateTaskInDepartment, canDeleteTask, canDeleteBoard, canDeleteCampaign, canManageKolOutreach, hubActorFromClient } from '@/lib/hub-permissions';
 import { filterTasksByBucket } from '@/lib/internal-buckets';
 import { personKey } from '@/lib/appdev';
 import { countPersonalHubStats, countOpenAssignedTasks } from '@/lib/personal-hub-stats';
@@ -423,6 +423,10 @@ export default function InternalDepartment({
   const canCreate = useMemo(
     () => Boolean(createScopeDepartment && actor && canCreateTaskInDepartment(actor, createScopeDepartment)),
     [actor, createScopeDepartment]
+  );
+  const canManageKolOutreachAccess = useMemo(
+    () => Boolean(actor && canManageKolOutreach(actor)),
+    [actor]
   );
   const flowCview = FLOW_CVIEW.includes(cviewParam) ? cviewParam : 'flow';
   const boardCview = cviewParam === 'list' ? 'list' : 'board';
@@ -1467,7 +1471,7 @@ export default function InternalDepartment({
             initialKolPool={initialKolPool}
             outreachTasks={tasks}
             onOutreachTasksChanged={refresh}
-            canCreate={canCreate}
+            canCreate={canManageKolOutreachAccess}
             displayName={me.displayName}
             teamMembers={teamMembers}
           />

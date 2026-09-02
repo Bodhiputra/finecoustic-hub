@@ -59,7 +59,6 @@ export default function KolOutreachTransitionModal({
   const [noDealReasonPreset, setNoDealReasonPreset] = useState(KOL_NO_DEAL_REASON_PRESET_NO_REPLY);
   const [noDealReasonCustom, setNoDealReasonCustom] = useState('');
   const [qcPassed, setQcPassed] = useState(false);
-  const [weibinHandoffDate, setWeibinHandoffDate] = useState(todayIso());
   const [shippingDate, setShippingDate] = useState(todayIso());
   const [orderNumber, setOrderNumber] = useState('');
   const [trackingLink, setTrackingLink] = useState('');
@@ -105,7 +104,7 @@ export default function KolOutreachTransitionModal({
     setProductRows(parseDealProducts(cv[KOL_BOARD_PROP.dealProducts]).length
       ? parseDealProducts(cv[KOL_BOARD_PROP.dealProducts])
       : []);
-    setShippingForm(shippingFormFromRecord(poolRecord));
+    setShippingForm(shippingFormFromRecord(poolRecord, { fallbackName: displayName }));
     const existingNoDealReason = cv[KOL_BOARD_PROP.noDealReason] || '';
     setNoDealReasonPreset(resolveNoDealReasonPreset(existingNoDealReason));
     setNoDealReasonCustom(
@@ -114,7 +113,6 @@ export default function KolOutreachTransitionModal({
         : ''
     );
     setQcPassed(cv[KOL_BOARD_PROP.qcPassed] === 'yes');
-    setWeibinHandoffDate(cv[KOL_BOARD_PROP.weibinHandoffDate] || todayIso());
     setShippingDate(cv[KOL_BOARD_PROP.shippingDate] || todayIso());
     setOrderNumber(cv[KOL_BOARD_PROP.orderNumber] || '');
     setTrackingLink(cv[KOL_BOARD_PROP.trackingLink] || '');
@@ -195,9 +193,6 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
       nextCustom[KOL_BOARD_PROP.qcDate] = todayIso();
       nextCustom[KOL_BOARD_PROP.qcCheckedBy] = displayName;
-    }
-    if (toStatus === 'weibin') {
-      nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
     }
     if (toStatus === 'shipping') {
       if (!orderNumber.trim()) return;
@@ -358,10 +353,6 @@ export default function KolOutreachTransitionModal({
         {toStatus === 'weibin' ? (
           <div className="kol-modal-panel">
             <p className="kol-modal-sub">{t('hub.campaignKol.weibinHint')}</p>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
-              <input type="date" value={weibinHandoffDate} onChange={e => setWeibinHandoffDate(e.target.value)} required />
-            </label>
           </div>
         ) : null}
 

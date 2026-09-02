@@ -3,7 +3,8 @@
 import UserAvatar from '@/components/internal/UserAvatar';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
-import { kolLinkAriaLabel, kolLinkIconName } from '@/lib/kol-pool';
+import { kolLinkAriaLabel, kolOutreachPlatformIconName } from '@/lib/kol-pool';
+import { KOL_BOARD_PROP } from '@/lib/kol-outreach-shared';
 import { canDragOutreachCard, isNoDealCard, kolCardChips, needsFollowUp } from '@/lib/kol-outreach-utils';
 import { normalizeKolOutreachStatus } from '@/lib/kol-outreach-shared';
 
@@ -27,8 +28,9 @@ export default function KolOutreachCard({
   const chips = kolCardChips(task, poolRecord, t);
   const assignee = task.assignee || '';
   const socialLink = String(poolRecord?.links || '').trim();
-  const platformIcon = poolRecord ? kolLinkIconName(poolRecord) : null;
-  const showPlatformIcon = Boolean(platformIcon && (socialLink || poolRecord?.main_platform));
+  const approachedSocials = String(task?.custom_values?.[KOL_BOARD_PROP.socials] || '');
+  const platformIcon = kolOutreachPlatformIconName(poolRecord, approachedSocials);
+  const showPlatformIcon = Boolean(platformIcon);
   const dimmed = isNoDealCard(task);
   const canDrag = draggable && canDragOutreachCard(task, displayName, { isManager, isAdmin });
   const showFollowUp = normalizeKolOutreachStatus(task.status) === 'waiting_response';
@@ -76,14 +78,14 @@ export default function KolOutreachCard({
                     title={kolLinkAriaLabel(poolRecord, t)}
                     onClick={e => e.stopPropagation()}
                   >
-                    <Icon name={platformIcon} size={14} />
+                    <Icon name={platformIcon} size={16} />
                   </a>
                 ) : (
                   <span
                     className={`kol-outreach-card-platform-icon is-${platformIcon}`}
                     aria-hidden="true"
                   >
-                    <Icon name={platformIcon} size={14} />
+                    <Icon name={platformIcon} size={16} />
                   </span>
                 )
               ) : null}

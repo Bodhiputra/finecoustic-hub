@@ -4186,17 +4186,32 @@ button.internal-campaign-card {
   border-color: color-mix(in srgb, var(--fc-yellow) 45%, var(--border));
   color: var(--fc-yellow);
 }
-.kol-pool-link-icon.is-instagram:hover {
+.kol-pool-link-icon.is-instagram {
   color: #e1306c;
 }
-.kol-pool-link-icon.is-youtube:hover {
+.kol-pool-link-icon.is-instagram:hover {
+  color: #f77737;
+}
+.kol-pool-link-icon.is-youtube {
   color: #ff0000;
 }
-.kol-pool-link-icon.is-xSocial:hover {
+.kol-pool-link-icon.is-youtube:hover {
+  color: #ff4444;
+}
+.kol-pool-link-icon.is-xSocial {
   color: var(--text);
 }
-.kol-pool-link-icon.is-facebook:hover {
+.kol-pool-link-icon.is-xSocial:hover {
+  color: #fff;
+}
+.kol-pool-link-icon.is-tiktok {
+  color: #69c9d0;
+}
+.kol-pool-link-icon.is-facebook {
   color: #1877f2;
+}
+.kol-pool-link-icon.is-facebook:hover {
+  color: #3b8bff;
 }
 .kol-pool-link-icon--lg {
   width: 2.5rem;
@@ -4632,11 +4647,24 @@ button.internal-campaign-card {
 .kol-shipping-span-2 {
   grid-column: span 2;
 }
+.kol-shipping-field-hint {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+}
 .kol-shipping-country-code-input {
   max-width: 5.5rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 600;
+}
+.kol-shipping-country-code-input::placeholder {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
 }
 .kol-ship-kit-fields {
   display: flex;
@@ -4862,34 +4890,47 @@ button.internal-campaign-card {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0.05rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.02rem;
   border-radius: 6px;
   color: var(--muted);
   text-decoration: none;
-  transition: color 160ms var(--ease-out);
+  transition: color 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+.kol-outreach-card-platform-icon .icon-brand {
+  display: block;
 }
 .kol-outreach-card-platform-icon:hover {
   color: var(--text);
+  transform: scale(1.05);
 }
 .kol-outreach-card-platform-icon.is-instagram {
-  color: color-mix(in srgb, #e1306c 78%, var(--muted));
-}
-.kol-outreach-card-platform-icon.is-instagram:hover {
   color: #e1306c;
 }
-.kol-outreach-card-platform-icon.is-youtube {
-  color: color-mix(in srgb, #ff0000 78%, var(--muted));
+.kol-outreach-card-platform-icon.is-instagram:hover {
+  color: #f77737;
 }
-.kol-outreach-card-platform-icon.is-youtube:hover {
+.kol-outreach-card-platform-icon.is-youtube {
   color: #ff0000;
 }
-.kol-outreach-card-platform-icon.is-xSocial:hover {
+.kol-outreach-card-platform-icon.is-youtube:hover {
+  color: #ff4444;
+}
+.kol-outreach-card-platform-icon.is-xSocial {
   color: var(--text);
 }
-.kol-outreach-card-platform-icon.is-facebook:hover {
+.kol-outreach-card-platform-icon.is-xSocial:hover {
+  color: #fff;
+}
+.kol-outreach-card-platform-icon.is-tiktok {
+  color: #69c9d0;
+}
+.kol-outreach-card-platform-icon.is-facebook {
   color: #1877f2;
+}
+.kol-outreach-card-platform-icon.is-facebook:hover {
+  color: #3b8bff;
 }
 .kol-outreach-card-title {
   display: block;

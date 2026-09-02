@@ -372,6 +372,7 @@ export default function KolOutreachCardModal({
           <Section title={t('hub.campaignKol.cardModalWeibin')}>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
+              <span className="kol-shipping-field-hint">{t('hub.campaignKol.weibinHandoffDateHint')}</span>
               <input
                 type="date"
                 value={weibinHandoffDate}
