@@ -5037,6 +5037,13 @@ button.internal-campaign-card {
   background: color-mix(in srgb, var(--ok) 12%, var(--surface));
   color: var(--ok);
 }
+.kol-outreach-card-chips .internal-hint-chip.is-order-number {
+  border-color: color-mix(in srgb, #16a085 35%, var(--line));
+  background: color-mix(in srgb, #16a085 12%, var(--surface));
+  color: color-mix(in srgb, #16a085 92%, var(--text));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
 .kol-outreach-card-chips .internal-hint-chip.is-days {
   border-color: color-mix(in srgb, #f39c12 35%, var(--line));
   background: color-mix(in srgb, #f39c12 12%, var(--surface));
