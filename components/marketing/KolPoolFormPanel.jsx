@@ -1,25 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Icon from '@/components/Icon';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import {
   KOL_PLATFORM_SUGGESTIONS,
   KOL_TAG_SUGGESTIONS,
   isHubNativeKol,
+  kolLinkAriaLabel,
+  kolLinkIconName,
   kolRecordSourceLabel,
   kolShippingSummary,
+  partitionCollabProductsByCatalog,
 } from '@/lib/kol-pool';
 
-function formPayload(fd) {
-  const collabRaw = String(fd.get('collaboration_products') || '');
+function formPayload(fd, { links, collaboration_products }) {
   return {
     channel_name: fd.get('channel_name'),
     description: fd.get('description'),
-    links: fd.get('links'),
+    links,
     main_platform: fd.get('main_platform'),
     country: fd.get('country'),
     kol_category: fd.get('kol_category'),
@@ -33,7 +36,7 @@ function formPayload(fd) {
     shipping_phone: fd.get('shipping_phone'),
     shipping_email: fd.get('shipping_email'),
     shipping_notes: fd.get('shipping_notes'),
-    collaboration_products: collabRaw.split(/[,;|\n]/).map(s => s.trim()).filter(Boolean),
+    collaboration_products,
   };
 }
 
@@ -49,6 +52,38 @@ function FormField({ label, required = false, span = 1, children }) {
   );
 }
 
+function CollabProductChips({ products, selectedSkus, legacyEntries, onToggle, disabled, ariaLabel }) {
+  if (!products.length && !legacyEntries.length) {
+    return <p className="kol-collab-products-empty">—</p>;
+  }
+
+  return (
+    <div className="kol-collab-product-chips" role="group" aria-label={ariaLabel}>
+      {products.map(product => {
+        const active = selectedSkus.has(product.sku);
+        return (
+          <button
+            key={product.sku}
+            type="button"
+            className={`kol-collab-product-chip${active ? ' is-active' : ''}`}
+            aria-pressed={active}
+            title={product.name}
+            onClick={() => onToggle(product.sku)}
+            disabled={disabled}
+          >
+            {product.sku}
+          </button>
+        );
+      })}
+      {legacyEntries.map(entry => (
+        <span key={entry} className="kol-collab-product-chip is-legacy" title={entry}>
+          {entry}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function KolPoolFormPanel({
   mode = 'edit',
   record = null,
@@ -60,17 +95,72 @@ export default function KolPoolFormPanel({
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
+  const { requestConfirm, confirmDialog } = useConfirm();
   const [busy, setBusy] = useState(false);
+  const [links, setLinks] = useState('');
+  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [selectedCollabSkus, setSelectedCollabSkus] = useState(() => new Set());
+  const [legacyCollabEntries, setLegacyCollabEntries] = useState([]);
   const isCreate = mode === 'create';
   const data = record || {};
 
+  const activeCatalogProducts = useMemo(
+    () => catalogProducts.filter(product => product.status !== 'discontinued'),
+    [catalogProducts]
+  );
+
+  const socialIconName = useMemo(
+    () => kolLinkIconName({ links, main_platform: data.main_platform }),
+    [links, data.main_platform]
+  );
+
+  const socialLink = links.trim();
+
+  useEffect(() => {
+    fetch(API_V1.products, { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(body => {
+        const payload = unwrapData(body);
+        setCatalogProducts(Array.isArray(payload?.products) ? payload.products : []);
+      })
+      .catch(() => setCatalogProducts([]));
+  }, []);
+
+  const catalogProductKey = activeCatalogProducts.map(product => product.sku).join(',');
+
+  useEffect(() => {
+    setLinks(data.links || '');
+    const { skus, legacy } = partitionCollabProductsByCatalog(
+      data.collaboration_products,
+      activeCatalogProducts
+    );
+    setSelectedCollabSkus(new Set(skus));
+    setLegacyCollabEntries(legacy);
+  }, [data.notion_page_id, data.links, data.collaboration_products, catalogProductKey]);
+
   if (!isCreate && !record) return null;
+
+  function toggleCollabSku(sku) {
+    setSelectedCollabSkus(prev => {
+      const next = new Set(prev);
+      if (next.has(sku)) next.delete(sku);
+      else next.add(sku);
+      return next;
+    });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setBusy(true);
     try {
-      const payload = formPayload(new FormData(e.currentTarget));
+      const collaboration_products = [
+        ...legacyCollabEntries,
+        ...Array.from(selectedCollabSkus),
+      ];
+      const payload = formPayload(new FormData(e.currentTarget), {
+        links: socialLink,
+        collaboration_products,
+      });
 
       if (isCreate && onCreateAndAdd) {
         await onCreateAndAdd(payload);
@@ -115,7 +205,13 @@ export default function KolPoolFormPanel({
     const message = isHubNativeKol(data)
       ? t('hub.kol.deleteConfirm')
       : `${t('hub.kol.deleteConfirm')}\n\n${t('hub.kol.deleteNotionHint')}`;
-    if (!window.confirm(message)) return;
+    const confirmed = await requestConfirm({
+      title: t('hub.kol.deleteKol'),
+      message,
+      confirmLabel: t('hub.kol.deleteKol'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!confirmed) return;
 
     setBusy(true);
     try {
@@ -198,12 +294,34 @@ export default function KolPoolFormPanel({
                 />
               </FormField>
               <FormField label={t('hub.kol.colLinks')} span={2}>
-                <input
-                  name="links"
-                  type="url"
-                  defaultValue={data.links || ''}
-                  placeholder={t('hub.kol.linksPlaceholder')}
-                />
+                <div className="kol-pool-social-edit">
+                  {socialLink ? (
+                    <a
+                      href={socialLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`kol-pool-link-icon kol-pool-link-icon--lg is-${socialIconName}`}
+                      aria-label={kolLinkAriaLabel({ links: socialLink, main_platform: data.main_platform }, t)}
+                      title={kolLinkAriaLabel({ links: socialLink, main_platform: data.main_platform }, t)}
+                    >
+                      <Icon name={socialIconName} size={20} />
+                    </a>
+                  ) : (
+                    <span className="kol-pool-link-icon kol-pool-link-icon--lg is-empty" aria-hidden="true">
+                      <Icon name="externalLink" size={20} />
+                    </span>
+                  )}
+                  <label className="kol-pool-social-url">
+                    <span className="sr-only">{t('hub.kol.linksPlaceholder')}</span>
+                    <input
+                      type="url"
+                      value={links}
+                      onChange={e => setLinks(e.target.value)}
+                      placeholder={t('hub.kol.linksPlaceholder')}
+                      disabled={busy}
+                    />
+                  </label>
+                </div>
               </FormField>
             </div>
           </section>
@@ -248,12 +366,13 @@ export default function KolPoolFormPanel({
 
               <section className="kol-edit-section" aria-labelledby="kol-edit-collab-title">
                 <h4 id="kol-edit-collab-title" className="kol-edit-section-title">{t('hub.kol.collaborationProducts')}</h4>
-                <textarea
-                  name="collaboration_products"
-                  rows={2}
-                  defaultValue={(data.collaboration_products || []).join(', ')}
-                  placeholder={t('hub.kol.collaborationProductsHint')}
-                  aria-labelledby="kol-edit-collab-title"
+                <CollabProductChips
+                  products={activeCatalogProducts}
+                  selectedSkus={selectedCollabSkus}
+                  legacyEntries={legacyCollabEntries}
+                  onToggle={toggleCollabSku}
+                  disabled={busy}
+                  ariaLabel={t('hub.kol.collaborationProducts')}
                 />
               </section>
             </>
@@ -294,6 +413,8 @@ export default function KolPoolFormPanel({
           </div>
         </footer>
       </form>
+
+      {confirmDialog}
     </KolModal>
   );
 }

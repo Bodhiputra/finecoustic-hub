@@ -4189,6 +4189,69 @@ button.internal-campaign-card {
 .kol-pool-link-icon.is-xSocial:hover {
   color: var(--text);
 }
+.kol-pool-link-icon.is-facebook:hover {
+  color: #1877f2;
+}
+.kol-pool-link-icon--lg {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+}
+.kol-pool-link-icon.is-empty {
+  opacity: 0.35;
+  border-style: dashed;
+  cursor: default;
+}
+.kol-pool-social-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.kol-pool-social-url {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.kol-pool-social-url input {
+  width: 100%;
+}
+.kol-collab-product-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.kol-collab-product-chip {
+  padding: 0.35rem 0.65rem;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+  transition: border-color 160ms var(--ease-out), background 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.kol-collab-product-chip:hover:not(:disabled):not(.is-legacy) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.kol-collab-product-chip.is-active {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.kol-collab-product-chip.is-legacy {
+  border-style: solid;
+  opacity: 0.72;
+  cursor: default;
+  font-weight: 500;
+}
+.kol-collab-products-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
 .kol-outreach-status {
   display: inline-flex;
   align-items: center;

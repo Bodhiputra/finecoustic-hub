@@ -11,6 +11,7 @@ import KolOutreachFollowUpModal from '@/components/marketing/KolOutreachFollowUp
 import KolOutreachTransitionModal from '@/components/marketing/KolOutreachTransitionModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useHubPermissions } from '@/hooks/useHubPermissions';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
@@ -62,6 +63,7 @@ export default function KolOutreachWorkspace({
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
+  const { requestConfirm, confirmDialog } = useConfirm();
   const { canDeleteTaskFor } = useHubPermissions();
   const searchParams = useSearchParams();
   const initiativeFromUrl = (searchParams.get('initiative') || '').trim().toLowerCase();
@@ -387,7 +389,13 @@ export default function KolOutreachWorkspace({
 
   async function handleCardDelete() {
     if (!cardTask?.id) return;
-    if (!window.confirm(t('hub.campaignKol.removeCardConfirm'))) return;
+    const confirmed = await requestConfirm({
+      title: t('hub.campaignKol.removeCard'),
+      message: t('hub.campaignKol.removeCardConfirm'),
+      confirmLabel: t('hub.campaignKol.removeCard'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!confirmed) return;
     setBusy(true);
     try {
       const res = await fetch(API_V1.internalTask(cardTask.id), {
@@ -754,6 +762,8 @@ export default function KolOutreachWorkspace({
         onConfirm={handleTransitionConfirm}
         busy={busy}
       />
+
+      {confirmDialog}
     </>
   );
 }
