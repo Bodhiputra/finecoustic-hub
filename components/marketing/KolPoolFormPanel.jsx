@@ -7,7 +7,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
+import KolChipPicker from '@/components/marketing/KolChipPicker';
 import {
   KOL_PLATFORM_SUGGESTIONS,
   KOL_TAG_SUGGESTIONS,
@@ -155,6 +155,7 @@ export default function KolPoolFormPanel({
     () => KOL_TAG_SUGGESTIONS.map(id => ({
       id,
       label: t(KOL_TAG_LABEL_KEYS[id] || id),
+      tone: id === 'unqualified' ? 'danger' : id === 'qualified' ? 'ok' : undefined,
     })),
     [t]
   );
@@ -305,27 +306,27 @@ export default function KolPoolFormPanel({
               <FormField label={t('hub.kol.colCountry')}>
                 <input name="country" defaultValue={data.country || ''} placeholder={t('hub.kol.countryPlaceholder')} />
               </FormField>
-              <div className="kol-edit-span-2 kol-pool-tag-field">
+              <div className="kol-edit-span-2 kol-pool-choice-field">
                 <span className="kol-edit-label">{t('hub.kol.colTier')}</span>
-                <KolSegmentPicker
+                <p className="kol-pool-choice-hint">{t('hub.kol.tierPickerHint')}</p>
+                <KolChipPicker
                   options={tierOptions}
                   value={kolCategory}
                   onChange={setKolCategory}
                   disabled={busy}
                   ariaLabel={t('hub.kol.colTier')}
                 />
-                <input type="hidden" name="kol_category" value={kolCategory} />
               </div>
-              <div className="kol-edit-span-2 kol-pool-tag-field">
+              <div className="kol-edit-span-2 kol-pool-choice-field">
                 <span className="kol-edit-label">{t('hub.kol.colTags')}</span>
-                <KolSegmentPicker
+                <p className="kol-pool-choice-hint">{t('hub.kol.tagPickerHint')}</p>
+                <KolChipPicker
                   options={tagOptions}
                   value={tags}
                   onChange={setTags}
                   disabled={busy}
                   ariaLabel={t('hub.kol.colTags')}
                 />
-                <input type="hidden" name="tags" value={tags} />
               </div>
               <FormField label={t('hub.kol.colDescription')} span={2}>
                 <textarea

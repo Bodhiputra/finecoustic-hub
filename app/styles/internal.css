@@ -4233,15 +4233,76 @@ button.internal-campaign-card {
   min-width: 0;
   margin: 0;
 }
-.kol-pool-tag-field {
+.kol-pool-social-url input {
+  width: 100%;
+}
+.kol-pool-choice-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 0.45rem;
+  grid-column: 1 / -1;
 }
-.kol-pool-tag-field .kol-segment-picker {
+.kol-pool-choice-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.kol-chip-picker {
+  display: flex;
   flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
 }
-  width: 100%;
+.kol-chip-picker-option {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.kol-chip-picker-option:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+.kol-chip-picker-option.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.kol-chip-picker-option.is-ok.is-active {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--bg));
+  color: var(--ok);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 35%, transparent);
+}
+.kol-chip-picker-option.is-danger.is-active {
+  border-color: #e74c3c;
+  background: color-mix(in srgb, #e74c3c 14%, var(--bg));
+  color: #ffb4a8;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #e74c3c 35%, transparent);
+}
+.kol-chip-picker-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.kol-pool-edit-form .kol-chip-picker-option {
+  width: auto;
+  min-height: 0;
+  box-sizing: border-box;
 }
 .kol-collab-product-chips {
   display: flex;
