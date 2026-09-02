@@ -194,10 +194,15 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.qcDate] = todayIso();
       nextCustom[KOL_BOARD_PROP.qcCheckedBy] = displayName;
     }
-    if (toStatus === 'shipping') {
+    if (toStatus === 'weibin') {
       if (!orderNumber.trim()) return;
-      nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
       nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
+    }
+    if (toStatus === 'shipping') {
+      const resolvedOrderNumber = orderNumber.trim() || String(cv[KOL_BOARD_PROP.orderNumber] || '').trim();
+      if (!resolvedOrderNumber) return;
+      nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
+      nextCustom[KOL_BOARD_PROP.orderNumber] = resolvedOrderNumber;
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
       nextCustom[KOL_BOARD_PROP.trackingSent] = trackingSent ? 'yes' : 'no';
       if (trackingSent && !cv[KOL_BOARD_PROP.trackingSentAt]) {
@@ -353,6 +358,17 @@ export default function KolOutreachTransitionModal({
         {toStatus === 'weibin' ? (
           <div className="kol-modal-panel">
             <p className="kol-modal-sub">{t('hub.campaignKol.weibinHint')}</p>
+            <label className="appdev-field">
+              <span>{t('hub.campaignKol.orderNumber')}</span>
+              <span className="kol-shipping-field-hint">{t('hub.campaignKol.orderNumberWeibinHint')}</span>
+              <input
+                value={orderNumber}
+                onChange={e => setOrderNumber(e.target.value)}
+                placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
+                required
+                disabled={busy}
+              />
+            </label>
           </div>
         ) : null}
 
@@ -361,7 +377,8 @@ export default function KolOutreachTransitionModal({
             shippingDate={shippingDate}
             onShippingDateChange={setShippingDate}
             requireShippingDate
-            requireOrderNumber
+            requireOrderNumber={!String(cv[KOL_BOARD_PROP.orderNumber] || orderNumber || '').trim()}
+            showOrderNumber={!String(cv[KOL_BOARD_PROP.orderNumber] || '').trim()}
             orderNumber={orderNumber}
             onOrderNumberChange={setOrderNumber}
             mediaKitLink={mediaKitLink}

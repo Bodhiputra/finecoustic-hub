@@ -36,6 +36,7 @@ export default function KolOutreachShipKitFields({
   disabled = false,
   requireShippingDate = false,
   requireOrderNumber = false,
+  showOrderNumber = true,
 }) {
   const { t } = useLocale();
 
@@ -54,16 +55,18 @@ export default function KolOutreachShipKitFields({
         </label>
       ) : null}
 
-      <label className="appdev-field">
-        <span>{t('hub.campaignKol.orderNumber')}</span>
-        <input
-          value={orderNumber || ''}
-          onChange={e => onOrderNumberChange?.(e.target.value)}
-          placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
-          disabled={disabled}
-          required={requireOrderNumber}
-        />
-      </label>
+      {showOrderNumber ? (
+        <label className="appdev-field">
+          <span>{t('hub.campaignKol.orderNumber')}</span>
+          <input
+            value={orderNumber || ''}
+            onChange={e => onOrderNumberChange?.(e.target.value)}
+            placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
+            disabled={disabled}
+            required={requireOrderNumber}
+          />
+        </label>
+      ) : null}
 
       <label className="appdev-field">
         <span>{t('hub.campaignKol.mediaKitLink')}</span>

@@ -203,6 +203,7 @@ export default function KolOutreachCardModal({
     }
     if (sections.weibin) {
       nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
+      nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
     }
     if (sections.shipping) {
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
@@ -371,6 +372,16 @@ export default function KolOutreachCardModal({
         {sections.weibin ? (
           <Section title={t('hub.campaignKol.cardModalWeibin')}>
             <label className="appdev-field">
+              <span>{t('hub.campaignKol.orderNumber')}</span>
+              <span className="kol-shipping-field-hint">{t('hub.campaignKol.orderNumberWeibinHint')}</span>
+              <input
+                value={orderNumber}
+                onChange={e => setOrderNumber(e.target.value)}
+                placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
+                disabled={busy}
+              />
+            </label>
+            <label className="appdev-field">
               <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
               <span className="kol-shipping-field-hint">{t('hub.campaignKol.weibinHandoffDateHint')}</span>
               <input
@@ -416,6 +427,7 @@ export default function KolOutreachCardModal({
               onShippingDateChange={setShippingDate}
               orderNumber={orderNumber}
               onOrderNumberChange={setOrderNumber}
+              showOrderNumber={!sections.weibin}
               mediaKitLink={mediaKitLink}
               onMediaKitLinkChange={setMediaKitLink}
               mediaKitSent={mediaKitSent}
