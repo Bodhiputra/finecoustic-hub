@@ -38,6 +38,7 @@ export default function KolPoolShippingModal({ open, record, onClose }) {
         </button>
       </header>
 
+      <div className="kol-modal-body">
       <div className="kol-shipping-detail">
         {entries.length ? (
           <dl className="kol-shipping-detail-list">
@@ -51,6 +52,7 @@ export default function KolPoolShippingModal({ open, record, onClose }) {
         ) : (
           <p className="kol-shipping-detail-empty">{t('hub.kol.shippingEmpty')}</p>
         )}
+      </div>
       </div>
 
       {entries.length ? (

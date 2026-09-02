@@ -26,7 +26,6 @@ import {
   parseDealProducts,
   resolveNoDealReasonPreset,
   serializeDealProducts,
-  suggestWeibinBatchCode,
 } from '@/lib/kol-outreach-shared';
 import { hasKolShippingAddress } from '@/lib/kol-pool';
 
@@ -60,7 +59,6 @@ export default function KolOutreachTransitionModal({
   const [noDealReasonPreset, setNoDealReasonPreset] = useState(KOL_NO_DEAL_REASON_PRESET_NO_REPLY);
   const [noDealReasonCustom, setNoDealReasonCustom] = useState('');
   const [qcPassed, setQcPassed] = useState(false);
-  const [weibinBatchCode, setWeibinBatchCode] = useState('');
   const [weibinHandoffDate, setWeibinHandoffDate] = useState(todayIso());
   const [shippingDate, setShippingDate] = useState(todayIso());
   const [orderNumber, setOrderNumber] = useState('');
@@ -70,7 +68,6 @@ export default function KolOutreachTransitionModal({
   const [mediaKitSent, setMediaKitSent] = useState(false);
   const [productArrived, setProductArrived] = useState(false);
   const [publishUrl, setPublishUrl] = useState('');
-  const [publishPlatform, setPublishPlatform] = useState('');
   const [publishDate, setPublishDate] = useState(todayIso());
   const [catalogProducts, setCatalogProducts] = useState([]);
 
@@ -117,7 +114,6 @@ export default function KolOutreachTransitionModal({
         : ''
     );
     setQcPassed(cv[KOL_BOARD_PROP.qcPassed] === 'yes');
-    setWeibinBatchCode(suggestWeibinBatchCode(task, poolRecord));
     setWeibinHandoffDate(cv[KOL_BOARD_PROP.weibinHandoffDate] || todayIso());
     setShippingDate(cv[KOL_BOARD_PROP.shippingDate] || todayIso());
     setOrderNumber(cv[KOL_BOARD_PROP.orderNumber] || '');
@@ -127,7 +123,6 @@ export default function KolOutreachTransitionModal({
     setMediaKitSent(cv[KOL_BOARD_PROP.mediaKitSent] === 'yes');
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
     setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
-    setPublishPlatform(cv[KOL_BOARD_PROP.publishPlatform] || '');
     setPublishDate(cv[KOL_BOARD_PROP.publishDate] || todayIso());
     setPlatforms(
       String(cv[KOL_BOARD_PROP.socials] || '')
@@ -202,10 +197,10 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.qcCheckedBy] = displayName;
     }
     if (toStatus === 'weibin') {
-      nextCustom[KOL_BOARD_PROP.weibinBatchCode] = weibinBatchCode.trim();
       nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
     }
     if (toStatus === 'shipping') {
+      if (!orderNumber.trim()) return;
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
       nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
@@ -226,7 +221,6 @@ export default function KolOutreachTransitionModal({
     if (toStatus === 'publish') {
       if (!publishUrl.trim()) return;
       nextCustom[KOL_BOARD_PROP.publishUrl] = publishUrl.trim();
-      nextCustom[KOL_BOARD_PROP.publishPlatform] = publishPlatform.trim();
       nextCustom[KOL_BOARD_PROP.publishDate] = publishDate;
     }
 
@@ -257,6 +251,7 @@ export default function KolOutreachTransitionModal({
           </button>
         </header>
 
+        <div className="kol-modal-body">
         {toStatus === 'waiting_response' ? (
           <>
             <div className="appdev-field">
@@ -361,22 +356,13 @@ export default function KolOutreachTransitionModal({
         ) : null}
 
         {toStatus === 'weibin' ? (
-          <>
+          <div className="kol-modal-panel">
             <p className="kol-modal-sub">{t('hub.campaignKol.weibinHint')}</p>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.weibinBatchCode')}</span>
-              <input
-                value={weibinBatchCode}
-                onChange={e => setWeibinBatchCode(e.target.value)}
-                placeholder={t('hub.campaignKol.weibinBatchPlaceholder')}
-                required
-              />
-            </label>
             <label className="appdev-field">
               <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
               <input type="date" value={weibinHandoffDate} onChange={e => setWeibinHandoffDate(e.target.value)} required />
             </label>
-          </>
+          </div>
         ) : null}
 
         {toStatus === 'shipping' ? (
@@ -384,6 +370,7 @@ export default function KolOutreachTransitionModal({
             shippingDate={shippingDate}
             onShippingDateChange={setShippingDate}
             requireShippingDate
+            requireOrderNumber
             orderNumber={orderNumber}
             onOrderNumberChange={setOrderNumber}
             mediaKitLink={mediaKitLink}
@@ -420,15 +407,12 @@ export default function KolOutreachTransitionModal({
               <input type="url" value={publishUrl} onChange={e => setPublishUrl(e.target.value)} required />
             </label>
             <label className="appdev-field">
-              <span>{t('hub.campaignKol.publishPlatform')}</span>
-              <input value={publishPlatform} onChange={e => setPublishPlatform(e.target.value)} required />
-            </label>
-            <label className="appdev-field">
               <span>{t('hub.campaignKol.publishDate')}</span>
               <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} required />
             </label>
           </>
         ) : null}
+        </div>
 
         <footer className="kol-modal-foot">
           <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>

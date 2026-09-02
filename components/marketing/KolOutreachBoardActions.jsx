@@ -8,7 +8,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey, resolveKolInitiative } from '@/lib/kol-outreach-shared';
-import { collectKolCountryOptions, isKolSelectableForOutreach, kolMatchesCountryFilter, platformChipClass } from '@/lib/kol-pool';
+import { collectKolCountryOptions, collectKolMainPlatformOptions, isKolSelectableForOutreach, kolMatchesCountryFilter, kolMatchesPlatformFilter, platformChipClass } from '@/lib/kol-pool';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 
 function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, onAdd, busy }) {
@@ -16,12 +16,14 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
   const [selected, setSelected] = useState(new Set());
   const [query, setQuery] = useState('');
   const [countryFilter, setCountryFilter] = useState('all');
+  const [platformFilter, setPlatformFilter] = useState('all');
 
   useEffect(() => {
     if (open) {
       setSelected(new Set());
       setQuery('');
       setCountryFilter('all');
+      setPlatformFilter('all');
     }
   }, [open]);
 
@@ -31,9 +33,11 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
     r => isKolSelectableForOutreach(r) && !existingKeys.has(outreachRowKey(r.notion_page_id, initiative))
   );
   const countryOptions = collectKolCountryOptions(available);
+  const platformOptions = collectKolMainPlatformOptions(available);
   const q = query.trim().toLowerCase();
   const filtered = available.filter(r => {
     if (!kolMatchesCountryFilter(r, countryFilter)) return false;
+    if (!kolMatchesPlatformFilter(r, platformFilter)) return false;
     if (!q) return true;
     return [r.channel_name, r.main_platform, r.country].join(' ').toLowerCase().includes(q);
   });
@@ -55,6 +59,7 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
           <Icon name="x" size={16} />
         </button>
       </header>
+      <div className="kol-modal-body">
       <p className="kol-modal-sub">
         {t('hub.campaignKol.addFromPoolInitiative').replace(
           '{initiative}',
@@ -69,21 +74,41 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
         onChange={e => setQuery(e.target.value)}
         disabled={busy}
       />
-      {countryOptions.length ? (
-        <label className="kol-modal-filter">
-          <span>{t('hub.kol.colCountry')}</span>
-          <select
-            value={countryFilter}
-            onChange={e => setCountryFilter(e.target.value)}
-            disabled={busy}
-            aria-label={t('hub.kol.filterCountry')}
-          >
-            <option value="all">{t('hub.campaignKol.filterAll')}</option>
-            {countryOptions.map(option => (
-              <option key={option.key} value={option.key}>{option.label}</option>
-            ))}
-          </select>
-        </label>
+      {countryOptions.length || platformOptions.length ? (
+        <div className="kol-modal-filters">
+          {platformOptions.length ? (
+            <label className="kol-modal-filter">
+              <span>{t('hub.kol.colPlatform')}</span>
+              <select
+                value={platformFilter}
+                onChange={e => setPlatformFilter(e.target.value)}
+                disabled={busy}
+                aria-label={t('hub.kol.filterPlatform')}
+              >
+                <option value="all">{t('hub.campaignKol.filterAll')}</option>
+                {platformOptions.map(option => (
+                  <option key={option.key} value={option.key}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {countryOptions.length ? (
+            <label className="kol-modal-filter">
+              <span>{t('hub.kol.colCountry')}</span>
+              <select
+                value={countryFilter}
+                onChange={e => setCountryFilter(e.target.value)}
+                disabled={busy}
+                aria-label={t('hub.kol.filterCountry')}
+              >
+                <option value="all">{t('hub.campaignKol.filterAll')}</option>
+                {countryOptions.map(option => (
+                  <option key={option.key} value={option.key}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       ) : null}
       <ul className={`kol-modal-list${busy ? ' is-busy' : ''}`}>
         {filtered.length === 0 ? (
@@ -106,6 +131,7 @@ function KolPickerModal({ open, poolRecords, existingKeys, initiative, onClose, 
           ))
         )}
       </ul>
+      </div>
       <footer className="kol-modal-foot">
         <button type="button" className="appdev-btn-ghost" onClick={onClose} disabled={busy}>{t('common.cancel')}</button>
         <button

@@ -91,8 +91,8 @@ export default function KolOutreachProductRowsEditor({ rows, onChange, products,
         </ul>
       )}
 
-      <label className="kol-deal-products-custom">
-        <span className="sr-only">{t('hub.campaignKol.productPlaceholder')}</span>
+      <label className="appdev-field kol-deal-products-custom">
+        <span>{t('hub.campaignKol.productPlaceholder')}</span>
         <input
           type="text"
           placeholder={t('hub.campaignKol.productPlaceholderExample')}

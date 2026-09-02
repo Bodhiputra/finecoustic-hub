@@ -4,7 +4,7 @@ import { useLocale } from '@/components/LocaleProvider';
 
 function ToggleRow({ label, checked, onChange, disabled }) {
   return (
-    <label className="kol-toggle-row">
+    <label className="kol-toggle-row kol-toggle-row--block">
       <span>{label}</span>
       <button
         type="button"
@@ -35,11 +35,12 @@ export default function KolOutreachShipKitFields({
   onShippingDateChange,
   disabled = false,
   requireShippingDate = false,
+  requireOrderNumber = false,
 }) {
   const { t } = useLocale();
 
   return (
-    <div className="kol-ship-kit-fields">
+    <div className="kol-ship-kit-fields kol-modal-panel">
       {onShippingDateChange ? (
         <label className="appdev-field">
           <span>{t('hub.campaignKol.colShipping')}</span>
@@ -60,6 +61,7 @@ export default function KolOutreachShipKitFields({
           onChange={e => onOrderNumberChange?.(e.target.value)}
           placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
           disabled={disabled}
+          required={requireOrderNumber}
         />
       </label>
 

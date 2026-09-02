@@ -67,7 +67,6 @@ export default function KolOutreachCardModal({
   const [noDealReasonPreset, setNoDealReasonPreset] = useState(KOL_NO_DEAL_REASON_PRESET_NO_REPLY);
   const [noDealReasonCustom, setNoDealReasonCustom] = useState('');
   const [qcPassed, setQcPassed] = useState(false);
-  const [weibinBatchCode, setWeibinBatchCode] = useState('');
   const [weibinHandoffDate, setWeibinHandoffDate] = useState('');
   const [shippingDate, setShippingDate] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
@@ -78,7 +77,6 @@ export default function KolOutreachCardModal({
   const [arrivalDate, setArrivalDate] = useState('');
   const [productArrived, setProductArrived] = useState(false);
   const [publishUrl, setPublishUrl] = useState('');
-  const [publishPlatform, setPublishPlatform] = useState('');
   const [publishDate, setPublishDate] = useState('');
   const [catalogProducts, setCatalogProducts] = useState([]);
 
@@ -143,7 +141,6 @@ export default function KolOutreachCardModal({
         : ''
     );
     setQcPassed(cv[KOL_BOARD_PROP.qcPassed] === 'yes');
-    setWeibinBatchCode(cv[KOL_BOARD_PROP.weibinBatchCode] || '');
     setWeibinHandoffDate(cv[KOL_BOARD_PROP.weibinHandoffDate] || '');
     setShippingDate(cv[KOL_BOARD_PROP.shippingDate] || '');
     setOrderNumber(cv[KOL_BOARD_PROP.orderNumber] || '');
@@ -154,7 +151,6 @@ export default function KolOutreachCardModal({
     setArrivalDate(cv[KOL_BOARD_PROP.arrivalDate] || '');
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
     setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
-    setPublishPlatform(cv[KOL_BOARD_PROP.publishPlatform] || '');
     setPublishDate(cv[KOL_BOARD_PROP.publishDate] || '');
   }, [open, task, cv, defaultInitiative, displayName]);
 
@@ -206,7 +202,6 @@ export default function KolOutreachCardModal({
       nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
     }
     if (sections.weibin) {
-      nextCustom[KOL_BOARD_PROP.weibinBatchCode] = weibinBatchCode.trim();
       nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
     }
     if (sections.shipping) {
@@ -223,7 +218,6 @@ export default function KolOutreachCardModal({
     }
     if (sections.publish) {
       nextCustom[KOL_BOARD_PROP.publishUrl] = publishUrl.trim();
-      nextCustom[KOL_BOARD_PROP.publishPlatform] = publishPlatform.trim();
       nextCustom[KOL_BOARD_PROP.publishDate] = publishDate;
     }
 
@@ -247,6 +241,7 @@ export default function KolOutreachCardModal({
           </button>
         </header>
 
+        <div className="kol-modal-body">
         <Section title={t('hub.campaignKol.cardModalBasics')}>
           <label className="appdev-field">
             <span>{t('hub.internal.taskPanel.assignee')}</span>
@@ -376,15 +371,6 @@ export default function KolOutreachCardModal({
         {sections.weibin ? (
           <Section title={t('hub.campaignKol.cardModalWeibin')}>
             <label className="appdev-field">
-              <span>{t('hub.campaignKol.weibinBatchCode')}</span>
-              <input
-                value={weibinBatchCode}
-                onChange={e => setWeibinBatchCode(e.target.value)}
-                placeholder={t('hub.campaignKol.weibinBatchPlaceholder')}
-                disabled={busy}
-              />
-            </label>
-            <label className="appdev-field">
               <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
               <input
                 type="date"
@@ -476,15 +462,12 @@ export default function KolOutreachCardModal({
               <input type="url" value={publishUrl} onChange={e => setPublishUrl(e.target.value)} disabled={busy} />
             </label>
             <label className="appdev-field">
-              <span>{t('hub.campaignKol.publishPlatform')}</span>
-              <input value={publishPlatform} onChange={e => setPublishPlatform(e.target.value)} disabled={busy} />
-            </label>
-            <label className="appdev-field">
               <span>{t('hub.campaignKol.publishDate')}</span>
               <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} disabled={busy} />
             </label>
           </Section>
         ) : null}
+        </div>
 
         <footer className="kol-modal-foot">
           {onDelete ? (

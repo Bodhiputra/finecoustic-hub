@@ -64,7 +64,7 @@ export default function KolOutreachWorkspace({
   const { t } = useLocale();
   const { toast } = useToast();
   const { requestConfirm, confirmDialog } = useConfirm();
-  const { canDeleteTaskFor } = useHubPermissions();
+  const { canDeleteTaskFor, actor } = useHubPermissions();
   const searchParams = useSearchParams();
   const initiativeFromUrl = (searchParams.get('initiative') || '').trim().toLowerCase();
 
@@ -640,6 +640,8 @@ export default function KolOutreachWorkspace({
             tasks={filtered}
             poolRecords={poolRecords}
             displayName={displayName}
+            isManager={Boolean(actor?.isManager)}
+            isAdmin={Boolean(actor?.isAdmin)}
             initiativeFilter={initiativeFilter}
             selectedIds={selectedIds}
             onToggleSelect={selectMode ? toggleSelect : undefined}

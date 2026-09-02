@@ -7,6 +7,7 @@ import KolOutreachCard from '@/components/marketing/KolOutreachCard';
 import {
   allowedKolTransition,
   defaultKolOutreachStatusColumns,
+  isKolWeibinExportStatus,
   normalizeKolOutreachStatus,
 } from '@/lib/kol-outreach-shared';
 import { poolRecordForTask } from '@/lib/kol-outreach-utils';
@@ -27,6 +28,8 @@ export default function KolOutreachKanban({
   tasks,
   poolRecords = [],
   displayName = '',
+  isManager = false,
+  isAdmin = false,
   initiativeFilter = '',
   selectedIds = null,
   onToggleSelect,
@@ -41,8 +44,8 @@ export default function KolOutreachKanban({
 
   const columns = useMemo(() => defaultKolOutreachStatusColumns(), []);
 
-  const weibinCount = useMemo(
-    () => tasks.filter(task => normalizeKolOutreachStatus(task.status) === 'weibin').length,
+  const weibinExportCount = useMemo(
+    () => tasks.filter(task => isKolWeibinExportStatus(task.status)).length,
     [tasks]
   );
 
@@ -105,7 +108,7 @@ export default function KolOutreachKanban({
                   <span className={`internal-board-col-bar is-${col.id}`} aria-hidden="true" />
                   <h3>{columnLabel(col)}</h3>
                   <span className="internal-board-col-count">{colTasks.length}</span>
-                  {col.id === 'weibin' && weibinCount > 0 ? (
+                  {col.id === 'weibin' && weibinExportCount > 0 ? (
                     <button
                       type="button"
                       className="kol-weibin-export-btn"
@@ -127,6 +130,8 @@ export default function KolOutreachKanban({
                       task={task}
                       poolRecord={poolRecordForTask(task, poolRecords)}
                       displayName={displayName}
+                      isManager={isManager}
+                      isAdmin={isAdmin}
                       draggable
                       isDragging={dragId === task.id}
                       selected={selectedIds?.has(task.id)}

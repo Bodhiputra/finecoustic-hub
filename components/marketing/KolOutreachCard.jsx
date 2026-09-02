@@ -1,7 +1,9 @@
 'use client';
 
 import UserAvatar from '@/components/internal/UserAvatar';
+import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
+import { kolLinkAriaLabel, kolLinkIconName } from '@/lib/kol-pool';
 import { canDragOutreachCard, isNoDealCard, kolCardChips, needsFollowUp } from '@/lib/kol-outreach-utils';
 import { normalizeKolOutreachStatus } from '@/lib/kol-outreach-shared';
 
@@ -9,6 +11,8 @@ export default function KolOutreachCard({
   task,
   poolRecord = null,
   displayName = '',
+  isManager = false,
+  isAdmin = false,
   draggable = false,
   onDragStart,
   onDragEnd,
@@ -22,11 +26,15 @@ export default function KolOutreachCard({
   const { t } = useLocale();
   const chips = kolCardChips(task, poolRecord, t);
   const assignee = task.assignee || '';
+  const socialLink = String(poolRecord?.links || '').trim();
+  const platformIcon = poolRecord ? kolLinkIconName(poolRecord) : null;
+  const showPlatformIcon = Boolean(platformIcon && (socialLink || poolRecord?.main_platform));
   const dimmed = isNoDealCard(task);
-  const canDrag = draggable && canDragOutreachCard(task, displayName);
+  const canDrag = draggable && canDragOutreachCard(task, displayName, { isManager, isAdmin });
   const showFollowUp = normalizeKolOutreachStatus(task.status) === 'waiting_response';
-  const showAssigneeHint = !canDrag && draggable && assignee && assignee !== displayName;
-  const showUnassignedHint = !assignee;
+  const outreachLead = isManager || isAdmin;
+  const showAssigneeHint = !canDrag && draggable && assignee && assignee !== displayName && !outreachLead;
+  const showUnassignedHint = !assignee && !outreachLead;
 
   return (
     <article
@@ -56,7 +64,31 @@ export default function KolOutreachCard({
         ) : null}
         <div className="kol-outreach-card-content">
           <button type="button" className="kol-outreach-card-open" onClick={() => onOpenCard?.(task)}>
-            <span className="kol-outreach-card-title">{task.title || '—'}</span>
+            <div className="kol-outreach-card-title-row">
+              {showPlatformIcon ? (
+                socialLink ? (
+                  <a
+                    href={socialLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`kol-outreach-card-platform-icon is-${platformIcon}`}
+                    aria-label={kolLinkAriaLabel(poolRecord, t)}
+                    title={kolLinkAriaLabel(poolRecord, t)}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Icon name={platformIcon} size={14} />
+                  </a>
+                ) : (
+                  <span
+                    className={`kol-outreach-card-platform-icon is-${platformIcon}`}
+                    aria-hidden="true"
+                  >
+                    <Icon name={platformIcon} size={14} />
+                  </span>
+                )
+              ) : null}
+              <span className="kol-outreach-card-title">{task.title || '—'}</span>
+            </div>
             {chips.length ? (
               <div className="kol-outreach-card-chips">
                 {chips.map(chip => (

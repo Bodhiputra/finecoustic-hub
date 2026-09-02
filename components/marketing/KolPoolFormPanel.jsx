@@ -33,6 +33,7 @@ function formPayload(fd, { links, collaboration_products }) {
     shipping_state: fd.get('shipping_state'),
     shipping_postal: fd.get('shipping_postal'),
     shipping_country: fd.get('shipping_country'),
+    shipping_country_code: fd.get('shipping_country_code'),
     shipping_phone: fd.get('shipping_phone'),
     shipping_email: fd.get('shipping_email'),
     shipping_notes: fd.get('shipping_notes'),
@@ -348,6 +349,16 @@ export default function KolPoolFormPanel({
                   </FormField>
                   <FormField label={t('hub.kol.shippingCountry')}>
                     <input name="shipping_country" defaultValue={data.shipping_country || ''} />
+                  </FormField>
+                  <FormField label={t('hub.kol.shippingCountryCode')} required>
+                    <input
+                      name="shipping_country_code"
+                      defaultValue={data.shipping_country_code || ''}
+                      placeholder={t('hub.kol.shippingCountryCodePlaceholder')}
+                      maxLength={2}
+                      className="kol-shipping-country-code-input"
+                      autoComplete="country"
+                    />
                   </FormField>
                   <FormField label={t('hub.kol.shippingPhone')}>
                     <input name="shipping_phone" defaultValue={data.shipping_phone || ''} />

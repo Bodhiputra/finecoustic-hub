@@ -48,6 +48,7 @@ export default function KolOutreachFollowUpModal({ open, task, onClose, onSave, 
           </button>
         </header>
 
+        <div className="kol-modal-body">
         <label className="appdev-field">
           <span>{t('hub.campaignKol.followUpDate')}</span>
           <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)} required />
@@ -57,6 +58,7 @@ export default function KolOutreachFollowUpModal({ open, task, onClose, onSave, 
           <span>{t('hub.campaignKol.followUpNote')}</span>
           <textarea rows={4} value={followUpNote} onChange={e => setFollowUpNote(e.target.value)} placeholder={t('hub.campaignKol.followUpNotePlaceholder')} />
         </label>
+        </div>
 
         <footer className="kol-modal-foot">
           <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>

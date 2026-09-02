@@ -2,7 +2,7 @@ import { requireHubActor } from '@/lib/hub-actor';
 import { canAccessDepartment } from '@/lib/hub-departments';
 import { listKolPoolRecords } from '@/lib/kol-pool-data';
 import { buildWeibinWorkbook } from '@/lib/kol-weibin-export';
-import { normalizeKolOutreachStatus, KOL_BOARD_PROP } from '@/lib/kol-outreach-shared';
+import { normalizeKolOutreachStatus, KOL_BOARD_PROP, isKolWeibinExportStatus } from '@/lib/kol-outreach-shared';
 import { listKolOutreachTasksForAlerts } from '@/lib/internal-data';
 import { restForbidden, restUnauthorized } from '@/lib/api/rest';
 
@@ -26,7 +26,7 @@ export async function GET(request) {
     listKolPoolRecords(),
   ]);
 
-  let weibinTasks = tasks.filter(task => normalizeKolOutreachStatus(task.status) === 'weibin');
+  let weibinTasks = tasks.filter(task => isKolWeibinExportStatus(task.status));
   if (initiative) {
     weibinTasks = weibinTasks.filter(task => {
       const raw = String(task?.custom_values?.[KOL_BOARD_PROP.initiative] || '').trim().toLowerCase();

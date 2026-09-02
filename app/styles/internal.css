@@ -4102,13 +4102,19 @@ button.internal-campaign-card {
   color: var(--fc-yellow);
 }
 .kol-shipping-detail {
-  padding: var(--space-4) var(--kol-modal-pad);
+  padding: 0;
 }
 .kol-shipping-detail-list {
   margin: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
+}
+.kol-shipping-detail-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 34%) minmax(0, 1fr);
   gap: var(--space-3);
+  align-items: start;
 }
 .kol-shipping-detail-row dt {
   margin: 0 0 0.2rem;
@@ -4448,8 +4454,11 @@ button.internal-campaign-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: 0.35rem 0;
+}
+.kol-toggle-row .kol-toggle {
+  flex-shrink: 0;
 }
 .kol-toggle-row--block {
   margin: 0.25rem 0;
@@ -4487,10 +4496,16 @@ button.internal-campaign-card {
   flex-direction: column;
   gap: var(--space-3);
 }
+.kol-deal-products .appdev-prompt-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
 .kol-deal-products-catalog {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 .kol-deal-products-chip {
   padding: 0.3rem 0.55rem;
@@ -4518,46 +4533,83 @@ button.internal-campaign-card {
   gap: 0.35rem;
 }
 .kol-deal-products-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 0.5rem;
+  display: flex;
   align-items: center;
-  padding: 0.45rem 0.55rem;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--bg);
 }
 .kol-deal-products-name {
+  flex: 1;
+  min-width: 0;
   font-size: 0.86rem;
   font-weight: 500;
+  line-height: 1.35;
 }
 .kol-deal-products-qty {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin: 0;
 }
 .kol-deal-products-qty input {
-  width: 2.5rem;
+  width: 2.25rem;
+  height: 1.75rem;
+  box-sizing: border-box;
   text-align: center;
-  padding: 0.2rem;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 0.82rem;
+  line-height: 1;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.kol-deal-products-qty input::-webkit-outer-spin-button,
+.kol-deal-products-qty input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .kol-deal-products-step {
-  width: 1.5rem;
-  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--bg);
   cursor: pointer;
+  font-size: 1rem;
   line-height: 1;
+}
+.kol-deal-products-remove {
+  flex-shrink: 0;
+  align-self: center;
+}
+.kol-deal-products-custom {
+  margin: 0;
 }
 .kol-deal-products-custom input {
   width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
 }
 .kol-shipping-address-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--space-4);
+  padding: var(--space-5);
   border: 1px solid var(--line);
   border-radius: 10px;
   background: color-mix(in srgb, var(--accent) 4%, var(--bg));
@@ -4565,20 +4617,44 @@ button.internal-campaign-card {
 .kol-shipping-address-hint {
   margin: 0;
   font-size: 0.82rem;
+  line-height: 1.5;
   color: var(--muted);
 }
 .kol-shipping-address-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: var(--space-4);
+}
+.kol-shipping-address-grid .appdev-field {
+  margin: 0;
+  min-width: 0;
 }
 .kol-shipping-span-2 {
   grid-column: span 2;
 }
+.kol-shipping-country-code-input {
+  max-width: 5.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
 .kol-ship-kit-fields {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-5);
+}
+.kol-ship-kit-fields .appdev-field {
+  margin: 0;
+}
+.kol-modal-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-5);
+  padding: var(--kol-modal-panel-pad, var(--space-5));
+  border: 1px solid var(--line);
+  border-radius: var(--kol-modal-panel-radius, 10px);
+  background: var(--bg);
 }
 .kol-weibin-export-btn {
   display: inline-flex;
@@ -4645,6 +4721,9 @@ button.internal-campaign-card {
 }
 .kol-outreach-card-pick {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 17px;
   height: 17px;
   margin-top: 1px;
@@ -4678,10 +4757,9 @@ button.internal-campaign-card {
   display: block;
   width: 4px;
   height: 7px;
-  margin: 2px auto 0;
   border: solid color-mix(in srgb, var(--bg) 92%, #000);
   border-width: 0 1.5px 1.5px 0;
-  transform: rotate(45deg);
+  transform: rotate(45deg) translate(-0.5px, -1px);
 }
 .kol-outreach-select-toggle {
   margin-right: 0.35rem;
@@ -4773,8 +4851,50 @@ button.internal-campaign-card {
 .kol-outreach-card.is-drag-locked .kol-outreach-card-open {
   cursor: pointer;
 }
+.kol-outreach-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.kol-outreach-card-platform-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.05rem;
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 160ms var(--ease-out);
+}
+.kol-outreach-card-platform-icon:hover {
+  color: var(--text);
+}
+.kol-outreach-card-platform-icon.is-instagram {
+  color: color-mix(in srgb, #e1306c 78%, var(--muted));
+}
+.kol-outreach-card-platform-icon.is-instagram:hover {
+  color: #e1306c;
+}
+.kol-outreach-card-platform-icon.is-youtube {
+  color: color-mix(in srgb, #ff0000 78%, var(--muted));
+}
+.kol-outreach-card-platform-icon.is-youtube:hover {
+  color: #ff0000;
+}
+.kol-outreach-card-platform-icon.is-xSocial:hover {
+  color: var(--text);
+}
+.kol-outreach-card-platform-icon.is-facebook:hover {
+  color: #1877f2;
+}
 .kol-outreach-card-title {
   display: block;
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
@@ -4793,29 +4913,10 @@ button.internal-campaign-card {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.kol-outreach-card-chips .internal-hint-chip.is-initiative {
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  color: color-mix(in srgb, var(--accent) 88%, var(--text));
-}
 .kol-outreach-card-chips .internal-hint-chip.is-country {
   border-color: color-mix(in srgb, #5b8def 35%, var(--line));
   background: color-mix(in srgb, #5b8def 12%, var(--surface));
   color: color-mix(in srgb, #5b8def 88%, var(--text));
-}
-.kol-outreach-card-chips .internal-hint-chip.is-platform.is-instagram {
-  border-color: color-mix(in srgb, #e1306c 35%, var(--line));
-  background: color-mix(in srgb, #e1306c 12%, var(--surface));
-  color: color-mix(in srgb, #e1306c 90%, var(--text));
-}
-.kol-outreach-card-chips .internal-hint-chip.is-platform.is-youtube {
-  border-color: color-mix(in srgb, #ff0000 35%, var(--line));
-  background: color-mix(in srgb, #ff0000 10%, var(--surface));
-  color: color-mix(in srgb, #ff0000 88%, var(--text));
-}
-.kol-outreach-card-chips .internal-hint-chip.is-platform.is-x {
-  border-color: color-mix(in srgb, var(--text) 25%, var(--line));
-  background: color-mix(in srgb, var(--text) 8%, var(--surface));
 }
 .kol-outreach-card-chips .internal-hint-chip.is-category {
   border-color: color-mix(in srgb, var(--fc-yellow) 35%, var(--line));
@@ -4907,23 +5008,31 @@ button.internal-campaign-card {
 }
 
 .kol-outreach-platform-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
   margin: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
+  background: var(--bg);
 }
 .kol-outreach-platform-pick legend {
+  flex: 0 0 100%;
+  width: 100%;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--muted);
-  padding: 0 0.25rem;
+  padding: 0;
+  margin: 0 0 var(--space-1);
 }
 .kol-outreach-platform-option {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  margin: 0.25rem 0.5rem 0.25rem 0;
+  gap: var(--space-2);
+  margin: 0;
   font-size: 0.82rem;
   cursor: pointer;
 }
@@ -5029,7 +5138,10 @@ button.internal-campaign-card {
   padding: 1rem;
 }
 .kol-modal {
-  --kol-modal-pad: 1.25rem;
+  --kol-modal-pad: 2rem;
+  --kol-modal-gap: var(--space-5);
+  --kol-modal-panel-pad: var(--space-5);
+  --kol-modal-panel-radius: 10px;
   width: min(480px, 100%);
   max-height: min(90vh, 840px);
   display: flex;
@@ -5052,18 +5164,31 @@ button.internal-campaign-card {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--kol-modal-pad) var(--kol-modal-pad) var(--space-3);
+  gap: var(--space-4);
+  padding: var(--kol-modal-pad);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
+}
+.kol-modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 .kol-modal-head-copy {
   min-width: 0;
   flex: 1;
 }
+.kol-modal-head .appdev-btn-ghost,
 .kol-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-top: -0.15rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  margin: 0;
 }
 .kol-modal-head h3 {
   margin: 0;
@@ -5073,23 +5198,29 @@ button.internal-campaign-card {
 }
 .kol-modal-sub {
   margin: 0;
-  padding: var(--space-2) var(--kol-modal-pad) 0;
+  padding: 0;
   font-size: 0.82rem;
   color: var(--muted);
-  line-height: 1.45;
+  line-height: 1.5;
 }
 .kol-modal-head .kol-modal-sub {
-  margin: var(--space-1) 0 0;
-  padding: 0;
+  margin-top: var(--space-1);
 }
 .kol-card-modal-form {
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .kol-card-modal-section {
-  padding: var(--space-4) var(--kol-modal-pad);
+  padding: 0 0 var(--space-5);
+  margin: 0 0 var(--space-5);
   border-bottom: 1px solid var(--line);
 }
 .kol-card-modal-section:last-of-type {
+  margin-bottom: 0;
+  padding-bottom: 0;
   border-bottom: none;
 }
 .kol-card-modal-section-title {
@@ -5102,13 +5233,10 @@ button.internal-campaign-card {
 .kol-card-modal-section-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 .kol-card-modal-section-body .appdev-field {
   margin: 0;
-}
-.kol-modal > .kol-modal-sub {
-  padding-top: var(--space-3);
 }
 .kol-modal form {
   display: flex;
@@ -5116,24 +5244,163 @@ button.internal-campaign-card {
   flex: 1;
   min-height: 0;
 }
-.kol-modal:not(:has(.kol-pool-edit-form)) {
+.kol-modal:not(:has(.kol-pool-edit-form)):not(:has(.kol-modal-body)) {
   overflow: auto;
 }
-.kol-modal:has(.kol-pool-edit-form) {
+.kol-modal:has(.kol-pool-edit-form),
+.kol-modal:has(.kol-modal-body) {
   overflow: hidden;
 }
-.kol-modal form > .appdev-field {
+.kol-modal .kol-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--kol-modal-gap);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-6) var(--kol-modal-pad);
+  -webkit-overflow-scrolling: touch;
+}
+.kol-modal-body .appdev-field {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-2);
+}
+.kol-modal .appdev-field span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.kol-modal .appdev-field input,
+.kol-modal .appdev-field textarea,
+.kol-modal .appdev-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+.kol-modal .appdev-field textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+}
+.kol-modal .appdev-field input:focus,
+.kol-modal .appdev-field textarea:focus,
+.kol-modal .appdev-field select:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 1px;
+}
+.kol-modal-body .kol-ship-kit-fields.kol-modal-panel .kol-toggle-row--block {
+  margin: 0;
+}
+.kol-modal-body .appdev-field .kol-segment-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  width: 100%;
+}
+.kol-modal-body .kol-modal-sub {
+  margin: 0;
+  padding: 0;
+  line-height: 1.55;
+}
+.kol-modal-body fieldset.kol-outreach-platform-pick {
+  margin: 0;
+}
+.kol-modal-body .kol-toggle-row--block {
+  margin: 0;
+  padding: var(--kol-modal-panel-pad);
+  border: 1px solid var(--line);
+  border-radius: var(--kol-modal-panel-radius);
+  background: var(--bg);
+  min-height: 3.75rem;
+}
+.kol-modal-body .kol-toggle-row--block > span {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45;
+  padding-right: var(--space-3);
+}
+.kol-modal-body .kol-toggle-row:not(.kol-toggle-row--block) {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--kol-modal-panel-radius);
+  background: var(--bg);
+}
+.kol-modal-body .kol-ship-kit-fields,
+.kol-modal-body .kol-deal-products,
+.kol-modal-body .kol-shipping-address-form {
+  margin: 0;
+}
+.kol-modal-body .kol-shipping-address-grid {
+  gap: var(--space-4);
+}
+.kol-modal-body .kol-modal-search {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.kol-modal-body .kol-modal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin: 0;
+}
+.kol-modal-body .kol-modal-filters .kol-modal-filter {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+.kol-modal-body .kol-modal-list {
+  margin: 0;
+  padding: 0;
+  max-height: min(320px, 40vh);
+}
+.kol-modal:has(.kol-modal-body) > .kol-modal-foot,
+.kol-modal form:has(.kol-modal-body) > .kol-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: 0;
+  flex-shrink: 0;
+  padding: var(--space-5) var(--kol-modal-pad) var(--space-6);
+  border-top: 1px solid var(--line);
+}
+.kol-modal-foot .appdev-btn-primary,
+.kol-modal-foot .appdev-btn-ghost {
+  min-height: 2.5rem;
+  padding: 0.625rem 1.125rem;
+}
+.kol-modal form:not(:has(.kol-modal-body)) > .appdev-field {
   margin: 0;
   padding: var(--space-4) var(--kol-modal-pad) 0;
 }
-.kol-modal form > .appdev-field:first-of-type {
+.kol-modal form:not(:has(.kol-modal-body)) > .appdev-field:first-of-type {
   padding-top: var(--space-5);
 }
-.kol-modal form > fieldset.kol-outreach-platform-pick {
+.kol-modal form:not(:has(.kol-modal-body)) > fieldset.kol-outreach-platform-pick {
   margin: var(--space-4) var(--kol-modal-pad) 0;
 }
-.kol-modal form > .kol-outreach-product-rows,
-.kol-modal form > .kol-outreach-checkbox {
+.kol-modal form:not(:has(.kol-modal-body)) > .kol-outreach-product-rows,
+.kol-modal form:not(:has(.kol-modal-body)) > .kol-outreach-checkbox {
   padding: var(--space-4) var(--kol-modal-pad) 0;
 }
 .kol-modal-search {
@@ -5149,9 +5416,18 @@ button.internal-campaign-card {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0 var(--kol-modal-pad) var(--space-3);
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--muted);
+}
+.kol-modal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0 var(--kol-modal-pad) var(--space-3);
+}
+.kol-modal-filters .kol-modal-filter {
+  flex: 1 1 12rem;
 }
 .kol-modal-filter select {
   min-width: 9rem;
@@ -5171,8 +5447,8 @@ button.internal-campaign-card {
 .kol-modal-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.5rem;
+  gap: var(--space-3);
+  padding: 0.65rem 0.75rem;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -5194,12 +5470,13 @@ button.internal-campaign-card {
 }
 .kol-modal-foot {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-3);
-  padding: var(--space-4) var(--kol-modal-pad) var(--kol-modal-pad);
+  padding: var(--space-5) var(--kol-modal-pad);
   border-top: 1px solid var(--line);
-  margin-top: var(--space-4);
+  margin-top: 0;
+  flex-shrink: 0;
 }
 .kol-modal-foot-danger {
   margin-right: auto;
