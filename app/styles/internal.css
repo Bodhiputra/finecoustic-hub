@@ -4233,7 +4233,14 @@ button.internal-campaign-card {
   min-width: 0;
   margin: 0;
 }
-.kol-pool-social-url input {
+.kol-pool-tag-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.kol-pool-tag-field .kol-segment-picker {
+  flex-wrap: wrap;
+}
   width: 100%;
 }
 .kol-collab-product-chips {
@@ -5164,6 +5171,14 @@ button.internal-campaign-card {
 }
 .kol-chip-tag {
   background: color-mix(in srgb, var(--fc-yellow) 18%, transparent);
+}
+.kol-chip-tag.is-unqualified {
+  background: color-mix(in srgb, #e74c3c 16%, transparent);
+  color: color-mix(in srgb, #ffb4a8 88%, var(--text));
+}
+.kol-chip-tier {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  font-size: 0.8125rem;
 }
 .kol-chip-status {
   background: color-mix(in srgb, var(--ok) 14%, transparent);

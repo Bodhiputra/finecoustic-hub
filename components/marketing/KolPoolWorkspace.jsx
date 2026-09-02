@@ -13,15 +13,18 @@ import {
   collectKolCollabInitiativeOptions,
   collectKolCountryOptions,
   collectKolMainPlatformOptions,
+  countKolBySection,
   filterKolBySection,
   hasKolShippingAddress,
   isHubNativeKol,
+  KOL_TAG_LABEL_KEYS,
   kolLinkAriaLabel,
   kolLinkIconName,
   kolMatchesCollabInitiativeFilter,
   kolMatchesCountryFilter,
   kolMatchesPlatformFilter,
   kolShippingSummary,
+  normalizeKolTagChoice,
   platformChipClass,
 } from '@/lib/kol-pool';
 
@@ -254,12 +257,11 @@ export default function KolPoolWorkspace({
     if (!record) return;
     setRecords(prev => {
       const idx = prev.findIndex(r => r.notion_page_id === record.notion_page_id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = record;
-        return next;
-      }
-      return [...prev, record].sort((a, b) => a.channel_name.localeCompare(b.channel_name));
+      const next = idx >= 0
+        ? prev.map((r, i) => (i === idx ? record : r))
+        : [...prev, record].sort((a, b) => a.channel_name.localeCompare(b.channel_name));
+      setCounts(countKolBySection(next));
+      return next;
     });
   }
 
@@ -438,6 +440,7 @@ export default function KolPoolWorkspace({
                 <tr
                   key={row.notion_page_id}
                   className="kol-pool-row-click"
+                  title={t('hub.kol.editRowHint')}
                   onClick={() => setEditing(row)}
                 >
                   <td className="kol-pool-channel">
@@ -465,9 +468,23 @@ export default function KolPoolWorkspace({
                   <td>
                     <KolChip className="kol-chip-country">{row.country || '—'}</KolChip>
                   </td>
-                  <td>{row.kol_category || '—'}</td>
                   <td>
-                    {row.tags ? <KolChip className="kol-chip-tag">{row.tags}</KolChip> : '—'}
+                    {row.kol_category ? (
+                      <KolChip className="kol-chip-tier">{row.kol_category}</KolChip>
+                    ) : '—'}
+                  </td>
+                  <td>
+                    {row.tags ? (() => {
+                      const tagKey = normalizeKolTagChoice(row.tags);
+                      const label = tagKey && KOL_TAG_LABEL_KEYS[tagKey]
+                        ? t(KOL_TAG_LABEL_KEYS[tagKey])
+                        : row.tags;
+                      return (
+                        <KolChip className={`kol-chip-tag${tagKey === 'unqualified' ? ' is-unqualified' : ''}`}>
+                          {label}
+                        </KolChip>
+                      );
+                    })() : '—'}
                   </td>
                   <td className="kol-pool-collab">
                     {(row.collaboration_products || []).length

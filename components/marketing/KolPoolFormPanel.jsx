@@ -7,26 +7,31 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
 import {
   KOL_PLATFORM_SUGGESTIONS,
   KOL_TAG_SUGGESTIONS,
+  KOL_TAG_LABEL_KEYS,
+  KOL_TIER_OPTIONS,
   isHubNativeKol,
   kolLinkAriaLabel,
   kolLinkIconName,
   kolRecordSourceLabel,
   kolShippingSummary,
+  normalizeKolTagChoice,
+  normalizeKolTierChoice,
   partitionCollabProductsByCatalog,
 } from '@/lib/kol-pool';
 
-function formPayload(fd, { links, collaboration_products }) {
+function formPayload(fd, { links, collaboration_products, tags, kol_category }) {
   return {
     channel_name: fd.get('channel_name'),
     description: fd.get('description'),
     links,
     main_platform: fd.get('main_platform'),
     country: fd.get('country'),
-    kol_category: fd.get('kol_category'),
-    tags: fd.get('tags'),
+    kol_category,
+    tags,
     shipping_name: fd.get('shipping_name'),
     shipping_line1: fd.get('shipping_line1'),
     shipping_line2: fd.get('shipping_line2'),
@@ -105,6 +110,8 @@ export default function KolPoolFormPanel({
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [selectedCollabSkus, setSelectedCollabSkus] = useState(() => new Set());
   const [legacyCollabEntries, setLegacyCollabEntries] = useState([]);
+  const [tags, setTags] = useState('stored');
+  const [kolCategory, setKolCategory] = useState('');
   const isCreate = mode === 'create';
   const data = record || {};
 
@@ -134,13 +141,31 @@ export default function KolPoolFormPanel({
 
   useEffect(() => {
     setLinks(data.links || '');
+    setTags(normalizeKolTagChoice(data.tags, { isCreate }) || 'stored');
+    setKolCategory(normalizeKolTierChoice(data.kol_category));
     const { skus, legacy } = partitionCollabProductsByCatalog(
       data.collaboration_products,
       activeCatalogProducts
     );
     setSelectedCollabSkus(new Set(skus));
     setLegacyCollabEntries(legacy);
-  }, [data.notion_page_id, data.links, data.collaboration_products, catalogProductKey]);
+  }, [data.notion_page_id, data.links, data.tags, data.kol_category, data.collaboration_products, catalogProductKey, isCreate]);
+
+  const tagOptions = useMemo(
+    () => KOL_TAG_SUGGESTIONS.map(id => ({
+      id,
+      label: t(KOL_TAG_LABEL_KEYS[id] || id),
+    })),
+    [t]
+  );
+
+  const tierOptions = useMemo(
+    () => [
+      { id: '', label: t('hub.kol.tierUnset') },
+      ...KOL_TIER_OPTIONS.map(({ id, labelKey }) => ({ id, label: t(labelKey) })),
+    ],
+    [t]
+  );
 
   if (!isCreate && !record) return null;
 
@@ -164,6 +189,8 @@ export default function KolPoolFormPanel({
       const payload = formPayload(new FormData(e.currentTarget), {
         links: socialLink,
         collaboration_products,
+        tags,
+        kol_category: kolCategory,
       });
 
       if (isCreate && onCreateAndAdd) {
@@ -278,17 +305,28 @@ export default function KolPoolFormPanel({
               <FormField label={t('hub.kol.colCountry')}>
                 <input name="country" defaultValue={data.country || ''} placeholder={t('hub.kol.countryPlaceholder')} />
               </FormField>
-              <FormField label={t('hub.kol.colTier')}>
-                <input name="kol_category" defaultValue={data.kol_category || ''} placeholder={t('hub.kol.tierPlaceholder')} />
-              </FormField>
-              <FormField label={t('hub.kol.colTags')}>
-                <input
-                  name="tags"
-                  list="kol-tag-options"
-                  defaultValue={data.tags || (isCreate ? 'stored' : '')}
-                  placeholder={t('hub.kol.tagsPlaceholder')}
+              <div className="kol-edit-span-2 kol-pool-tag-field">
+                <span className="kol-edit-label">{t('hub.kol.colTier')}</span>
+                <KolSegmentPicker
+                  options={tierOptions}
+                  value={kolCategory}
+                  onChange={setKolCategory}
+                  disabled={busy}
+                  ariaLabel={t('hub.kol.colTier')}
                 />
-              </FormField>
+                <input type="hidden" name="kol_category" value={kolCategory} />
+              </div>
+              <div className="kol-edit-span-2 kol-pool-tag-field">
+                <span className="kol-edit-label">{t('hub.kol.colTags')}</span>
+                <KolSegmentPicker
+                  options={tagOptions}
+                  value={tags}
+                  onChange={setTags}
+                  disabled={busy}
+                  ariaLabel={t('hub.kol.colTags')}
+                />
+                <input type="hidden" name="tags" value={tags} />
+              </div>
               <FormField label={t('hub.kol.colDescription')} span={2}>
                 <textarea
                   name="description"
@@ -409,11 +447,6 @@ export default function KolPoolFormPanel({
 
         <datalist id="kol-platform-options">
           {KOL_PLATFORM_SUGGESTIONS.map(p => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
-        <datalist id="kol-tag-options">
-          {KOL_TAG_SUGGESTIONS.map(p => (
             <option key={p} value={p} />
           ))}
         </datalist>
