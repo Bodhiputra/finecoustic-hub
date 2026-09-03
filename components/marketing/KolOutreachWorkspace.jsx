@@ -710,7 +710,7 @@ export default function KolOutreachWorkspace({
         task={cardTask}
         teamMembers={teamMembers}
         displayName={displayName}
-        isManager={Boolean(actor?.isManager)}
+        actor={actor}
         defaultInitiative={initiativeFilter}
         onClose={() => setCardTask(null)}
         onSave={handleCardSave}

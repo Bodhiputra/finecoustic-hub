@@ -11,6 +11,7 @@ import KolOutreachOrderNumberField from '@/components/marketing/KolOutreachOrder
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import { personKey } from '@/lib/appdev';
 import { buildTeamAssigneeOptions } from '@/lib/internal';
 import { getTaskPanelCapabilities } from '@/lib/internal-task-panel-permissions';
 import {
@@ -49,7 +50,7 @@ export default function KolOutreachCardModal({
   task,
   teamMembers = [],
   displayName = '',
-  isManager = false,
+  actor = null,
   defaultInitiative = '',
   onClose,
   onSave,
@@ -63,8 +64,8 @@ export default function KolOutreachCardModal({
   const status = normalizeKolOutreachStatus(task?.status);
   const sections = useMemo(() => kolCardModalSections(status), [status]);
   const caps = useMemo(
-    () => getTaskPanelCapabilities(task, { displayName, isManager }),
-    [task, displayName, isManager]
+    () => getTaskPanelCapabilities(task, actor || { displayName }),
+    [task, actor, displayName]
   );
 
   const [assignee, setAssignee] = useState('');
@@ -102,6 +103,14 @@ export default function KolOutreachCardModal({
     }),
     [teamMembers, displayName, task?.assignee]
   );
+
+  const visibleAssigneeOptions = useMemo(() => {
+    if (caps.canEditMetadata) return assigneeOptions;
+    if (caps.canSelfAssignKol) {
+      return assigneeOptions.filter(name => personKey(name) === personKey(displayName));
+    }
+    return assigneeOptions;
+  }, [assigneeOptions, caps.canEditMetadata, caps.canSelfAssignKol, displayName]);
 
   const approachOptions = useMemo(
     () => KOL_APPROACH_DIRECTIONS.map(item => ({
@@ -283,10 +292,13 @@ export default function KolOutreachCardModal({
             <span>{t('hub.internal.taskPanel.assignee')}</span>
             <select value={assignee} onChange={e => setAssignee(e.target.value)} disabled={busy || !caps.canEditAssignee}>
               <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
-              {assigneeOptions.map(name => (
+              {visibleAssigneeOptions.map(name => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
+            {caps.canSelfAssignKol && !caps.canEditMetadata ? (
+              <span className="kol-shipping-field-hint">{t('hub.internal.taskPanel.assigneeHintContributor')}</span>
+            ) : null}
           </label>
           <div className="appdev-field">
             <span>{t('hub.campaignKol.initiative')}</span>
