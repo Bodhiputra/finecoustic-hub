@@ -28,11 +28,6 @@ export default function KolWeibinColumnActions({
         </button>
       ) : (
         <>
-          <span className="kol-weibin-col-hint">
-            {selectedExportCount > 0
-              ? t('hub.campaignKol.selectedCount').replace('{count}', String(selectedExportCount))
-              : t('hub.campaignKol.selectModeHint')}
-          </span>
           <button
             type="button"
             className="kol-weibin-col-btn"

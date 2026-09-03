@@ -4794,20 +4794,21 @@ button.internal-campaign-card {
   background: var(--bg);
 }
 .kol-weibin-col-actions {
-  flex: 1 1 100%;
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.35rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .kol-weibin-col-actions.is-compact {
-  flex: unset;
+  margin-left: 0;
+  flex-wrap: wrap;
 }
 .kol-weibin-col-hint {
-  flex: 1 1 100%;
-  margin: 0;
-  font-size: 0.72rem;
-  color: var(--muted);
+  display: none;
 }
 .kol-weibin-col-btn {
   display: inline-flex;
@@ -4820,6 +4821,7 @@ button.internal-campaign-card {
   font: inherit;
   font-size: 0.72rem;
   color: var(--text);
+  white-space: nowrap;
   cursor: pointer;
 }
 .kol-weibin-col-btn:hover:not(:disabled) {
@@ -4848,7 +4850,8 @@ button.internal-campaign-card {
   background: color-mix(in srgb, #16a085 6%, var(--bg));
 }
 .kol-outreach-col.is-weibin .internal-board-col-head {
-  align-items: flex-start;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 .kol-weibin-export-inline {
   align-self: flex-start;
