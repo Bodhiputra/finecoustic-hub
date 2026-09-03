@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import DataWorkspaceShell from '@/components/workspace/DataWorkspaceShell';
 import KolOutreachBoardActions from '@/components/marketing/KolOutreachBoardActions';
 import KolOutreachKanban from '@/components/marketing/KolOutreachKanban';
+import KolWeibinColumnActions from '@/components/marketing/KolWeibinColumnActions';
 import KolOutreachCardModal from '@/components/marketing/KolOutreachCardModal';
 import KolOutreachMoreInfoModal from '@/components/marketing/KolOutreachMoreInfoModal';
 import KolOutreachFollowUpModal from '@/components/marketing/KolOutreachFollowUpModal';
@@ -469,6 +470,15 @@ export default function KolOutreachWorkspace({
     [normalizedTasks, selectedIds]
   );
 
+  const weibinExportCount = useMemo(
+    () => filtered.filter(task => isKolWeibinExportStatus(task.status)).length,
+    [filtered]
+  );
+
+  function exportWeibinExcelAll() {
+    openKolWeibinExport({ initiative: initiativeFilter });
+  }
+
   function exportSelectedWeibinExcel() {
     if (!selectedWeibinExportIds.length) {
       toast.error(t('hub.campaignKol.weibinExportSelectedEmpty'));
@@ -535,15 +545,6 @@ export default function KolOutreachWorkspace({
           </p>
 
           <div className="kol-outreach-view-toggle" role="tablist" aria-label={t('hub.campaignKol.viewToggle')}>
-            {!selectMode ? (
-              <button
-                type="button"
-                className="kol-outreach-select-toggle"
-                onClick={() => setSelectMode(true)}
-              >
-                {t('hub.campaignKol.enterSelectMode')}
-              </button>
-            ) : null}
             <button
               type="button"
               className={view === 'board' ? 'is-active' : ''}
@@ -631,16 +632,11 @@ export default function KolOutreachWorkspace({
           </label>
         </div>
 
-        {(selectedIds.size > 0 || selectMode) ? (
+        {selectedIds.size > 0 ? (
           <div className="kol-outreach-bulk-bar">
-            {selectedIds.size > 0 ? (
-              <span className="kol-outreach-bulk-count">
-                {t('hub.campaignKol.selectedCount').replace('{count}', String(selectedIds.size))}
-              </span>
-            ) : (
-              <span className="kol-outreach-bulk-count is-hint">{t('hub.campaignKol.selectModeHint')}</span>
-            )}
-            {selectedIds.size > 0 ? (
+            <span className="kol-outreach-bulk-count">
+              {t('hub.campaignKol.selectedCount').replace('{count}', String(selectedIds.size))}
+            </span>
             <label className="kol-outreach-bulk-assign">
               <span>{t('hub.internal.taskPanel.assignee')}</span>
               <select
@@ -654,21 +650,6 @@ export default function KolOutreachWorkspace({
                 ))}
               </select>
             </label>
-            ) : null}
-            {selectedIds.size > 0 ? (
-            <button
-              type="button"
-              className="appdev-btn-ghost"
-              onClick={exportSelectedWeibinExcel}
-              disabled={busy || selectedWeibinExportIds.length === 0}
-            >
-              {t('hub.campaignKol.weibinExportSelected').replace(
-                '{count}',
-                String(selectedWeibinExportIds.length)
-              )}
-            </button>
-            ) : null}
-            {selectedIds.size > 0 ? (
             <button
               type="button"
               className="appdev-btn-primary"
@@ -677,16 +658,13 @@ export default function KolOutreachWorkspace({
             >
               {t('hub.campaignKol.bulkAssign')}
             </button>
-            ) : null}
-            {selectMode && selectedIds.size < filtered.length ? (
+            {selectedIds.size < filtered.length ? (
               <button type="button" className="appdev-btn-ghost" onClick={selectAllFiltered} disabled={busy}>
                 {t('hub.campaignKol.selectAllVisible')}
               </button>
             ) : null}
             <button type="button" className="appdev-btn-ghost" onClick={clearSelection} disabled={busy}>
-              {selectMode && selectedIds.size === 0
-                ? t('hub.campaignKol.exitSelectMode')
-                : t('hub.campaignKol.clearSelection')}
+              {t('hub.campaignKol.clearSelection')}
             </button>
           </div>
         ) : null}
@@ -699,6 +677,11 @@ export default function KolOutreachWorkspace({
             isManager={Boolean(actor?.isManager)}
             isAdmin={Boolean(actor?.isAdmin)}
             initiativeFilter={initiativeFilter}
+            selectMode={selectMode}
+            selectedWeibinExportCount={selectedWeibinExportIds.length}
+            onEnterSelectMode={() => setSelectMode(true)}
+            onExitSelectMode={clearSelection}
+            onExportSelected={exportSelectedWeibinExcel}
             selectedIds={selectedIds}
             onToggleSelect={selectMode ? toggleSelect : undefined}
             onStatusChange={handleStatusChange}
@@ -707,6 +690,19 @@ export default function KolOutreachWorkspace({
             onFollowUp={setFollowUpTask}
           />
         ) : (
+          <>
+            <div className="kol-weibin-list-actions">
+              <KolWeibinColumnActions
+                compact
+                exportableCount={weibinExportCount}
+                selectMode={selectMode}
+                selectedExportCount={selectedWeibinExportIds.length}
+                onEnterSelectMode={() => setSelectMode(true)}
+                onExitSelectMode={clearSelection}
+                onExportSelected={exportSelectedWeibinExcel}
+                onExportAll={exportWeibinExcelAll}
+              />
+            </div>
           <div className="kol-pool-table-wrap h-scroll">
             <table className="kol-pool-table kol-outreach-table">
               <thead>
@@ -768,6 +764,7 @@ export default function KolOutreachWorkspace({
               </tbody>
             </table>
           </div>
+          </>
         )}
       </DataWorkspaceShell>
 

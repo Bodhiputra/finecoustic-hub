@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
 import KolOutreachCard from '@/components/marketing/KolOutreachCard';
+import KolWeibinColumnActions from '@/components/marketing/KolWeibinColumnActions';
 import {
   allowedKolTransition,
   defaultKolOutreachStatusColumns,
@@ -33,6 +33,11 @@ export default function KolOutreachKanban({
   isAdmin = false,
   initiativeFilter = '',
   selectedIds = null,
+  selectMode = false,
+  selectedWeibinExportCount = 0,
+  onEnterSelectMode,
+  onExitSelectMode,
+  onExportSelected,
   onToggleSelect,
   onStatusChange,
   onOpenCard,
@@ -106,16 +111,16 @@ export default function KolOutreachKanban({
                   <span className={`internal-board-col-bar is-${col.id}`} aria-hidden="true" />
                   <h3>{columnLabel(col)}</h3>
                   <span className="internal-board-col-count">{colTasks.length}</span>
-                  {col.id === 'weibin' && weibinExportCount > 0 ? (
-                    <button
-                      type="button"
-                      className="kol-weibin-export-btn"
-                      onClick={exportWeibinExcelAll}
-                      title={t('hub.campaignKol.weibinExportAll')}
-                    >
-                      <Icon name="download" size={14} />
-                      <span>{t('hub.campaignKol.weibinExportAll')}</span>
-                    </button>
+                  {col.id === 'weibin' ? (
+                    <KolWeibinColumnActions
+                      exportableCount={weibinExportCount}
+                      selectMode={selectMode}
+                      selectedExportCount={selectedWeibinExportCount}
+                      onEnterSelectMode={onEnterSelectMode}
+                      onExitSelectMode={onExitSelectMode}
+                      onExportSelected={onExportSelected}
+                      onExportAll={exportWeibinExcelAll}
+                    />
                   ) : null}
                 </header>
                 <div className="internal-board-col-body">

@@ -4793,6 +4793,63 @@ button.internal-campaign-card {
   border-radius: var(--kol-modal-panel-radius, 10px);
   background: var(--bg);
 }
+.kol-weibin-col-actions {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.kol-weibin-col-actions.is-compact {
+  flex: unset;
+}
+.kol-weibin-col-hint {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.kol-weibin-col-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.kol-weibin-col-btn:hover:not(:disabled) {
+  border-color: #16a085;
+  color: #16a085;
+}
+.kol-weibin-col-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.kol-weibin-col-btn--select {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: color-mix(in srgb, var(--accent) 88%, var(--text));
+  font-weight: 600;
+}
+.kol-weibin-col-btn--ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.kol-weibin-list-actions {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, #16a085 6%, var(--bg));
+}
+.kol-outreach-col.is-weibin .internal-board-col-head {
+  align-items: flex-start;
+}
 .kol-weibin-export-inline {
   align-self: flex-start;
 }
