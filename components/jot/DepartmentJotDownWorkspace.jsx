@@ -20,8 +20,23 @@ function pageToJot(page) {
     id: page.id,
     title: page.title || '',
     content: jotContentToPlainText(page.content),
+    created_at: page.created_at || null,
     updated_at: page.updated_at || null,
+    sort_order: Number.isFinite(page.sort_order) ? page.sort_order : 0,
   };
+}
+
+function sortDepartmentJots(items = []) {
+  return [...items].sort(
+    (a, b) =>
+      (b.created_at || '').localeCompare(a.created_at || '')
+      || (Number(b.sort_order) - Number(a.sort_order))
+      || (a.title || '').localeCompare(b.title || '')
+  );
+}
+
+function mergeJot(list, jot) {
+  return sortDepartmentJots([...list.filter(j => j.id !== jot.id), jot]);
 }
 
 export default function DepartmentJotDownWorkspace({
@@ -33,14 +48,24 @@ export default function DepartmentJotDownWorkspace({
   const { t } = useLocale();
   const { toast } = useToast();
   const router = useRouter();
-  const [jots, setJots] = useState(() => initialJots.map(pageToJot));
-  const [activeId, setActiveId] = useState(activeJotId || initialJots[0]?.id || '');
+  const [jots, setJots] = useState(() => sortDepartmentJots(initialJots.map(pageToJot)));
+  const [activeId, setActiveId] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef(null);
   const editingJotIdRef = useRef('');
   const draftRef = useRef({ title: '', content: '' });
+  const activeJotIdRef = useRef(activeJotId);
+  const flushSaveRef = useRef(() => {});
+
+  activeJotIdRef.current = activeJotId;
+
+  const pickActiveId = useCallback((list, preferredId = '') => {
+    if (preferredId && list.some(j => j.id === preferredId)) return preferredId;
+    return list[0]?.id || '';
+  }, []);
 
   const activeJot = useMemo(
     () => jots.find(j => j.id === activeId) || null,
@@ -49,10 +74,18 @@ export default function DepartmentJotDownWorkspace({
 
   useEffect(() => {
     if (activeJotId && jots.some(j => j.id === activeJotId)) {
-      if (activeJotId !== activeId) flushSave();
+      if (activeJotId !== activeId) flushSaveRef.current();
       setActiveId(activeJotId);
     }
   }, [activeJotId, jots, activeId]);
+
+  useEffect(() => {
+    if (!loaded || activeId) return;
+    const nextId = pickActiveId(jots, activeJotId);
+    if (!nextId) return;
+    setActiveId(nextId);
+    router.replace(departmentJotDownUrl(deptBase, { jotId: nextId }));
+  }, [loaded, activeId, jots, activeJotId, pickActiveId, router, deptBase]);
 
   useEffect(() => {
     if (!activeJot) {
@@ -78,8 +111,14 @@ export default function DepartmentJotDownWorkspace({
     if (!res.ok) return;
     const data = unwrapData(await res.json());
     const pages = Array.isArray(data?.pages) ? data.pages : [];
-    setJots(pages.map(pageToJot));
-  }, [departmentId]);
+    const list = sortDepartmentJots(pages.map(pageToJot));
+    setJots(list);
+    setActiveId(prev => pickActiveId(list, prev || activeJotIdRef.current));
+  }, [departmentId, pickActiveId]);
+
+  useEffect(() => {
+    reloadPages().finally(() => setLoaded(true));
+  }, [reloadPages]);
 
   useEffect(() => {
     const onChanged = () => reloadPages();
@@ -103,13 +142,7 @@ export default function DepartmentJotDownWorkspace({
       const data = unwrapData(await res.json());
       const page = data?.page;
       if (page?.id) {
-        const jot = pageToJot(page);
-        setJots(prev => {
-          const next = prev.map(j => (j.id === jot.id ? jot : j));
-          return [...next].sort(
-            (a, b) => (b.updated_at || '').localeCompare(a.updated_at || '') || a.title.localeCompare(b.title)
-          );
-        });
+        setJots(prev => mergeJot(prev, pageToJot(page)));
       }
     } catch {
       toast.error(t('common.somethingWrong'));
@@ -130,6 +163,8 @@ export default function DepartmentJotDownWorkspace({
     saveTimer.current = null;
     persist(id, draftRef.current);
   }
+
+  flushSaveRef.current = flushSave;
 
   function selectJot(id) {
     if (id === activeId) return;
@@ -159,7 +194,7 @@ export default function DepartmentJotDownWorkspace({
       const page = data?.page;
       if (!page?.id) return;
       const jot = pageToJot(page);
-      setJots(prev => [jot, ...prev]);
+      setJots(prev => mergeJot(prev, jot));
       window.dispatchEvent(new CustomEvent(KNOWLEDGE_PAGES_CHANGED));
       router.push(departmentJotDownUrl(deptBase, { jotId: jot.id }));
     } finally {
@@ -202,7 +237,9 @@ export default function DepartmentJotDownWorkspace({
 
       <div className="personal-jot-layout">
         <aside className="personal-jot-list" aria-label={t('hub.jotDown.title')}>
-          {jots.length === 0 ? (
+          {!loaded ? (
+            <p className="knowledge-sidebar-empty">{t('common.loading')}</p>
+          ) : jots.length === 0 ? (
             <p className="knowledge-sidebar-empty">{t('hub.jotDown.empty')}</p>
           ) : (
             <ul>

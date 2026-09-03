@@ -5,7 +5,7 @@ import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { personalJotDownUrl } from '@/lib/personal-jots-shared';
+import { personalJotDownUrl, sortPersonalJots } from '@/lib/personal-jots-shared';
 
 function syncPersonalJotUrl(jotId) {
   const url = personalJotDownUrl(jotId ? { jotId } : {});
@@ -17,29 +17,73 @@ function jotPreview(content) {
   return line ? line.slice(0, 120) : '';
 }
 
+function mergeJot(list, jot) {
+  return sortPersonalJots([...list.filter(j => j.id !== jot.id), jot]);
+}
+
 export default function PersonalJotDownWorkspace({
   initialJots = [],
   activeJotId = '',
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
-  const [jots, setJots] = useState(initialJots);
-  const [activeId, setActiveId] = useState(activeJotId || initialJots[0]?.id || '');
+  const [jots, setJots] = useState(() => sortPersonalJots(initialJots));
+  const [activeId, setActiveId] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef(null);
   const editingJotIdRef = useRef('');
   const draftRef = useRef({ title: '', content: '' });
+  const activeJotIdRef = useRef(activeJotId);
+  const flushSaveRef = useRef(() => {});
+
+  activeJotIdRef.current = activeJotId;
 
   const activeJot = useMemo(
     () => jots.find(j => j.id === activeId) || null,
     [jots, activeId]
   );
 
+  const pickActiveId = useCallback((list, preferredId = '') => {
+    if (preferredId && list.some(j => j.id === preferredId)) return preferredId;
+    return list[0]?.id || '';
+  }, []);
+
+  const loadJots = useCallback(async () => {
+    try {
+      const res = await fetch(API_V1.personalJots, { credentials: 'same-origin' });
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      const data = unwrapData(await res.json());
+      const list = sortPersonalJots(Array.isArray(data?.jots) ? data.jots : []);
+      setJots(list);
+      setActiveId(prev => pickActiveId(list, prev || activeJotIdRef.current));
+    } catch {
+      toast.error(t('common.somethingWrong'));
+    } finally {
+      setLoaded(true);
+    }
+  }, [pickActiveId, t, toast]);
+
+  useEffect(() => {
+    loadJots();
+  }, [loadJots]);
+
+  useEffect(() => {
+    if (!loaded || activeId) return;
+    const nextId = pickActiveId(jots, activeJotId);
+    if (!nextId) return;
+    setActiveId(nextId);
+    syncPersonalJotUrl(nextId);
+  }, [loaded, activeId, jots, activeJotId, pickActiveId]);
+
   useEffect(() => {
     if (activeJotId && jots.some(j => j.id === activeJotId)) {
-      if (activeJotId !== activeId) flushSave();
+      if (activeJotId !== activeId) flushSaveRef.current();
       setActiveId(activeJotId);
     }
   }, [activeJotId, jots, activeId]);
@@ -76,12 +120,7 @@ export default function PersonalJotDownWorkspace({
       const data = unwrapData(await res.json());
       const jot = data?.jot || data;
       if (jot?.id) {
-        setJots(prev => {
-          const next = prev.map(j => (j.id === jot.id ? jot : j));
-          return [...next].sort(
-            (a, b) => (b.updated_at || '').localeCompare(a.updated_at || '') || a.title.localeCompare(b.title)
-          );
-        });
+        setJots(prev => mergeJot(prev, jot));
       }
     } catch {
       toast.error(t('common.somethingWrong'));
@@ -102,6 +141,8 @@ export default function PersonalJotDownWorkspace({
     saveTimer.current = null;
     persist(id, draftRef.current);
   }
+
+  flushSaveRef.current = flushSave;
 
   function selectJot(id) {
     if (id === activeId) return;
@@ -126,7 +167,7 @@ export default function PersonalJotDownWorkspace({
       const data = unwrapData(await res.json());
       const jot = data?.jot || data;
       if (!jot?.id) return;
-      setJots(prev => [jot, ...prev]);
+      setJots(prev => mergeJot(prev, jot));
       setActiveId(jot.id);
       syncPersonalJotUrl(jot.id);
     } finally {
@@ -170,7 +211,9 @@ export default function PersonalJotDownWorkspace({
 
       <div className="personal-jot-layout">
         <aside className="personal-jot-list" aria-label={t('hub.jotDown.title')}>
-          {jots.length === 0 ? (
+          {!loaded ? (
+            <p className="knowledge-sidebar-empty">{t('common.loading')}</p>
+          ) : jots.length === 0 ? (
             <p className="knowledge-sidebar-empty">{t('hub.jotDown.empty')}</p>
           ) : (
             <ul>
