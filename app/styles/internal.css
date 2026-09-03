@@ -4394,6 +4394,10 @@ button.internal-campaign-card {
   flex: 1;
   min-height: 0;
 }
+.kol-outreach-kanban {
+  --kol-outreach-col-w: 280px;
+  --kol-outreach-col-w-weibin: 320px;
+}
 .kol-outreach-kanban .internal-board-scroll.h-scroll {
   flex: 1;
   min-height: 0;
@@ -4404,11 +4408,17 @@ button.internal-campaign-card {
   flex: 1;
   min-height: 0;
   align-items: stretch;
+  min-width: calc(8 * var(--kol-outreach-col-w) + 7 * var(--space-3));
 }
 .kol-outreach-col.internal-board-col {
-  flex: 1 1 0;
+  flex: 1 0 var(--kol-outreach-col-w);
   align-self: stretch;
+  min-width: var(--kol-outreach-col-w);
   min-height: 0;
+}
+.kol-outreach-col.internal-board-col.is-weibin {
+  flex-basis: var(--kol-outreach-col-w-weibin);
+  min-width: var(--kol-outreach-col-w-weibin);
 }
 .kol-outreach-col.internal-board-col.is-not_started { border-top-color: var(--muted); }
 .kol-outreach-col.internal-board-col.is-waiting_response { border-top-color: #f39c12; }
@@ -4795,7 +4805,7 @@ button.internal-campaign-card {
 }
 .kol-weibin-col-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.35rem;
   width: 100%;
@@ -4805,7 +4815,7 @@ button.internal-campaign-card {
   flex-wrap: wrap;
 }
 .kol-weibin-col-actions.is-short .kol-weibin-col-btn {
-  flex: 1 1 calc(50% - 0.2rem);
+  flex: 0 1 auto;
   justify-content: center;
   min-width: 0;
 }
