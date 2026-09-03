@@ -4794,18 +4794,24 @@ button.internal-campaign-card {
   background: var(--bg);
 }
 .kol-weibin-col-actions {
-  display: inline-flex;
-  flex-wrap: nowrap;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  margin-left: auto;
-  flex-shrink: 0;
-  max-width: 100%;
-  overflow-x: auto;
+  width: 100%;
+  min-width: 0;
 }
 .kol-weibin-col-actions.is-compact {
-  margin-left: 0;
   flex-wrap: wrap;
+}
+.kol-weibin-col-actions.is-short .kol-weibin-col-btn {
+  flex: 1 1 calc(50% - 0.2rem);
+  justify-content: center;
+  min-width: 0;
+}
+.kol-weibin-col-actions.is-short .kol-weibin-col-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .kol-weibin-col-hint {
   display: none;
@@ -4849,9 +4855,22 @@ button.internal-campaign-card {
   border-radius: 10px;
   background: color-mix(in srgb, #16a085 6%, var(--bg));
 }
-.kol-outreach-col.is-weibin .internal-board-col-head {
+.kol-outreach-col.is-weibin .internal-board-col-head,
+.kol-outreach-col-head--weibin {
+  flex-direction: column;
+  align-items: stretch;
   flex-wrap: nowrap;
+  gap: 0.45rem;
+  overflow: hidden;
+}
+.kol-outreach-col-head-main {
+  display: flex;
   align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.kol-outreach-col.is-weibin .internal-board-col-head {
+  align-items: stretch;
 }
 .kol-weibin-export-inline {
   align-self: flex-start;

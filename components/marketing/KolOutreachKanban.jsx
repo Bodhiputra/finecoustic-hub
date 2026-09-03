@@ -107,12 +107,15 @@ export default function KolOutreachKanban({
                 onDragLeave={() => setOverCol(current => (current === col.id ? null : current))}
                 onDrop={e => onDrop(e, col.id)}
               >
-                <header className="internal-board-col-head">
-                  <span className={`internal-board-col-bar is-${col.id}`} aria-hidden="true" />
-                  <h3>{columnLabel(col)}</h3>
-                  <span className="internal-board-col-count">{colTasks.length}</span>
+                <header className={`internal-board-col-head${col.id === 'weibin' ? ' kol-outreach-col-head--weibin' : ''}`}>
+                  <div className="kol-outreach-col-head-main">
+                    <span className={`internal-board-col-bar is-${col.id}`} aria-hidden="true" />
+                    <h3>{columnLabel(col)}</h3>
+                    <span className="internal-board-col-count">{colTasks.length}</span>
+                  </div>
                   {col.id === 'weibin' ? (
                     <KolWeibinColumnActions
+                      shortLabels
                       exportableCount={weibinExportCount}
                       selectMode={selectMode}
                       selectedExportCount={selectedWeibinExportCount}

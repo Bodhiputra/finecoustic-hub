@@ -12,19 +12,26 @@ export default function KolWeibinColumnActions({
   onExportSelected,
   onExportAll,
   compact = false,
+  shortLabels = false,
 }) {
   const { t } = useLocale();
   const showExportAll = exportableCount > 0;
+  const selectLabel = t(shortLabels ? 'hub.campaignKol.enterSelectModeShort' : 'hub.campaignKol.enterSelectMode');
+  const exportAllLabel = t(shortLabels ? 'hub.campaignKol.weibinExportAllShort' : 'hub.campaignKol.weibinExportAll');
+  const exportSelectedLabel = t(
+    shortLabels ? 'hub.campaignKol.weibinExportSelectedShort' : 'hub.campaignKol.weibinExportSelected'
+  ).replace('{count}', String(selectedExportCount));
+  const exportAllTitle = t('hub.campaignKol.weibinExportAll');
 
   return (
-    <div className={`kol-weibin-col-actions${compact ? ' is-compact' : ''}`}>
+    <div className={`kol-weibin-col-actions${compact ? ' is-compact' : ''}${shortLabels ? ' is-short' : ''}`}>
       {!selectMode ? (
         <button
           type="button"
           className="kol-weibin-col-btn kol-weibin-col-btn--select"
           onClick={onEnterSelectMode}
         >
-          {t('hub.campaignKol.enterSelectMode')}
+          {selectLabel}
         </button>
       ) : (
         <>
@@ -33,11 +40,10 @@ export default function KolWeibinColumnActions({
             className="kol-weibin-col-btn"
             onClick={onExportSelected}
             disabled={selectedExportCount === 0}
+            title={t('hub.campaignKol.weibinExportSelected').replace('{count}', String(selectedExportCount))}
           >
             <Icon name="download" size={14} />
-            <span>
-              {t('hub.campaignKol.weibinExportSelected').replace('{count}', String(selectedExportCount))}
-            </span>
+            <span>{exportSelectedLabel}</span>
           </button>
           <button
             type="button"
@@ -53,10 +59,10 @@ export default function KolWeibinColumnActions({
           type="button"
           className="kol-weibin-col-btn"
           onClick={onExportAll}
-          title={t('hub.campaignKol.weibinExportAll')}
+          title={exportAllTitle}
         >
           <Icon name="download" size={14} />
-          <span>{t('hub.campaignKol.weibinExportAll')}</span>
+          <span>{exportAllLabel}</span>
         </button>
       ) : null}
     </div>
