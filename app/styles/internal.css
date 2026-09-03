@@ -4866,6 +4866,11 @@ button.internal-campaign-card {
   border-radius: 10px;
   background: color-mix(in srgb, #16a085 6%, var(--bg));
 }
+.kol-weibin-list-actions .kol-weibin-col-actions {
+  display: flex;
+  width: 100%;
+  margin-left: 0;
+}
 .kol-outreach-col.is-weibin .internal-board-col-head,
 .kol-outreach-col-head--weibin {
   flex-direction: row;
