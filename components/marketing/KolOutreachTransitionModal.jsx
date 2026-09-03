@@ -205,16 +205,18 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.qcCheckedBy] = displayName;
     }
     if (toStatus === 'weibin') {
-      const result = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
-      if (!result.ok) return;
-      nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
+      const result = validateKolOrderNumber(orderNumber);
+      if (result.normalized) {
+        nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
+      }
     }
     if (toStatus === 'shipping') {
       const resolvedRaw = orderNumber.trim() || String(cv[KOL_BOARD_PROP.orderNumber] || '').trim();
-      const result = validateKolOrderNumber(resolvedRaw, outreachTasks, task.id);
-      if (!result.ok) return;
+      const result = validateKolOrderNumber(resolvedRaw);
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
-      nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
+      if (result.normalized) {
+        nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
+      }
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
       nextCustom[KOL_BOARD_PROP.trackingSent] = trackingSent ? 'yes' : 'no';
       if (trackingSent && !cv[KOL_BOARD_PROP.trackingSentAt]) {
@@ -374,9 +376,7 @@ export default function KolOutreachTransitionModal({
               value={orderNumber}
               onChange={setOrderNumber}
               outreachTasks={outreachTasks}
-              excludeTaskId={task.id}
               disabled={busy}
-              required
             />
           </div>
         ) : null}
@@ -386,7 +386,7 @@ export default function KolOutreachTransitionModal({
             shippingDate={shippingDate}
             onShippingDateChange={setShippingDate}
             requireShippingDate
-            requireOrderNumber={!String(cv[KOL_BOARD_PROP.orderNumber] || orderNumber || '').trim()}
+            requireOrderNumber={false}
             showOrderNumber={!String(cv[KOL_BOARD_PROP.orderNumber] || '').trim()}
             orderNumber={orderNumber}
             onOrderNumberChange={setOrderNumber}

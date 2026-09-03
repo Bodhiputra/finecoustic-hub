@@ -64,9 +64,7 @@ export default function KolOutreachShipKitFields({
             value={orderNumber}
             onChange={onOrderNumberChange}
             outreachTasks={outreachTasks}
-            excludeTaskId={excludeTaskId}
             disabled={disabled}
-            required={requireOrderNumber}
             hintKey=""
           />
         ) : (

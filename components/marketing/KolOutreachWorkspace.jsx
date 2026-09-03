@@ -26,7 +26,6 @@ import {
   kolOutreachBoardUrl,
   kolTransitionSteps,
   initiativeLabel,
-  KOL_ORDER_NUMBER_EXTERNAL_FLOOR,
   latestKolOrderNumberSequence,
   normalizeApproachDirection,
   normalizeKolOutreachStatus,
@@ -321,12 +320,8 @@ export default function KolOutreachWorkspace({
       setCardTask(null);
       await onTasksChanged?.();
       signalHubNotificationsRefresh();
-    } catch (err) {
-      if (err?.code?.startsWith('kol_order_number_')) {
-        orderNumberErrorToast(err.code, err.detail);
-      } else {
-        toast.error(t('common.somethingWrong'));
-      }
+    } catch {
+      toast.error(t('common.somethingWrong'));
     } finally {
       setBusy(false);
     }
@@ -382,12 +377,8 @@ export default function KolOutreachWorkspace({
         await onTasksChanged?.();
         signalHubNotificationsRefresh();
       }
-    } catch (err) {
-      if (err?.code?.startsWith('kol_order_number_')) {
-        orderNumberErrorToast(err.code, err.detail);
-      } else {
-        toast.error(t('common.somethingWrong'));
-      }
+    } catch {
+      toast.error(t('common.somethingWrong'));
     } finally {
       setBusy(false);
     }
@@ -484,28 +475,6 @@ export default function KolOutreachWorkspace({
       return;
     }
     openKolWeibinExport({ taskIds: selectedWeibinExportIds });
-  }
-
-  function orderNumberErrorToast(code, detail) {
-    if (code === 'kol_order_number_duplicate') {
-      toast.error(
-        t('hub.campaignKol.orderNumberDuplicateServer').replace('{name}', String(detail || '—'))
-      );
-      return;
-    }
-    if (code === 'kol_order_number_invalid') {
-      toast.error(t('hub.campaignKol.orderNumberInvalidFormat'));
-      return;
-    }
-    if (code === 'kol_order_number_reserved') {
-      toast.error(
-        t('hub.campaignKol.orderNumberReserved')
-          .replace('{latest}', formatKolOrderNumber(KOL_ORDER_NUMBER_EXTERNAL_FLOOR))
-          .replace('{next}', String(detail || suggestNextKolOrderNumber(normalizedTasks)))
-      );
-      return;
-    }
-    toast.error(t('common.somethingWrong'));
   }
 
   return (

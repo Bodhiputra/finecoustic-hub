@@ -7,33 +7,13 @@ import {
   latestKolOrderNumberSequence,
   normalizeKolOrderNumber,
   suggestNextKolOrderNumber,
-  validateKolOrderNumber,
 } from '@/lib/kol-outreach-shared';
-
-export function kolOrderNumberErrorMessage(validation, t) {
-  if (!validation || validation.ok) return '';
-  if (validation.code === 'required') return t('hub.campaignKol.orderNumberRequired');
-  if (validation.code === 'invalid_format') return t('hub.campaignKol.orderNumberInvalidFormat');
-  if (validation.code === 'duplicate') {
-    return t('hub.campaignKol.orderNumberDuplicate')
-      .replace('{number}', validation.normalized || '')
-      .replace('{name}', validation.conflict?.title || '—');
-  }
-  if (validation.code === 'reserved') {
-    return t('hub.campaignKol.orderNumberReserved')
-      .replace('{latest}', formatKolOrderNumber(validation.floor || 0))
-      .replace('{next}', validation.next || '');
-  }
-  return t('hub.campaignKol.orderNumberInvalidFormat');
-}
 
 export default function KolOutreachOrderNumberField({
   value,
   onChange,
   outreachTasks = [],
-  excludeTaskId = null,
   disabled = false,
-  required = false,
   hintKey = 'hub.campaignKol.orderNumberWeibinHint',
 }) {
   const { t } = useLocale();
@@ -47,15 +27,6 @@ export default function KolOutreachOrderNumberField({
     () => suggestNextKolOrderNumber(outreachTasks),
     [outreachTasks]
   );
-
-  const validation = useMemo(() => {
-    if (!String(value || '').trim()) {
-      return required ? { ok: false, code: 'required' } : { ok: true };
-    }
-    return validateKolOrderNumber(value, outreachTasks, excludeTaskId);
-  }, [value, outreachTasks, excludeTaskId, required]);
-
-  const errorMessage = kolOrderNumberErrorMessage(validation, t);
 
   function handleBlur() {
     const trimmed = String(value || '').trim();
@@ -82,8 +53,6 @@ export default function KolOutreachOrderNumberField({
           onBlur={handleBlur}
           placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
           disabled={disabled}
-          required={required}
-          aria-invalid={Boolean(errorMessage)}
         />
         <button
           type="button"
@@ -94,7 +63,6 @@ export default function KolOutreachOrderNumberField({
           {t('hub.campaignKol.orderNumberUseNext').replace('{next}', suggested)}
         </button>
       </div>
-      {errorMessage ? <p className="kol-order-number-error">{errorMessage}</p> : null}
     </label>
   );
 }
