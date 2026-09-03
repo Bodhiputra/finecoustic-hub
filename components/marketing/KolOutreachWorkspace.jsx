@@ -26,12 +26,10 @@ import {
   kolOutreachBoardUrl,
   kolTransitionSteps,
   initiativeLabel,
-  latestKolOrderNumberSequence,
   normalizeApproachDirection,
   normalizeKolOutreachStatus,
   openKolWeibinExport,
   resolveKolInitiative,
-  suggestNextKolOrderNumber,
   DEFAULT_KOL_INITIATIVE,
 } from '@/lib/kol-outreach-shared';
 import {
@@ -455,13 +453,6 @@ export default function KolOutreachWorkspace({
 
   const activeTransitionStatus = transition?.steps?.[transition.stepIndex] || null;
 
-  const orderNumberRegistry = useMemo(() => {
-    const latestSeq = latestKolOrderNumberSequence(normalizedTasks);
-    const latest = latestSeq > 0 ? formatKolOrderNumber(latestSeq) : null;
-    const next = suggestNextKolOrderNumber(normalizedTasks);
-    return { latest, next };
-  }, [normalizedTasks]);
-
   const selectedWeibinExportIds = useMemo(
     () => normalizedTasks
       .filter(task => selectedIds.has(task.id) && isKolWeibinExportStatus(task.status))
@@ -533,15 +524,6 @@ export default function KolOutreachWorkspace({
               </button>
             ))}
           </div>
-
-          <p className="kol-order-number-board-note">
-            {orderNumberRegistry.latest
-              ? t('hub.campaignKol.orderNumberBoardNote')
-                .replace('{latest}', orderNumberRegistry.latest)
-                .replace('{next}', orderNumberRegistry.next)
-              : t('hub.campaignKol.orderNumberBoardNoteEmpty')
-                .replace('{next}', orderNumberRegistry.next)}
-          </p>
 
           <div className="kol-outreach-view-toggle" role="tablist" aria-label={t('hub.campaignKol.viewToggle')}>
             <button
