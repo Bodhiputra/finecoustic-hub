@@ -86,7 +86,6 @@ export default function KolOutreachWorkspace({
   const [transition, setTransition] = useState(null);
   const [busy, setBusy] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
-  const [bulkAssignee, setBulkAssignee] = useState('');
   const [selectMode, setSelectMode] = useState(false);
 
   useEffect(() => {
@@ -250,32 +249,7 @@ export default function KolOutreachWorkspace({
 
   function clearSelection() {
     setSelectedIds(new Set());
-    setBulkAssignee('');
     setSelectMode(false);
-  }
-
-  async function handleBulkAssign() {
-    const assignee = bulkAssignee.trim();
-    if (!assignee || selectedIds.size === 0) return;
-    setBusy(true);
-    try {
-      const ids = [...selectedIds];
-      const results = await Promise.allSettled(
-        ids.map(id => patchTask(id, { assignee }))
-      );
-      const ok = results.filter(r => r.status === 'fulfilled').length;
-      if (ok) {
-        toast.success(t('hub.campaignKol.bulkAssignSuccess').replace('{count}', String(ok)));
-        clearSelection();
-        await onTasksChanged?.();
-        signalHubNotificationsRefresh();
-      }
-      if (ok < ids.length) toast.error(t('common.somethingWrong'));
-    } catch {
-      toast.error(t('common.somethingWrong'));
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function syncPoolProducts(task, productRows) {
@@ -613,43 +587,6 @@ export default function KolOutreachWorkspace({
           </label>
         </div>
 
-        {selectedIds.size > 0 ? (
-          <div className="kol-outreach-bulk-bar">
-            <span className="kol-outreach-bulk-count">
-              {t('hub.campaignKol.selectedCount').replace('{count}', String(selectedIds.size))}
-            </span>
-            <label className="kol-outreach-bulk-assign">
-              <span>{t('hub.internal.taskPanel.assignee')}</span>
-              <select
-                value={bulkAssignee}
-                onChange={e => setBulkAssignee(e.target.value)}
-                disabled={busy}
-              >
-                <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
-                {assigneeOptions.map(name => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="appdev-btn-primary"
-              onClick={handleBulkAssign}
-              disabled={busy || !bulkAssignee.trim() || selectedIds.size === 0}
-            >
-              {t('hub.campaignKol.bulkAssign')}
-            </button>
-            {selectedIds.size < filtered.length ? (
-              <button type="button" className="appdev-btn-ghost" onClick={selectAllFiltered} disabled={busy}>
-                {t('hub.campaignKol.selectAllVisible')}
-              </button>
-            ) : null}
-            <button type="button" className="appdev-btn-ghost" onClick={clearSelection} disabled={busy}>
-              {t('hub.campaignKol.clearSelection')}
-            </button>
-          </div>
-        ) : null}
-
         {view === 'board' ? (
           <KolOutreachKanban
             tasks={filtered}
@@ -698,7 +635,6 @@ export default function KolOutreachWorkspace({
                         onClick={() => {
                           if (filtered.length > 0 && filtered.every(task => selectedIds.has(task.id))) {
                             setSelectedIds(new Set());
-                            setBulkAssignee('');
                           } else {
                             selectAllFiltered();
                           }
