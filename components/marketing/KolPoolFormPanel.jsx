@@ -43,7 +43,6 @@ function formPayload(fd, { links, collaboration_products, tags, kol_category }) 
     shipping_phone: fd.get('shipping_phone'),
     shipping_email: fd.get('shipping_email'),
     shipping_tax_id: fd.get('shipping_tax_id'),
-    shipping_notes: fd.get('shipping_notes'),
     collaboration_products,
   };
 }
@@ -421,9 +420,6 @@ export default function KolPoolFormPanel({
                       defaultValue={data.shipping_tax_id || ''}
                       placeholder={t('hub.kol.shippingTaxIdPlaceholder')}
                     />
-                  </FormField>
-                  <FormField label={t('hub.kol.shippingNotes')} span={2}>
-                    <textarea name="shipping_notes" rows={3} defaultValue={data.shipping_notes || ''} />
                   </FormField>
                 </div>
                 {kolShippingSummary(data) ? (

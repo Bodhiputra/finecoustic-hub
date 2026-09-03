@@ -4427,6 +4427,47 @@ button.internal-campaign-card {
   gap: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
 }
+.kol-order-number-board-note {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid color-mix(in srgb, #16a085 35%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, #16a085 10%, var(--surface));
+  color: color-mix(in srgb, #16a085 88%, var(--text));
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+.kol-order-number-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.kol-order-number-registry-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.kol-order-number-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.kol-order-number-input-row input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.kol-order-number-use-next {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.kol-order-number-error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #e74c3c;
+}
 .kol-outreach-view-toggle {
   display: inline-flex;
   border: 1px solid var(--line);
@@ -4751,6 +4792,9 @@ button.internal-campaign-card {
   border: 1px solid var(--line);
   border-radius: var(--kol-modal-panel-radius, 10px);
   background: var(--bg);
+}
+.kol-weibin-export-inline {
+  align-self: flex-start;
 }
 .kol-weibin-export-btn {
   display: inline-flex;

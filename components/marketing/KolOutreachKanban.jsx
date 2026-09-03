@@ -9,6 +9,7 @@ import {
   defaultKolOutreachStatusColumns,
   isKolWeibinExportStatus,
   normalizeKolOutreachStatus,
+  openKolWeibinExport,
 } from '@/lib/kol-outreach-shared';
 import { poolRecordForTask } from '@/lib/kol-outreach-utils';
 
@@ -80,11 +81,8 @@ export default function KolOutreachKanban({
     onStatusChange?.(task, to);
   }
 
-  function exportWeibinExcel() {
-    const params = new URLSearchParams();
-    if (initiativeFilter) params.set('initiative', initiativeFilter);
-    const qs = params.toString();
-    window.open(`/api/v1/marketing/kol-outreach/weibin-export${qs ? `?${qs}` : ''}`, '_blank', 'noopener,noreferrer');
+  function exportWeibinExcelAll() {
+    openKolWeibinExport({ initiative: initiativeFilter });
   }
 
   return (
@@ -112,11 +110,11 @@ export default function KolOutreachKanban({
                     <button
                       type="button"
                       className="kol-weibin-export-btn"
-                      onClick={exportWeibinExcel}
-                      title={t('hub.campaignKol.weibinExport')}
+                      onClick={exportWeibinExcelAll}
+                      title={t('hub.campaignKol.weibinExportAll')}
                     >
                       <Icon name="download" size={14} />
-                      <span>{t('hub.campaignKol.weibinExport')}</span>
+                      <span>{t('hub.campaignKol.weibinExportAll')}</span>
                     </button>
                   ) : null}
                 </header>

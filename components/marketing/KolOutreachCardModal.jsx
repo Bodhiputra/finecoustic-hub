@@ -7,6 +7,7 @@ import KolModal from '@/components/KolModal';
 import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
 import KolOutreachShipKitFields from '@/components/marketing/KolOutreachShipKitFields';
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
+import KolOutreachOrderNumberField from '@/components/marketing/KolOutreachOrderNumberField';
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { buildTeamAssigneeOptions } from '@/lib/internal';
@@ -20,12 +21,15 @@ import {
   KOL_NO_DEAL_REASON_PRESET_NO_REPLY,
   KOL_NO_DEAL_REASON_PRESET_OTHER,
   kolCardModalSections,
+  isKolWeibinExportStatus,
   normalizeApproachDirection,
   normalizeKolOutreachStatus,
+  openKolWeibinExport,
   parseDealProducts,
   resolveKolInitiative,
   resolveNoDealReasonPreset,
   serializeDealProducts,
+  validateKolOrderNumber,
 } from '@/lib/kol-outreach-shared';
 import { taskInitiative } from '@/lib/kol-outreach-utils';
 
@@ -48,6 +52,7 @@ export default function KolOutreachCardModal({
   onSave,
   onDelete,
   busy = false,
+  outreachTasks = [],
 }) {
   const { t } = useLocale();
   const cv = task?.custom_values || {};
@@ -202,12 +207,20 @@ export default function KolOutreachCardModal({
       nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
     }
     if (sections.weibin) {
+      const orderResult = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
+      if (orderNumber.trim() && !orderResult.ok) return;
       nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
-      nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
+      if (orderResult.ok && orderResult.normalized) {
+        nextCustom[KOL_BOARD_PROP.orderNumber] = orderResult.normalized;
+      }
     }
     if (sections.shipping) {
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
-      nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
+      const orderResult = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
+      if (orderNumber.trim() && !orderResult.ok) return;
+      if (orderResult.ok && orderResult.normalized) {
+        nextCustom[KOL_BOARD_PROP.orderNumber] = orderResult.normalized;
+      }
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
       nextCustom[KOL_BOARD_PROP.trackingSent] = trackingSent ? 'yes' : 'no';
       nextCustom[KOL_BOARD_PROP.mediaKitLink] = mediaKitLink.trim();
@@ -371,16 +384,13 @@ export default function KolOutreachCardModal({
 
         {sections.weibin ? (
           <Section title={t('hub.campaignKol.cardModalWeibin')}>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.orderNumber')}</span>
-              <span className="kol-shipping-field-hint">{t('hub.campaignKol.orderNumberWeibinHint')}</span>
-              <input
-                value={orderNumber}
-                onChange={e => setOrderNumber(e.target.value)}
-                placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
-                disabled={busy}
-              />
-            </label>
+            <KolOutreachOrderNumberField
+              value={orderNumber}
+              onChange={setOrderNumber}
+              outreachTasks={outreachTasks}
+              excludeTaskId={task.id}
+              disabled={busy}
+            />
             <label className="appdev-field">
               <span>{t('hub.campaignKol.weibinHandoffDate')}</span>
               <span className="kol-shipping-field-hint">{t('hub.campaignKol.weibinHandoffDateHint')}</span>
@@ -391,6 +401,16 @@ export default function KolOutreachCardModal({
                 disabled={busy}
               />
             </label>
+            {isKolWeibinExportStatus(status) ? (
+              <button
+                type="button"
+                className="appdev-btn-ghost kol-weibin-export-inline"
+                onClick={() => openKolWeibinExport({ taskIds: [task.id] })}
+                disabled={busy}
+              >
+                {t('hub.campaignKol.weibinExportOne')}
+              </button>
+            ) : null}
           </Section>
         ) : null}
 
@@ -428,6 +448,8 @@ export default function KolOutreachCardModal({
               orderNumber={orderNumber}
               onOrderNumberChange={setOrderNumber}
               showOrderNumber={!sections.weibin}
+              outreachTasks={outreachTasks}
+              excludeTaskId={task.id}
               mediaKitLink={mediaKitLink}
               onMediaKitLinkChange={setMediaKitLink}
               mediaKitSent={mediaKitSent}

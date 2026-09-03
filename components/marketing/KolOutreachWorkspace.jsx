@@ -21,12 +21,17 @@ import {
   KOL_DEAL_TYPES,
   KOL_INITIATIVES,
   defaultKolOutreachStatusColumns,
+  formatKolOrderNumber,
+  isKolWeibinExportStatus,
   kolOutreachBoardUrl,
   kolTransitionSteps,
   initiativeLabel,
+  latestKolOrderNumberSequence,
   normalizeApproachDirection,
   normalizeKolOutreachStatus,
+  openKolWeibinExport,
   resolveKolInitiative,
+  suggestNextKolOrderNumber,
   DEFAULT_KOL_INITIATIVE,
 } from '@/lib/kol-outreach-shared';
 import {
@@ -211,8 +216,15 @@ export default function KolOutreachWorkspace({
       credentials: 'same-origin',
       body: JSON.stringify(patch),
     });
-    if (!res.ok) throw new Error('patch_failed');
-    return unwrapData(await res.json(), 'task')?.task;
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const code = body?.error || 'patch_failed';
+      const err = new Error(code);
+      err.code = code;
+      err.detail = body?.detail;
+      throw err;
+    }
+    return unwrapData(body, 'task')?.task;
   }, []);
 
   const filteredIds = useMemo(() => new Set(filtered.map(task => task.id)), [filtered]);
@@ -308,8 +320,12 @@ export default function KolOutreachWorkspace({
       setCardTask(null);
       await onTasksChanged?.();
       signalHubNotificationsRefresh();
-    } catch {
-      toast.error(t('common.somethingWrong'));
+    } catch (err) {
+      if (err?.code?.startsWith('kol_order_number_')) {
+        orderNumberErrorToast(err.code, err.detail);
+      } else {
+        toast.error(t('common.somethingWrong'));
+      }
     } finally {
       setBusy(false);
     }
@@ -365,8 +381,12 @@ export default function KolOutreachWorkspace({
         await onTasksChanged?.();
         signalHubNotificationsRefresh();
       }
-    } catch {
-      toast.error(t('common.somethingWrong'));
+    } catch (err) {
+      if (err?.code?.startsWith('kol_order_number_')) {
+        orderNumberErrorToast(err.code, err.detail);
+      } else {
+        toast.error(t('common.somethingWrong'));
+      }
     } finally {
       setBusy(false);
     }
@@ -443,6 +463,42 @@ export default function KolOutreachWorkspace({
 
   const activeTransitionStatus = transition?.steps?.[transition.stepIndex] || null;
 
+  const orderNumberRegistry = useMemo(() => {
+    const latestSeq = latestKolOrderNumberSequence(normalizedTasks);
+    const latest = latestSeq > 0 ? formatKolOrderNumber(latestSeq) : null;
+    const next = suggestNextKolOrderNumber(normalizedTasks);
+    return { latest, next };
+  }, [normalizedTasks]);
+
+  const selectedWeibinExportIds = useMemo(
+    () => normalizedTasks
+      .filter(task => selectedIds.has(task.id) && isKolWeibinExportStatus(task.status))
+      .map(task => task.id),
+    [normalizedTasks, selectedIds]
+  );
+
+  function exportSelectedWeibinExcel() {
+    if (!selectedWeibinExportIds.length) {
+      toast.error(t('hub.campaignKol.weibinExportSelectedEmpty'));
+      return;
+    }
+    openKolWeibinExport({ taskIds: selectedWeibinExportIds });
+  }
+
+  function orderNumberErrorToast(code, detail) {
+    if (code === 'kol_order_number_duplicate') {
+      toast.error(
+        t('hub.campaignKol.orderNumberDuplicateServer').replace('{name}', String(detail || '—'))
+      );
+      return;
+    }
+    if (code === 'kol_order_number_invalid') {
+      toast.error(t('hub.campaignKol.orderNumberInvalidFormat'));
+      return;
+    }
+    toast.error(t('common.somethingWrong'));
+  }
+
   return (
     <>
       <DataWorkspaceShell
@@ -490,6 +546,15 @@ export default function KolOutreachWorkspace({
               </button>
             ))}
           </div>
+
+          <p className="kol-order-number-board-note">
+            {orderNumberRegistry.latest
+              ? t('hub.campaignKol.orderNumberBoardNote')
+                .replace('{latest}', orderNumberRegistry.latest)
+                .replace('{next}', orderNumberRegistry.next)
+              : t('hub.campaignKol.orderNumberBoardNoteEmpty')
+                .replace('{next}', orderNumberRegistry.next)}
+          </p>
 
           <div className="kol-outreach-view-toggle" role="tablist" aria-label={t('hub.campaignKol.viewToggle')}>
             {!selectMode ? (
@@ -615,6 +680,19 @@ export default function KolOutreachWorkspace({
             {selectedIds.size > 0 ? (
             <button
               type="button"
+              className="appdev-btn-ghost"
+              onClick={exportSelectedWeibinExcel}
+              disabled={busy || selectedWeibinExportIds.length === 0}
+            >
+              {t('hub.campaignKol.weibinExportSelected').replace(
+                '{count}',
+                String(selectedWeibinExportIds.length)
+              )}
+            </button>
+            ) : null}
+            {selectedIds.size > 0 ? (
+            <button
+              type="button"
               className="appdev-btn-primary"
               onClick={handleBulkAssign}
               disabled={busy || !bulkAssignee.trim() || selectedIds.size === 0}
@@ -725,6 +803,7 @@ export default function KolOutreachWorkspace({
         onSave={handleCardSave}
         onDelete={cardTask && canDeleteTaskFor(cardTask) ? handleCardDelete : undefined}
         busy={busy}
+        outreachTasks={normalizedTasks}
       />
 
       <KolOutreachMoreInfoModal
@@ -760,6 +839,7 @@ export default function KolOutreachWorkspace({
         stepCount={transition?.steps?.length ?? 0}
         displayName={displayName}
         poolRecord={transition?.task ? poolRecordForTask(transition.task, poolRecords) : null}
+        outreachTasks={normalizedTasks}
         onClose={handleTransitionClose}
         onConfirm={handleTransitionConfirm}
         busy={busy}

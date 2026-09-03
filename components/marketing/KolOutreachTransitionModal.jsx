@@ -14,6 +14,7 @@ import KolOutreachShippingAddressForm, {
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
+import KolOutreachOrderNumberField from '@/components/marketing/KolOutreachOrderNumberField';
 import {
   KOL_APPROACH_DIRECTIONS,
   KOL_APPROACH_PLATFORMS,
@@ -26,6 +27,8 @@ import {
   parseDealProducts,
   resolveNoDealReasonPreset,
   serializeDealProducts,
+  suggestNextKolOrderNumber,
+  validateKolOrderNumber,
 } from '@/lib/kol-outreach-shared';
 import { hasKolShippingAddress } from '@/lib/kol-pool';
 
@@ -41,6 +44,7 @@ export default function KolOutreachTransitionModal({
   stepCount = 0,
   displayName = '',
   poolRecord = null,
+  outreachTasks = [],
   onClose,
   onConfirm,
   busy = false,
@@ -131,6 +135,12 @@ export default function KolOutreachTransitionModal({
   }, [open, task, cv, poolRecord, displayName]);
 
   useEffect(() => {
+    if (!open || toStatus !== 'weibin' || !task) return;
+    if (cv[KOL_BOARD_PROP.orderNumber]) return;
+    setOrderNumber(suggestNextKolOrderNumber(outreachTasks));
+  }, [open, toStatus, task, cv, outreachTasks]);
+
+  useEffect(() => {
     if (!open || toStatus !== 'deal') return;
     fetch(API_V1.products, { credentials: 'same-origin' })
       .then(res => (res.ok ? res.json() : null))
@@ -195,14 +205,16 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.qcCheckedBy] = displayName;
     }
     if (toStatus === 'weibin') {
-      if (!orderNumber.trim()) return;
-      nextCustom[KOL_BOARD_PROP.orderNumber] = orderNumber.trim();
+      const result = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
+      if (!result.ok) return;
+      nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
     }
     if (toStatus === 'shipping') {
-      const resolvedOrderNumber = orderNumber.trim() || String(cv[KOL_BOARD_PROP.orderNumber] || '').trim();
-      if (!resolvedOrderNumber) return;
+      const resolvedRaw = orderNumber.trim() || String(cv[KOL_BOARD_PROP.orderNumber] || '').trim();
+      const result = validateKolOrderNumber(resolvedRaw, outreachTasks, task.id);
+      if (!result.ok) return;
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
-      nextCustom[KOL_BOARD_PROP.orderNumber] = resolvedOrderNumber;
+      nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
       nextCustom[KOL_BOARD_PROP.trackingLink] = trackingLink.trim();
       nextCustom[KOL_BOARD_PROP.trackingSent] = trackingSent ? 'yes' : 'no';
       if (trackingSent && !cv[KOL_BOARD_PROP.trackingSentAt]) {
@@ -358,17 +370,14 @@ export default function KolOutreachTransitionModal({
         {toStatus === 'weibin' ? (
           <div className="kol-modal-panel">
             <p className="kol-modal-sub">{t('hub.campaignKol.weibinHint')}</p>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.orderNumber')}</span>
-              <span className="kol-shipping-field-hint">{t('hub.campaignKol.orderNumberWeibinHint')}</span>
-              <input
-                value={orderNumber}
-                onChange={e => setOrderNumber(e.target.value)}
-                placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
-                required
-                disabled={busy}
-              />
-            </label>
+            <KolOutreachOrderNumberField
+              value={orderNumber}
+              onChange={setOrderNumber}
+              outreachTasks={outreachTasks}
+              excludeTaskId={task.id}
+              disabled={busy}
+              required
+            />
           </div>
         ) : null}
 
@@ -381,6 +390,8 @@ export default function KolOutreachTransitionModal({
             showOrderNumber={!String(cv[KOL_BOARD_PROP.orderNumber] || '').trim()}
             orderNumber={orderNumber}
             onOrderNumberChange={setOrderNumber}
+            outreachTasks={outreachTasks}
+            excludeTaskId={task.id}
             mediaKitLink={mediaKitLink}
             onMediaKitLinkChange={setMediaKitLink}
             mediaKitSent={mediaKitSent}

@@ -20,6 +20,10 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const initiative = String(searchParams.get('initiative') || '').trim().toLowerCase();
+  const taskIdsRaw = String(searchParams.get('task_ids') || '').trim();
+  const taskIdSet = taskIdsRaw
+    ? new Set(taskIdsRaw.split(',').map(id => id.trim()).filter(Boolean))
+    : null;
 
   const [tasks, { records: poolRecords }] = await Promise.all([
     listKolOutreachTasksForAlerts(),
@@ -27,10 +31,19 @@ export async function GET(request) {
   ]);
 
   let weibinTasks = tasks.filter(task => isKolWeibinExportStatus(task.status));
-  if (initiative) {
+  if (taskIdSet?.size) {
+    weibinTasks = weibinTasks.filter(task => taskIdSet.has(task.id));
+  } else if (initiative) {
     weibinTasks = weibinTasks.filter(task => {
       const raw = String(task?.custom_values?.[KOL_BOARD_PROP.initiative] || '').trim().toLowerCase();
       return raw === initiative;
+    });
+  }
+
+  if (!weibinTasks.length) {
+    return new Response(JSON.stringify({ error: 'weibin_export_empty' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 

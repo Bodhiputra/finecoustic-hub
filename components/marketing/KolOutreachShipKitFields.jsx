@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/components/LocaleProvider';
+import KolOutreachOrderNumberField from '@/components/marketing/KolOutreachOrderNumberField';
 
 function ToggleRow({ label, checked, onChange, disabled }) {
   return (
@@ -37,6 +38,8 @@ export default function KolOutreachShipKitFields({
   requireShippingDate = false,
   requireOrderNumber = false,
   showOrderNumber = true,
+  outreachTasks = [],
+  excludeTaskId = null,
 }) {
   const { t } = useLocale();
 
@@ -56,16 +59,28 @@ export default function KolOutreachShipKitFields({
       ) : null}
 
       {showOrderNumber ? (
-        <label className="appdev-field">
-          <span>{t('hub.campaignKol.orderNumber')}</span>
-          <input
-            value={orderNumber || ''}
-            onChange={e => onOrderNumberChange?.(e.target.value)}
-            placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
+        outreachTasks.length ? (
+          <KolOutreachOrderNumberField
+            value={orderNumber}
+            onChange={onOrderNumberChange}
+            outreachTasks={outreachTasks}
+            excludeTaskId={excludeTaskId}
             disabled={disabled}
             required={requireOrderNumber}
+            hintKey=""
           />
-        </label>
+        ) : (
+          <label className="appdev-field">
+            <span>{t('hub.campaignKol.orderNumber')}</span>
+            <input
+              value={orderNumber || ''}
+              onChange={e => onOrderNumberChange?.(e.target.value)}
+              placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
+              disabled={disabled}
+              required={requireOrderNumber}
+            />
+          </label>
+        )
       ) : null}
 
       <label className="appdev-field">

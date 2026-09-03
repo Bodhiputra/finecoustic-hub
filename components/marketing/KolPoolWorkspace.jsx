@@ -15,8 +15,10 @@ import {
   collectKolMainPlatformOptions,
   countKolBySection,
   filterKolBySection,
+  filterVisibleKolPool,
   hasKolShippingAddress,
   isHubNativeKol,
+  isKolVisibleInPool,
   KOL_TAG_LABEL_KEYS,
   kolLinkAriaLabel,
   kolLinkIconName,
@@ -79,7 +81,7 @@ export default function KolPoolWorkspace({
   const { t, locale } = useLocale();
   const { toast } = useToast();
   const [section, setSection] = useState(initialSection);
-  const [records, setRecords] = useState(initialRecords);
+  const [records, setRecords] = useState(() => filterVisibleKolPool(initialRecords));
   const [meta, setMeta] = useState(
     initialMeta || { last_synced_at: null, last_synced_by: '', record_count: 0, last_error: '', sync_status: 'idle' }
   );
@@ -97,7 +99,7 @@ export default function KolPoolWorkspace({
   const [syncing, setSyncing] = useState(false);
 
   const sectionRecords = useMemo(
-    () => filterKolBySection(records, section),
+    () => filterKolBySection(filterVisibleKolPool(records), section),
     [records, section]
   );
 
@@ -192,7 +194,7 @@ export default function KolPoolWorkspace({
       const nextMeta = data?.meta || meta;
       if (nextMeta.sync_status === 'syncing') continue;
       if (nextMeta.last_synced_at && nextMeta.last_synced_at !== startedAt) {
-        setRecords(Array.isArray(data?.records) ? data.records : []);
+        setRecords(filterVisibleKolPool(Array.isArray(data?.records) ? data.records : []));
         if (data?.meta) setMeta(data.meta);
         if (data?.counts) setCounts(data.counts);
         if (nextMeta.last_error) {
@@ -241,7 +243,7 @@ export default function KolPoolWorkspace({
         await pollSyncResult(startedAt);
         return;
       }
-      const nextRecords = Array.isArray(data?.records) ? data.records : [];
+      const nextRecords = filterVisibleKolPool(Array.isArray(data?.records) ? data.records : []);
       setRecords(nextRecords);
       if (data?.meta) setMeta(data.meta);
       if (data?.counts) setCounts(data.counts);
@@ -256,19 +258,29 @@ export default function KolPoolWorkspace({
   function handleSaved(record) {
     if (!record) return;
     setRecords(prev => {
-      const idx = prev.findIndex(r => r.notion_page_id === record.notion_page_id);
-      const next = idx >= 0
-        ? prev.map((r, i) => (i === idx ? record : r))
-        : [...prev, record].sort((a, b) => a.channel_name.localeCompare(b.channel_name));
-      setCounts(countKolBySection(next));
-      return next;
+      const visible = filterVisibleKolPool(
+        isKolVisibleInPool(record)
+          ? (() => {
+              const idx = prev.findIndex(r => r.notion_page_id === record.notion_page_id);
+              if (idx >= 0) return prev.map((r, i) => (i === idx ? record : r));
+              return [...prev, record].sort((a, b) =>
+                a.channel_name.localeCompare(b.channel_name)
+              );
+            })()
+          : prev.filter(r => r.notion_page_id !== record.notion_page_id)
+      );
+      setCounts(countKolBySection(visible));
+      return visible;
     });
+    if (!isKolVisibleInPool(record)) {
+      setEditing(null);
+    }
   }
 
   function handleDeleted(notionPageId) {
     if (!notionPageId) return;
     setRecords(prev => {
-      const next = prev.filter(r => r.notion_page_id !== notionPageId);
+      const next = filterVisibleKolPool(prev.filter(r => r.notion_page_id !== notionPageId));
       setCounts(countKolBySection(next));
       return next;
     });
