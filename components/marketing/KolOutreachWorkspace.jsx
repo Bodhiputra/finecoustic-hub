@@ -22,7 +22,6 @@ import {
   KOL_DEAL_TYPES,
   KOL_INITIATIVES,
   defaultKolOutreachStatusColumns,
-  formatKolOrderNumber,
   isKolWeibinExportStatus,
   kolOutreachBoardUrl,
   kolTransitionSteps,

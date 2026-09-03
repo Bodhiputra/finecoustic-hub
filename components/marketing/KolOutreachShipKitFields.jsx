@@ -65,7 +65,6 @@ export default function KolOutreachShipKitFields({
             onChange={onOrderNumberChange}
             outreachTasks={outreachTasks}
             disabled={disabled}
-            hintKey=""
           />
         ) : (
           <label className="appdev-field">
