@@ -207,7 +207,8 @@ export default function KolOutreachCardModal({
       nextCustom[KOL_BOARD_PROP.qcPassed] = qcPassed ? 'yes' : 'no';
     }
     if (sections.weibin) {
-      const orderResult = validateKolOrderNumber(orderNumber);
+      const orderResult = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
+      if (orderNumber.trim() && !orderResult.ok) return;
       nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
       if (orderResult.normalized) {
         nextCustom[KOL_BOARD_PROP.orderNumber] = orderResult.normalized;
@@ -215,7 +216,8 @@ export default function KolOutreachCardModal({
     }
     if (sections.shipping) {
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
-      const orderResult = validateKolOrderNumber(orderNumber);
+      const orderResult = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
+      if (orderNumber.trim() && !orderResult.ok) return;
       if (orderResult.normalized) {
         nextCustom[KOL_BOARD_PROP.orderNumber] = orderResult.normalized;
       }
@@ -386,6 +388,7 @@ export default function KolOutreachCardModal({
               value={orderNumber}
               onChange={setOrderNumber}
               outreachTasks={outreachTasks}
+              excludeTaskId={task.id}
               disabled={busy}
             />
             <label className="appdev-field">

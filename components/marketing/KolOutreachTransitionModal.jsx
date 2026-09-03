@@ -205,14 +205,16 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.qcCheckedBy] = displayName;
     }
     if (toStatus === 'weibin') {
-      const result = validateKolOrderNumber(orderNumber);
+      const result = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
+      if (orderNumber.trim() && !result.ok) return;
       if (result.normalized) {
         nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
       }
     }
     if (toStatus === 'shipping') {
       const resolvedRaw = orderNumber.trim() || String(cv[KOL_BOARD_PROP.orderNumber] || '').trim();
-      const result = validateKolOrderNumber(resolvedRaw);
+      const result = validateKolOrderNumber(resolvedRaw, outreachTasks, task.id);
+      if (resolvedRaw && !result.ok) return;
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
       if (result.normalized) {
         nextCustom[KOL_BOARD_PROP.orderNumber] = result.normalized;
@@ -376,6 +378,7 @@ export default function KolOutreachTransitionModal({
               value={orderNumber}
               onChange={setOrderNumber}
               outreachTasks={outreachTasks}
+              excludeTaskId={task.id}
               disabled={busy}
             />
           </div>

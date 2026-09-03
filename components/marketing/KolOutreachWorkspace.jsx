@@ -292,8 +292,12 @@ export default function KolOutreachWorkspace({
       setCardTask(null);
       await onTasksChanged?.();
       signalHubNotificationsRefresh();
-    } catch {
-      toast.error(t('common.somethingWrong'));
+    } catch (err) {
+      if (err?.code?.startsWith('kol_order_number_')) {
+        orderNumberErrorToast(err.code, err.detail);
+      } else {
+        toast.error(t('common.somethingWrong'));
+      }
     } finally {
       setBusy(false);
     }
@@ -349,8 +353,12 @@ export default function KolOutreachWorkspace({
         await onTasksChanged?.();
         signalHubNotificationsRefresh();
       }
-    } catch {
-      toast.error(t('common.somethingWrong'));
+    } catch (err) {
+      if (err?.code?.startsWith('kol_order_number_')) {
+        orderNumberErrorToast(err.code, err.detail);
+      } else {
+        toast.error(t('common.somethingWrong'));
+      }
     } finally {
       setBusy(false);
     }
@@ -449,6 +457,16 @@ export default function KolOutreachWorkspace({
       return;
     }
     openKolWeibinExport({ taskIds: selectedWeibinExportIds });
+  }
+
+  function orderNumberErrorToast(code, detail) {
+    if (code === 'kol_order_number_duplicate') {
+      toast.error(
+        t('hub.campaignKol.orderNumberDuplicateServer').replace('{name}', String(detail || '—'))
+      );
+      return;
+    }
+    toast.error(t('common.somethingWrong'));
   }
 
   return (

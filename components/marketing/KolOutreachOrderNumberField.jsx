@@ -3,14 +3,26 @@
 import { useMemo } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import {
-  normalizeKolOrderNumber,
+  normalizeKolOrderNumberField,
   suggestNextKolOrderNumber,
+  validateKolOrderNumber,
 } from '@/lib/kol-outreach-shared';
+
+export function kolOrderNumberErrorMessage(validation, t) {
+  if (!validation || validation.ok) return '';
+  if (validation.code === 'duplicate') {
+    return t('hub.campaignKol.orderNumberDuplicate')
+      .replace('{number}', validation.normalized || '')
+      .replace('{name}', validation.conflict?.title || '—');
+  }
+  return '';
+}
 
 export default function KolOutreachOrderNumberField({
   value,
   onChange,
   outreachTasks = [],
+  excludeTaskId = null,
   disabled = false,
 }) {
   const { t } = useLocale();
@@ -20,10 +32,17 @@ export default function KolOutreachOrderNumberField({
     [outreachTasks]
   );
 
+  const validation = useMemo(() => {
+    if (!String(value || '').trim()) return { ok: true };
+    return validateKolOrderNumber(value, outreachTasks, excludeTaskId);
+  }, [value, outreachTasks, excludeTaskId]);
+
+  const errorMessage = kolOrderNumberErrorMessage(validation, t);
+
   function handleBlur() {
     const trimmed = String(value || '').trim();
     if (!trimmed) return;
-    const normalized = normalizeKolOrderNumber(trimmed);
+    const normalized = normalizeKolOrderNumberField(trimmed);
     if (normalized && normalized !== trimmed) onChange?.(normalized);
   }
 
@@ -37,6 +56,7 @@ export default function KolOutreachOrderNumberField({
           onBlur={handleBlur}
           placeholder={t('hub.campaignKol.orderNumberPlaceholder')}
           disabled={disabled}
+          aria-invalid={Boolean(errorMessage)}
         />
         <button
           type="button"
@@ -47,6 +67,7 @@ export default function KolOutreachOrderNumberField({
           {t('hub.campaignKol.orderNumberUseNext').replace('{next}', suggested)}
         </button>
       </div>
+      {errorMessage ? <p className="kol-order-number-error">{errorMessage}</p> : null}
     </label>
   );
 }
