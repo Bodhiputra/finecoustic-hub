@@ -9,8 +9,10 @@ import KolOutreachShipKitFields from '@/components/marketing/KolOutreachShipKitF
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
 import KolOutreachOrderNumberField from '@/components/marketing/KolOutreachOrderNumberField';
 import { useLocale } from '@/components/LocaleProvider';
+import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { buildTeamAssigneeOptions } from '@/lib/internal';
+import { getTaskPanelCapabilities } from '@/lib/internal-task-panel-permissions';
 import {
   KOL_APPROACH_DIRECTIONS,
   KOL_APPROACH_PLATFORMS,
@@ -47,6 +49,7 @@ export default function KolOutreachCardModal({
   task,
   teamMembers = [],
   displayName = '',
+  isManager = false,
   defaultInitiative = '',
   onClose,
   onSave,
@@ -55,9 +58,14 @@ export default function KolOutreachCardModal({
   outreachTasks = [],
 }) {
   const { t } = useLocale();
+  const { toast } = useToast();
   const cv = task?.custom_values || {};
   const status = normalizeKolOutreachStatus(task?.status);
   const sections = useMemo(() => kolCardModalSections(status), [status]);
+  const caps = useMemo(
+    () => getTaskPanelCapabilities(task, { displayName, isManager }),
+    [task, displayName, isManager]
+  );
 
   const [assignee, setAssignee] = useState('');
   const [initiative, setInitiative] = useState('');
@@ -208,7 +216,14 @@ export default function KolOutreachCardModal({
     }
     if (sections.weibin) {
       const orderResult = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
-      if (orderNumber.trim() && !orderResult.ok) return;
+      if (orderNumber.trim() && !orderResult.ok) {
+        toast.error(
+          t('hub.campaignKol.orderNumberDuplicate')
+            .replace('{number}', orderResult.normalized || orderNumber.trim())
+            .replace('{name}', orderResult.conflict?.title || '—')
+        );
+        return;
+      }
       nextCustom[KOL_BOARD_PROP.weibinHandoffDate] = weibinHandoffDate;
       if (orderResult.normalized) {
         nextCustom[KOL_BOARD_PROP.orderNumber] = orderResult.normalized;
@@ -217,7 +232,14 @@ export default function KolOutreachCardModal({
     if (sections.shipping) {
       nextCustom[KOL_BOARD_PROP.shippingDate] = shippingDate;
       const orderResult = validateKolOrderNumber(orderNumber, outreachTasks, task.id);
-      if (orderNumber.trim() && !orderResult.ok) return;
+      if (orderNumber.trim() && !orderResult.ok) {
+        toast.error(
+          t('hub.campaignKol.orderNumberDuplicate')
+            .replace('{number}', orderResult.normalized || orderNumber.trim())
+            .replace('{name}', orderResult.conflict?.title || '—')
+        );
+        return;
+      }
       if (orderResult.normalized) {
         nextCustom[KOL_BOARD_PROP.orderNumber] = orderResult.normalized;
       }
@@ -259,7 +281,7 @@ export default function KolOutreachCardModal({
         <Section title={t('hub.campaignKol.cardModalBasics')}>
           <label className="appdev-field">
             <span>{t('hub.internal.taskPanel.assignee')}</span>
-            <select value={assignee} onChange={e => setAssignee(e.target.value)} disabled={busy}>
+            <select value={assignee} onChange={e => setAssignee(e.target.value)} disabled={busy || !caps.canEditAssignee}>
               <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
               {assigneeOptions.map(name => (
                 <option key={name} value={name}>{name}</option>

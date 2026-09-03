@@ -295,6 +295,8 @@ export default function KolOutreachWorkspace({
     } catch (err) {
       if (err?.code?.startsWith('kol_order_number_')) {
         orderNumberErrorToast(err.code, err.detail);
+      } else if (err?.code === 'task_locked') {
+        toast.error(t('hub.internal.taskPanel.errors.taskLocked'));
       } else {
         toast.error(t('common.somethingWrong'));
       }
@@ -708,6 +710,7 @@ export default function KolOutreachWorkspace({
         task={cardTask}
         teamMembers={teamMembers}
         displayName={displayName}
+        isManager={Boolean(actor?.isManager)}
         defaultInitiative={initiativeFilter}
         onClose={() => setCardTask(null)}
         onSave={handleCardSave}
