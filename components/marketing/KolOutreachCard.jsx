@@ -6,10 +6,8 @@ import { useLocale } from '@/components/LocaleProvider';
 import { kolLinkAriaLabel, kolOutreachPlatformIconName } from '@/lib/kol-pool';
 import { canDragOutreachCard, isNoDealCard, kolCardChips, needsFollowUp } from '@/lib/kol-outreach-utils';
 import {
-  isKolWeibinExportStatus,
   KOL_BOARD_PROP,
   normalizeKolOutreachStatus,
-  openKolWeibinExport,
 } from '@/lib/kol-outreach-shared';
 
 export default function KolOutreachCard({
@@ -38,7 +36,6 @@ export default function KolOutreachCard({
   const dimmed = isNoDealCard(task);
   const canDrag = draggable && canDragOutreachCard(task, displayName, { isManager, isAdmin });
   const showFollowUp = normalizeKolOutreachStatus(task.status) === 'waiting_response';
-  const showWeibinExport = isKolWeibinExportStatus(task.status);
   const outreachLead = isManager || isAdmin;
   const showAssigneeHint = !canDrag && draggable && assignee && assignee !== displayName && !outreachLead;
   const showUnassignedHint = !assignee && !outreachLead;
@@ -133,18 +130,6 @@ export default function KolOutreachCard({
                 onClick={() => onFollowUp?.(task)}
               >
                 {t('hub.campaignKol.followUpAction')}
-              </button>
-            ) : null}
-            {showWeibinExport ? (
-              <button
-                type="button"
-                className="kol-outreach-card-action"
-                onClick={e => {
-                  e.stopPropagation();
-                  openKolWeibinExport({ taskIds: [task.id] });
-                }}
-              >
-                {t('hub.campaignKol.weibinExportOne')}
               </button>
             ) : null}
           </div>
