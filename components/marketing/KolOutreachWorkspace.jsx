@@ -26,6 +26,7 @@ import {
   kolOutreachBoardUrl,
   kolTransitionSteps,
   initiativeLabel,
+  KOL_ORDER_NUMBER_EXTERNAL_FLOOR,
   latestKolOrderNumberSequence,
   normalizeApproachDirection,
   normalizeKolOutreachStatus,
@@ -494,6 +495,14 @@ export default function KolOutreachWorkspace({
     }
     if (code === 'kol_order_number_invalid') {
       toast.error(t('hub.campaignKol.orderNumberInvalidFormat'));
+      return;
+    }
+    if (code === 'kol_order_number_reserved') {
+      toast.error(
+        t('hub.campaignKol.orderNumberReserved')
+          .replace('{latest}', formatKolOrderNumber(KOL_ORDER_NUMBER_EXTERNAL_FLOOR))
+          .replace('{next}', String(detail || suggestNextKolOrderNumber(normalizedTasks)))
+      );
       return;
     }
     toast.error(t('common.somethingWrong'));

@@ -19,6 +19,11 @@ export function kolOrderNumberErrorMessage(validation, t) {
       .replace('{number}', validation.normalized || '')
       .replace('{name}', validation.conflict?.title || '—');
   }
+  if (validation.code === 'reserved') {
+    return t('hub.campaignKol.orderNumberReserved')
+      .replace('{latest}', formatKolOrderNumber(validation.floor || 0))
+      .replace('{next}', validation.next || '');
+  }
   return t('hub.campaignKol.orderNumberInvalidFormat');
 }
 
