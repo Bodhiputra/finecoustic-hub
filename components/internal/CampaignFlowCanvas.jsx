@@ -22,7 +22,6 @@ import { useLocale } from '@/components/LocaleProvider';
 import FlowCanvasContextMenu from '@/components/internal/FlowCanvasContextMenu';
 import { FlowCanvasActionsContext } from '@/components/internal/FlowCanvasActionsContext';
 import FrameworkFlowNode from '@/components/internal/FrameworkFlowNode';
-import Icon from '@/components/Icon';
 import {
   flowCanvasTaskIds,
   flowNodeStatusClass,
@@ -584,17 +583,6 @@ function CampaignFlowCanvasInner({
     [canAddTask, canAddMilestone, canAddKanban, canAddLabel, canAddFrame, onCanvasAddNode, screenToFlowPosition]
   );
 
-  const addFrameworkNodeAtCenter = useCallback(
-    kind => {
-      if (!onCanvasAddNode) return;
-      const bounds = document.querySelector('.campaign-flow-canvas')?.getBoundingClientRect();
-      const cx = bounds ? bounds.left + bounds.width / 2 : window.innerWidth / 2;
-      const cy = bounds ? bounds.top + bounds.height / 2 : window.innerHeight / 2;
-      onCanvasAddNode({ kind, position: flowPositionAtCursor(screenToFlowPosition, cx, cy) });
-    },
-    [onCanvasAddNode, screenToFlowPosition]
-  );
-
   const onNodeContextMenu = useCallback(event => {
     event.preventDefault();
   }, []);
@@ -697,19 +685,6 @@ function CampaignFlowCanvasInner({
   return (
     <FlowCanvasActionsContext.Provider value={flowActionsRef}>
       <div className="campaign-flow-canvas">
-        {frameworkMode ? (
-          <div className="campaign-flow-framework-toolbar" role="toolbar" aria-label={t('hub.internal.frameworkMapToolbar')}>
-            <button type="button" className="appdev-btn-ghost" onClick={() => addFrameworkNodeAtCenter('label')}>
-              <Icon name="plus" size={14} />
-              {t('hub.internal.addFrameworkLabel')}
-            </button>
-            <button type="button" className="appdev-btn-ghost" onClick={() => addFrameworkNodeAtCenter('frame')}>
-              <Icon name="plus" size={14} />
-              {t('hub.internal.addFrameworkFrame')}
-            </button>
-            <span className="campaign-flow-framework-hint">{t('hub.internal.frameworkMapHint')}</span>
-          </div>
-        ) : null}
         <ReactFlow
           colorMode={colorMode}
           nodes={nodes}
@@ -735,18 +710,19 @@ function CampaignFlowCanvasInner({
           elevateNodesOnSelect={false}
           autoPanOnNodeDrag={false}
           selectNodesOnDrag={false}
-          selectionOnDrag
           selectionMode={SelectionMode.Partial}
-          panOnScroll
-          panOnScrollMode="free"
-          panOnDrag={false}
-          zoomOnScroll={false}
+          panOnDrag
+          zoomOnScroll
+          panOnScroll={false}
           zoomOnPinch
-          multiSelectionKeyCode="Shift"
+          preventScrolling
+          selectionOnDrag={false}
+          selectionKeyCode="Shift"
+          panActivationKeyCode="Space"
           proOptions={{ hideAttribution: true }}
         >
           {showBackground ? <Background gap={22} size={1} /> : null}
-          <Controls />
+          <Controls position="bottom-right" />
         </ReactFlow>
         <FlowCanvasContextMenu
           open={Boolean(contextMenu)}

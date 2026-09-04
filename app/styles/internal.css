@@ -2299,11 +2299,27 @@ button.internal-campaign-card {
 }
 
 .campaign-flow-canvas {
+  display: flex;
+  flex-direction: column;
   min-height: 420px;
   border: 1px solid var(--line, var(--border));
   border-radius: var(--radius-lg, 12px);
   overflow: hidden;
   background: var(--surface-1, var(--bg));
+}
+
+.campaign-flow-canvas .react-flow {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.campaign-flow-canvas .react-flow__pane {
+  cursor: grab;
+}
+
+.campaign-flow-canvas .react-flow__pane:active {
+  cursor: grabbing;
 }
 
 .campaign-flow-context-menu {
@@ -2390,6 +2406,9 @@ button.internal-campaign-card {
   border-radius: var(--radius-sm);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  bottom: 14px;
+  right: 14px;
+  left: auto;
 }
 
 .campaign-flow-canvas .react-flow__controls-button {
@@ -6542,22 +6561,6 @@ button.internal-campaign-card {
   font-size: 0.72rem;
   opacity: 0.65;
   margin-top: 0.35rem;
-}
-
-.campaign-flow-framework-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--line, var(--border));
-  background: color-mix(in srgb, var(--surface-2, var(--card)) 92%, transparent);
-}
-
-.campaign-flow-framework-hint {
-  margin-left: auto;
-  font-size: 0.8125rem;
-  color: var(--muted);
 }
 
 .campaign-flow-node.is-framework {
