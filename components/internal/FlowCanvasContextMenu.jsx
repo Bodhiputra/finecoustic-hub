@@ -4,10 +4,15 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Icon from '@/components/Icon';
 
-const MENU_ITEMS = [
+const WORKFLOW_ITEMS = [
   { kind: 'task', labelKey: 'addTaskIssue', icon: 'plus' },
   { kind: 'milestone', labelKey: 'addMilestone', icon: 'calendar' },
   { kind: 'kanban', labelKey: 'addKanbanNode', icon: 'kanban' },
+];
+
+const FRAMEWORK_ITEMS = [
+  { kind: 'label', labelKey: 'addFrameworkLabel', icon: 'plus' },
+  { kind: 'frame', labelKey: 'addFrameworkFrame', icon: 'layout' },
 ];
 
 export default function FlowCanvasContextMenu({
@@ -18,6 +23,9 @@ export default function FlowCanvasContextMenu({
   canAddTask = false,
   canAddMilestone = false,
   canAddKanban = false,
+  canAddLabel = false,
+  canAddFrame = false,
+  frameworkMode = false,
   onPick,
   onClose,
 }) {
@@ -42,10 +50,13 @@ export default function FlowCanvasContextMenu({
 
   if (!open || typeof document === 'undefined') return null;
 
-  const items = MENU_ITEMS.filter(item => {
+  const catalog = frameworkMode ? FRAMEWORK_ITEMS : WORKFLOW_ITEMS;
+  const items = catalog.filter(item => {
     if (item.kind === 'task') return canAddTask;
     if (item.kind === 'milestone') return canAddMilestone;
     if (item.kind === 'kanban') return canAddKanban;
+    if (item.kind === 'label') return canAddLabel;
+    if (item.kind === 'frame') return canAddFrame;
     return false;
   });
 

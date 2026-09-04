@@ -31,6 +31,7 @@ import OpsExpensesPanel from '@/components/ops/OpsExpensesPanel';
 import { PERSONAL_JOT_DOWN_TOOL } from '@/lib/personal-jots-shared';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
 import { appendKanbanNodeToFlow, flowNodeStatusLabel, syncBoardNameInFlow, appendTaskNodeToFlow } from '@/lib/campaign-flow-utils';
+import { appendFrameworkNodeToFlow, isFrameworkMapCampaign } from '@/lib/framework-map';
 import { boardStatusColumns, flowStatusColumns, statusColumnLabel } from '@/lib/internal-campaigns';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import {
@@ -406,6 +407,7 @@ export default function InternalDepartment({
 
   const boardView = Boolean(effectiveBoardParam && resolvedBoard);
   const flowView = Boolean(flowParam && resolvedCampaign);
+  const frameworkMapMode = flowView && isFrameworkMapCampaign(resolvedCampaign);
   const createScopeDepartment = useMemo(() => {
     if (personalMode) return PERSONAL_DEPARTMENT_ID;
     if (boardView && resolvedBoard?.department) return resolvedBoard.department;
@@ -923,6 +925,14 @@ export default function InternalDepartment({
 
   function handleCanvasAddNode({ kind, position }) {
     pendingFlowPositionRef.current = position;
+    if (kind === 'label' || kind === 'frame') {
+      if (!activeCampaign?.id) return;
+      const pos = position ?? pendingFlowPositionRef.current;
+      pendingFlowPositionRef.current = null;
+      const nextFlow = appendFrameworkNodeToFlow(activeCampaign.flow_data, { nodeType: kind }, pos);
+      saveFlowFromParent(nextFlow);
+      return;
+    }
     if (kind === 'kanban') {
       setKanbanCreateOpen(true);
       return;
@@ -1253,7 +1263,7 @@ export default function InternalDepartment({
           </div>
         ) : null}
 
-        {flowTaskSection && (
+        {flowTaskSection && !frameworkMapMode && (
           <div className="internal-dept-toolbar internal-dept-toolbar--board">
             <div className="internal-dept-view-tabs" role="toolbar" aria-label={t('hub.internal.flow')}>
               {flowViews.map(({ id, label, icon }) => (
@@ -1568,7 +1578,7 @@ export default function InternalDepartment({
           />
         )}
 
-        {flowTaskSection && flowCview === 'flow' && (
+        {flowTaskSection && (frameworkMapMode || flowCview === 'flow') && (
           <CampaignFlowCanvas
             campaign={resolvedCampaign}
             tasks={workspaceItems}
@@ -1582,14 +1592,17 @@ export default function InternalDepartment({
             }
             onSaveFlowData={handleSaveFlowData}
             onCanvasAddNode={handleCanvasAddNode}
-            canAddTask={canCreate}
-            canAddMilestone={canCreate}
-            canAddKanban={canEditBoard}
+            canAddTask={frameworkMapMode ? false : canCreate}
+            canAddMilestone={frameworkMapMode ? false : canCreate}
+            canAddKanban={frameworkMapMode ? false : canEditBoard}
+            canAddLabel={frameworkMapMode && canCreate}
+            canAddFrame={frameworkMapMode && canCreate}
+            frameworkMode={frameworkMapMode}
             statusLabelFor={flowStatusLabel}
           />
         )}
 
-        {flowTaskSection && flowCview === 'board' && (
+        {flowTaskSection && !frameworkMapMode && flowCview === 'board' && (
           <InternalBoard
             tasks={workspaceItems}
             onTaskClick={setPanelTask}
@@ -1599,7 +1612,7 @@ export default function InternalDepartment({
           />
         )}
 
-        {flowTaskSection && flowCview === 'list' && (
+        {flowTaskSection && !frameworkMapMode && flowCview === 'list' && (
           <InternalListView
             tasks={workspaceItems}
             onTaskClick={setPanelTask}

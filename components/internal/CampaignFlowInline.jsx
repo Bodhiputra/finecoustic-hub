@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { API_V1, internalTasksQuery, unwrapData } from '@/lib/api/routes';
 import { navigateToBoardOrigin } from '@/lib/client-board-nav';
 import { appendKanbanNodeToFlow, appendTaskNodeToFlow, flowNodeStatusLabel } from '@/lib/campaign-flow-utils';
+import { appendFrameworkNodeToFlow, isFrameworkMapCampaign } from '@/lib/framework-map';
 import { dispatchBoardsChanged } from '@/lib/internal-boards';
 import { useFlowKanbanPickerBoards } from '@/hooks/useFlowKanbanPickerBoards';
 import { bumpLocalEditQuiet, useInternalWorkspacePoll } from '@/hooks/useInternalWorkspacePoll';
@@ -326,12 +327,22 @@ export default function CampaignFlowInline({
 
   function handleCanvasAddNode({ kind, position }) {
     pendingFlowPositionRef.current = position;
+    if (kind === 'label' || kind === 'frame') {
+      if (!campaign?.id) return;
+      const pos = position ?? pendingFlowPositionRef.current;
+      pendingFlowPositionRef.current = null;
+      const nextFlow = appendFrameworkNodeToFlow(campaign.flow_data, { nodeType: kind }, pos);
+      saveFlowFromParent(nextFlow);
+      return;
+    }
     if (kind === 'kanban') {
       setKanbanCreateOpen(true);
       return;
     }
     onOpenNewTask?.(kind);
   }
+
+  const frameworkMode = isFrameworkMapCampaign(campaign);
 
   const flowStatusLabel = useCallback(
     (statusId, kind = 'task') => flowNodeStatusLabel(statusId, kind, t, flowStatusColumns(), statusColumnLabel),
@@ -368,7 +379,11 @@ export default function CampaignFlowInline({
         </button>
         <div className="internal-campaign-flow-inline-title">
           <h2>{campaign.name}</h2>
-          <p>{t('hub.internal.campaignFlowOnlyMeta')}</p>
+          <p>
+            {frameworkMode
+              ? t('hub.internal.frameworkMapMeta')
+              : t('hub.internal.campaignFlowOnlyMeta')}
+          </p>
         </div>
       </header>
 
@@ -386,9 +401,7 @@ export default function CampaignFlowInline({
         </div>
       ) : null}
 
-      {tasksLoading && !tasks.length ? (
-        <p className="internal-empty route-loading-inline">{t('hub.internal.loadingCampaigns')}</p>
-      ) : (
+      {frameworkMode || !(tasksLoading && !tasks.length) ? (
         <CampaignFlowCanvas
           campaign={campaign}
           tasks={tasks}
@@ -402,11 +415,16 @@ export default function CampaignFlowInline({
           }
           onSaveFlowData={handleSaveFlowData}
           onCanvasAddNode={handleCanvasAddNode}
-          canAddTask={canCreate}
-          canAddMilestone={canCreate}
-          canAddKanban={canEditBoard}
+          canAddTask={frameworkMode ? false : canCreate}
+          canAddMilestone={frameworkMode ? false : canCreate}
+          canAddKanban={frameworkMode ? false : canEditBoard}
+          canAddLabel={frameworkMode && canCreate}
+          canAddFrame={frameworkMode && canCreate}
+          frameworkMode={frameworkMode}
           statusLabelFor={flowStatusLabel}
         />
+      ) : (
+        <p className="internal-empty route-loading-inline">{t('hub.internal.loadingCampaigns')}</p>
       )}
 
       <KanbanCreateModal

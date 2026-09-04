@@ -9,6 +9,7 @@ import { useHubPermissions } from '@/hooks/useHubPermissions';
 import { usePrompt } from '@/hooks/usePrompt';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
+import { isFrameworkMapCampaign } from '@/lib/framework-map';
 
 export default function CampaignsWorkspace({
   initialProfile = null,
@@ -52,9 +53,10 @@ export default function CampaignsWorkspace({
     refresh().finally(() => setLoading(false));
   }, [loadedOnce, refresh]);
 
-  async function createCampaign() {
+  async function createCampaign(mapMode = 'workflow') {
+    const isFramework = mapMode === 'framework';
     const name = await requestPrompt({
-      title: t('hub.internal.addCampaign'),
+      title: isFramework ? t('hub.internal.addFrameworkMap') : t('hub.internal.addCampaign'),
       label: t('hub.internal.campaignNamePrompt'),
       confirmLabel: t('common.confirm'),
       cancelLabel: t('common.cancel'),
@@ -66,11 +68,23 @@ export default function CampaignsWorkspace({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ name, department: 'all', flow_enabled: true }),
+        body: JSON.stringify({
+          name,
+          department: 'all',
+          flow_enabled: true,
+          map_mode: mapMode,
+        }),
       });
       if (res.ok) {
+        const body = await res.json();
+        const data = unwrapData(body);
         await refresh();
-        toast.success(t('hub.internal.campaignCreated'));
+        toast.success(
+          isFramework ? t('hub.internal.frameworkMapCreated') : t('hub.internal.campaignCreated')
+        );
+        if (isFramework && data?.campaign?.id) {
+          onOpenFlow?.(data.campaign.id);
+        }
       } else {
         toast.error(t('common.somethingWrong'));
       }
@@ -166,15 +180,26 @@ export default function CampaignsWorkspace({
           <h2>{t('hub.internal.campaignList')}</h2>
         </div>
         {canCreate ? (
-          <button
-            type="button"
-            className="appdev-btn-primary"
-            onClick={createCampaign}
-            disabled={busy}
-          >
-            <Icon name="plus" size={16} />
-            {t('hub.internal.addCampaign')}
-          </button>
+          <div className="internal-campaigns-head-actions">
+            <button
+              type="button"
+              className="appdev-btn-primary"
+              onClick={() => createCampaign('workflow')}
+              disabled={busy}
+            >
+              <Icon name="plus" size={16} />
+              {t('hub.internal.addCampaign')}
+            </button>
+            <button
+              type="button"
+              className="appdev-btn-ghost"
+              onClick={() => createCampaign('framework')}
+              disabled={busy}
+            >
+              <Icon name="flow" size={16} />
+              {t('hub.internal.addFrameworkMap')}
+            </button>
+          </div>
         ) : null}
       </header>
 
@@ -183,28 +208,40 @@ export default function CampaignsWorkspace({
           <Icon name="megaphone" size={28} />
           <p>{t('hub.internal.noCampaigns')}</p>
           {canCreate ? (
-          <button type="button" className="appdev-btn-primary" onClick={createCampaign} disabled={busy}>
-            <Icon name="plus" size={16} />
-            {t('hub.internal.addCampaign')}
-          </button>
+          <div className="internal-campaigns-empty-actions">
+            <button type="button" className="appdev-btn-primary" onClick={() => createCampaign('workflow')} disabled={busy}>
+              <Icon name="plus" size={16} />
+              {t('hub.internal.addCampaign')}
+            </button>
+            <button type="button" className="appdev-btn-ghost" onClick={() => createCampaign('framework')} disabled={busy}>
+              <Icon name="flow" size={16} />
+              {t('hub.internal.addFrameworkMap')}
+            </button>
+          </div>
           ) : null}
         </div>
       ) : (
         <ul className="internal-campaigns-grid">
-          {campaigns.map(campaign => (
+          {campaigns.map(campaign => {
+            const frameworkMap = isFrameworkMapCampaign(campaign);
+            return (
             <li key={campaign.id} className="internal-campaign-card-item">
               <button
                 type="button"
-                className="internal-campaign-card internal-campaign-card--clickable"
+                className={`internal-campaign-card internal-campaign-card--clickable${frameworkMap ? ' is-framework-map' : ''}`}
                 onClick={() => onOpenFlow?.(campaign.id)}
               >
                 <header className="internal-campaign-card-top">
                   <div className="internal-campaign-card-icon" aria-hidden="true">
-                    <Icon name="flow" size={18} />
+                    <Icon name={frameworkMap ? 'layout' : 'flow'} size={18} />
                   </div>
                   <div className="internal-campaign-card-title-wrap">
                     <h3>{campaign.name}</h3>
-                    <p className="internal-campaign-card-meta">{t('hub.internal.campaignFlowOnlyMeta')}</p>
+                    <p className="internal-campaign-card-meta">
+                      {frameworkMap
+                        ? t('hub.internal.frameworkMapMeta')
+                        : t('hub.internal.campaignFlowOnlyMeta')}
+                    </p>
                   </div>
                 </header>
 
@@ -235,7 +272,8 @@ export default function CampaignsWorkspace({
                 </div>
               ) : null}
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 

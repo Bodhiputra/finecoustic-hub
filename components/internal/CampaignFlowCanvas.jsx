@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -20,6 +20,9 @@ import '@xyflow/react/dist/style.css';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { useLocale } from '@/components/LocaleProvider';
 import FlowCanvasContextMenu from '@/components/internal/FlowCanvasContextMenu';
+import { FlowCanvasActionsContext } from '@/components/internal/FlowCanvasActionsContext';
+import FrameworkFlowNode from '@/components/internal/FrameworkFlowNode';
+import Icon from '@/components/Icon';
 import {
   flowCanvasTaskIds,
   flowNodeStatusClass,
@@ -28,6 +31,7 @@ import {
   normalizeFlowEdgeDirection,
   getFlowDragFollowers,
 } from '@/lib/campaign-flow-utils';
+import { isFrameworkFlowNodeType } from '@/lib/framework-map';
 
 const SAVE_DEBOUNCE_MS = 400;
 const FLOW_BG_NODE_LIMIT = 35;
@@ -42,8 +46,6 @@ function flowPositionAtCursor(screenToFlowPosition, clientX, clientY) {
     y: point.y - FLOW_NODE_CENTER_OFFSET.y,
   };
 }
-
-const FlowCanvasActionsContext = createContext(null);
 
 function newEdgeId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -63,6 +65,7 @@ function flowNodeDataEqual(a, b) {
     && a.nodeType === b.nodeType
     && a.taskId === b.taskId
     && a.boardId === b.boardId
+    && a.notes === b.notes
   );
 }
 
@@ -120,7 +123,7 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
   );
 }, (prev, next) => prev.selected === next.selected && flowNodeDataEqual(prev.data, next.data));
 
-const nodeTypes = { flowNode: FlowNode };
+const nodeTypes = { flowNode: FlowNode, frameworkNode: FrameworkFlowNode };
 
 function useHubColorMode() {
   const [colorMode, setColorMode] = useState('dark');
@@ -142,9 +145,26 @@ function buildFlowGraph(flowData, tasks, boards = [], statusLabelFor) {
   const taskById = new Map(tasks.map(task => [task.id, task]));
   const boardById = new Map((boards || []).map(board => [board.id, board]));
   const nodes = (flowData?.nodes || [])
-    .filter(node => node.taskId || node.boardId || node.nodeType === 'kanban')
+    .filter(node =>
+      node.taskId
+      || node.boardId
+      || node.nodeType === 'kanban'
+      || isFrameworkFlowNodeType(node.nodeType)
+    )
     .map(node => {
       const nodeType = node.nodeType || (node.boardId ? 'kanban' : 'task');
+      if (isFrameworkFlowNodeType(nodeType)) {
+        return {
+          id: node.id,
+          type: 'frameworkNode',
+          position: node.position || { x: 0, y: 0 },
+          data: {
+            nodeType: nodeType === 'frame' ? 'frame' : 'label',
+            label: node.label || 'Untitled',
+            notes: node.notes || '',
+          },
+        };
+      }
       if (nodeType === 'kanban' || node.boardId) {
         const board = boardById.get(node.boardId);
         return {
@@ -202,8 +222,17 @@ function serializeFlow(nodes, edges) {
       taskId: node.data?.taskId || null,
       boardId: node.data?.boardId || null,
       label: String(node.data?.label || '').slice(0, 120),
+      notes: isFrameworkFlowNodeType(node.data?.nodeType)
+        ? String(node.data?.notes || '').slice(0, 500)
+        : undefined,
       position: node.position,
-    })),
+    })).map(node => {
+      if (!isFrameworkFlowNodeType(node.nodeType)) {
+        const { notes, ...rest } = node;
+        return rest;
+      }
+      return node;
+    }),
     edges: edges.map(edge => ({
       id: edge.id,
       source: edge.source,
@@ -228,7 +257,8 @@ function mergeNodeData(currentNodes, freshNodes) {
         node.data?.statusLabel === fresh.data?.statusLabel &&
         node.data?.kind === fresh.data?.kind &&
         node.data?.boardId === fresh.data?.boardId &&
-        node.data?.nodeType === fresh.data?.nodeType
+        node.data?.nodeType === fresh.data?.nodeType &&
+        node.data?.notes === fresh.data?.notes
       ) {
         return node;
       }
@@ -280,6 +310,9 @@ function CampaignFlowCanvasInner({
   canAddTask = false,
   canAddMilestone = false,
   canAddKanban = false,
+  canAddLabel = false,
+  canAddFrame = false,
+  frameworkMode = false,
   statusLabelFor,
 }) {
   const { t } = useLocale();
@@ -329,6 +362,15 @@ function CampaignFlowCanvasInner({
       } catch {
         /* ignore */
       }
+    },
+    updateFrameworkNode: (nodeId, patch) => {
+      setNodes(current => {
+        const next = current.map(node =>
+          node.id === nodeId ? { ...node, data: { ...node.data, ...patch } } : node
+        );
+        scheduleSave(next, edgesRef.current);
+        return next;
+      });
     },
   };
   const isDragging = useRef(false);
@@ -530,6 +572,7 @@ function CampaignFlowCanvasInner({
   const onPaneContextMenu = useCallback(
     event => {
       if (!onCanvasAddNode) return;
+      if (!canAddTask && !canAddMilestone && !canAddKanban && !canAddLabel && !canAddFrame) return;
       event.preventDefault();
       const position = flowPositionAtCursor(screenToFlowPosition, event.clientX, event.clientY);
       setContextMenu({
@@ -537,6 +580,17 @@ function CampaignFlowCanvasInner({
         y: event.clientY,
         position,
       });
+    },
+    [canAddTask, canAddMilestone, canAddKanban, canAddLabel, canAddFrame, onCanvasAddNode, screenToFlowPosition]
+  );
+
+  const addFrameworkNodeAtCenter = useCallback(
+    kind => {
+      if (!onCanvasAddNode) return;
+      const bounds = document.querySelector('.campaign-flow-canvas')?.getBoundingClientRect();
+      const cx = bounds ? bounds.left + bounds.width / 2 : window.innerWidth / 2;
+      const cy = bounds ? bounds.top + bounds.height / 2 : window.innerHeight / 2;
+      onCanvasAddNode({ kind, position: flowPositionAtCursor(screenToFlowPosition, cx, cy) });
     },
     [onCanvasAddNode, screenToFlowPosition]
   );
@@ -643,6 +697,19 @@ function CampaignFlowCanvasInner({
   return (
     <FlowCanvasActionsContext.Provider value={flowActionsRef}>
       <div className="campaign-flow-canvas">
+        {frameworkMode ? (
+          <div className="campaign-flow-framework-toolbar" role="toolbar" aria-label={t('hub.internal.frameworkMapToolbar')}>
+            <button type="button" className="appdev-btn-ghost" onClick={() => addFrameworkNodeAtCenter('label')}>
+              <Icon name="plus" size={14} />
+              {t('hub.internal.addFrameworkLabel')}
+            </button>
+            <button type="button" className="appdev-btn-ghost" onClick={() => addFrameworkNodeAtCenter('frame')}>
+              <Icon name="plus" size={14} />
+              {t('hub.internal.addFrameworkFrame')}
+            </button>
+            <span className="campaign-flow-framework-hint">{t('hub.internal.frameworkMapHint')}</span>
+          </div>
+        ) : null}
         <ReactFlow
           colorMode={colorMode}
           nodes={nodes}
@@ -689,6 +756,9 @@ function CampaignFlowCanvasInner({
           canAddTask={canAddTask}
           canAddMilestone={canAddMilestone}
           canAddKanban={canAddKanban}
+          canAddLabel={canAddLabel}
+          canAddFrame={canAddFrame}
+          frameworkMode={frameworkMode}
           onPick={handleContextMenuPick}
           onClose={closeContextMenu}
         />
