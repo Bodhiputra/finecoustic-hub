@@ -10,6 +10,7 @@ import KolPoolWorkspace from '@/components/marketing/KolPoolWorkspace';
 import KolOutreachWorkspace from '@/components/marketing/KolOutreachWorkspace';
 
 const KolGuidelinesPage = dynamic(() => import('@/components/marketing/KolGuidelinesPage'));
+const KolTrackingCodesWorkspace = dynamic(() => import('@/components/marketing/KolTrackingCodesWorkspace'));
 const PreorderSurveyDashboard = dynamic(() => import('@/components/PreorderSurveyDashboard'));
 
 export const MARKETING_VIEW_META = {
@@ -24,6 +25,10 @@ export const MARKETING_VIEW_META = {
   'kol-guidelines': {
     titleKey: 'hub.kolGuidelines.title',
     descKey: 'hub.kolGuidelines.subtitle',
+  },
+  'kol-tracking': {
+    titleKey: 'hub.kolTracking.title',
+    descKey: 'hub.kolTracking.subtitle',
   },
   'preorder-survey': {
     titleKey: 'hub.internal.fbsPreorderSurvey',
@@ -70,6 +75,9 @@ export function MarketingHubContent({
         />
       </div>
       {view === 'kol-guidelines' ? <KolGuidelinesPage /> : null}
+      {view === 'kol-tracking' ? (
+        <KolTrackingCodesWorkspace initialPoolRecords={initialKolPool?.records || []} />
+      ) : null}
       {view === 'preorder-survey' ? (
         <PreorderSurveyDashboard initialRows={initialRows} />
       ) : null}
