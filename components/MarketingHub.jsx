@@ -75,9 +75,9 @@ export function MarketingHubContent({
         />
       </div>
       {view === 'kol-guidelines' ? <KolGuidelinesPage /> : null}
-      {view === 'kol-tracking' ? (
+      <div className="marketing-tool-panel" hidden={view !== 'kol-tracking'} aria-hidden={view !== 'kol-tracking'}>
         <KolTrackingCodesWorkspace initialPoolRecords={initialKolPool?.records || []} />
-      ) : null}
+      </div>
       {view === 'preorder-survey' ? (
         <PreorderSurveyDashboard initialRows={initialRows} />
       ) : null}

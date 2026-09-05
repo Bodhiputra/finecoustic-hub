@@ -6150,104 +6150,102 @@ button.internal-campaign-card {
 
 /* KOL tracking codes — marketing */
 .kol-tracking-workspace {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
-.kol-tracking-header {
-  margin: 0;
-}
-.kol-tracking-subtitle {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.5;
-  max-width: 52rem;
+.kol-tracking-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: var(--space-4) var(--space-5);
 }
 .kol-tracking-section-title {
   margin: 0 0 var(--space-2);
-  font-size: 1rem;
+  font-size: 1.02rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .kol-tracking-hint {
   margin: 0 0 var(--space-4);
   color: var(--muted);
-  font-size: 0.85rem;
-  line-height: 1.45;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  max-width: 44rem;
 }
 .kol-tracking-generator-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
   align-items: flex-end;
+  gap: var(--space-3);
 }
-.kol-tracking-field {
-  display: flex;
+.kol-tracking-kol-pick {
   flex-direction: column;
-  gap: 0.35rem;
-  flex: 1 1 16rem;
+  align-items: flex-start;
+  gap: 0.4rem;
   min-width: 0;
 }
-.kol-tracking-field span {
+.kol-tracking-kol-pick span {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.kol-tracking-field select {
-  width: 100%;
-}
-.kol-tracking-selected-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  margin: var(--space-3) 0 0;
+.kol-tracking-kol-pick select {
+  width: min(24rem, 100%);
+  min-width: 14rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font: inherit;
+  color: var(--text);
 }
 .kol-tracking-note {
+  margin: var(--space-3) 0 0;
   font-size: 0.82rem;
   color: var(--muted);
+  line-height: 1.45;
 }
 .kol-tracking-registry-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
-.kol-tracking-registry-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
+.kol-tracking-registry-head .kol-tracking-section-title {
+  margin: 0;
 }
-.kol-tracking-search {
-  min-width: 12rem;
+.kol-tracking-registry-tools {
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.kol-tracking-registry-tools .kol-pool-search {
+  flex: 0 1 18rem;
+  max-width: 18rem;
 }
 .kol-tracking-copy {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.2rem 0.45rem;
+  padding: 0.28rem 0.55rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
   cursor: pointer;
   font: inherit;
+  color: var(--text);
 }
 .kol-tracking-copy:hover {
   border-color: var(--accent);
+  color: var(--accent);
 }
 .kol-tracking-code {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.92rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   letter-spacing: 0.06em;
 }
 .kol-tracking-delete {
-  font-size: 0.78rem;
-  padding: 0.25rem 0.55rem;
+  color: var(--danger, #dc2626);
 }
 
 .kol-guide-lead {

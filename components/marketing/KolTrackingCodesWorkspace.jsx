@@ -6,7 +6,7 @@ import ButtonBusyContent from '@/components/ButtonBusyContent';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { filterVisibleKolPool, platformChipClass } from '@/lib/kol-pool';
+import { filterVisibleKolPool } from '@/lib/kol-pool';
 
 function formatWhen(iso, locale = 'en') {
   if (!iso) return '—';
@@ -56,12 +56,6 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
     [initialPoolRecords]
   );
 
-  const poolById = useMemo(() => {
-    const map = new Map();
-    poolRecords.forEach(record => map.set(record.notion_page_id, record));
-    return map;
-  }, [poolRecords]);
-
   const codedKolIds = useMemo(() => new Set(entries.map(entry => entry.kol_pool_id)), [entries]);
 
   const kolOptions = useMemo(
@@ -108,7 +102,6 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
     );
   }, [entries, query]);
 
-  const selectedKol = selectedKolId ? poolById.get(selectedKolId) : null;
   const selectedHasCode = selectedKolId ? codedKolIds.has(selectedKolId) : false;
 
   const generate = async () => {
@@ -164,16 +157,21 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
   };
 
   return (
-    <div className="kol-tracking-workspace">
-      <header className="kol-tracking-header">
-        <p className="kol-tracking-subtitle">{t('hub.kolTracking.subtitle')}</p>
+    <div className="kol-pool-workspace kol-tracking-workspace">
+      <header className="kol-pool-header wrap-row">
+        <div className="kol-pool-header-copy">
+          <h2 className="kol-pool-title">{t('hub.kolTracking.title')}</h2>
+          <p className="kol-pool-subtitle">{t('hub.kolTracking.subtitle')}</p>
+        </div>
       </header>
 
-      <section className="kol-tracking-generator card">
-        <h2 className="kol-tracking-section-title">{t('hub.kolTracking.generateTitle')}</h2>
+      <section className="kol-tracking-panel" aria-labelledby="kol-tracking-generate-title">
+        <h3 id="kol-tracking-generate-title" className="kol-tracking-section-title">
+          {t('hub.kolTracking.generateTitle')}
+        </h3>
         <p className="kol-tracking-hint">{t('hub.kolTracking.generateHint')}</p>
-        <div className="kol-tracking-generator-row">
-          <label className="kol-tracking-field">
+        <div className="kol-tracking-generator-row wrap-row">
+          <label className="kol-pool-filter kol-tracking-kol-pick">
             <span>{t('hub.kolTracking.pickKolLabel')}</span>
             <select
               value={selectedKolId}
@@ -191,7 +189,7 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
           </label>
           <button
             type="button"
-            className="btn bp"
+            className="hub-btn hub-btn--primary"
             disabled={!selectedKolId || generating}
             onClick={generate}
           >
@@ -200,33 +198,29 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
             </ButtonBusyContent>
           </button>
         </div>
-        {selectedKol ? (
-          <p className="kol-tracking-selected-meta">
-            {selectedKol.main_platform ? (
-              <span className={`kol-chip ${platformChipClass(selectedKol.main_platform)}`}>
-                {selectedKol.main_platform}
-              </span>
-            ) : null}
-            {selectedHasCode ? (
-              <span className="kol-tracking-note">{t('hub.kolTracking.onePerKol')}</span>
-            ) : null}
-          </p>
+        {selectedHasCode ? (
+          <p className="kol-tracking-note">{t('hub.kolTracking.onePerKol')}</p>
         ) : null}
       </section>
 
-      <section className="kol-tracking-registry card">
-        <div className="kol-tracking-registry-head">
-          <h2 className="kol-tracking-section-title">{t('hub.kolTracking.registryTitle')}</h2>
-          <div className="kol-tracking-registry-tools">
-            <input
-              type="search"
-              className="kol-tracking-search"
-              value={query}
-              onChange={event => setQuery(event.target.value)}
-              placeholder={t('hub.kolTracking.searchPlaceholder')}
-              aria-label={t('hub.kolTracking.searchPlaceholder')}
-            />
-            <button type="button" className="btn bs2" onClick={loadEntries} disabled={loading}>
+      <section className="kol-tracking-panel" aria-labelledby="kol-tracking-registry-title">
+        <div className="kol-tracking-registry-head wrap-row">
+          <h3 id="kol-tracking-registry-title" className="kol-tracking-section-title">
+            {t('hub.kolTracking.registryTitle')}
+          </h3>
+          <div className="kol-tracking-registry-tools wrap-row">
+            <label className="kol-pool-search">
+              <Icon name="search" size={16} />
+              <input
+                type="search"
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                placeholder={t('hub.kolTracking.searchPlaceholder')}
+                aria-label={t('hub.kolTracking.searchPlaceholder')}
+              />
+            </label>
+            <button type="button" className="hub-btn hub-btn--ghost" onClick={loadEntries} disabled={loading}>
+              <Icon name="refresh" size={16} />
               <ButtonBusyContent busy={loading} busyLabel={t('common.loading')}>
                 {t('hub.kolTracking.refresh')}
               </ButtonBusyContent>
@@ -235,7 +229,9 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
         </div>
 
         {!filteredEntries.length ? (
-          <p className="internal-empty">{loaded ? t('hub.kolTracking.empty') : t('common.loading')}</p>
+          <p className="internal-empty personal-hub-hint">
+            {loaded ? t('hub.kolTracking.empty') : t('common.loading')}
+          </p>
         ) : (
           <div className="kol-pool-table-wrap">
             <table className="kol-pool-table kol-tracking-table">
@@ -265,7 +261,7 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
                     <td>
                       <button
                         type="button"
-                        className="btn bd kol-tracking-delete"
+                        className="hub-btn hub-btn--ghost hub-btn--sm kol-tracking-delete"
                         onClick={() => removeEntry(entry.id)}
                       >
                         {t('hub.kolTracking.delete')}
