@@ -74,7 +74,9 @@ export function MarketingHubContent({
           teamMembers={teamMembers}
         />
       </div>
-      {view === 'kol-guidelines' ? <KolGuidelinesPage /> : null}
+      <div className="marketing-tool-panel" hidden={view !== 'kol-guidelines'} aria-hidden={view !== 'kol-guidelines'}>
+        <KolGuidelinesPage />
+      </div>
       <div className="marketing-tool-panel" hidden={view !== 'kol-tracking'} aria-hidden={view !== 'kol-tracking'}>
         <KolTrackingCodesWorkspace initialPoolRecords={initialKolPool?.records || []} />
       </div>

@@ -6,7 +6,7 @@ import ButtonBusyContent from '@/components/ButtonBusyContent';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
-import { filterVisibleKolPool } from '@/lib/kol-pool';
+import { filterVisibleKolPool, platformChipClass } from '@/lib/kol-pool';
 import KolPoolSearchSelect from '@/components/marketing/KolPoolSearchSelect';
 
 function formatWhen(iso, locale = 'en') {
@@ -195,12 +195,15 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
         ) : null}
       </section>
 
-      <section className="kol-tracking-panel" aria-labelledby="kol-tracking-registry-title">
-        <div className="kol-tracking-registry-head wrap-row">
-          <h3 id="kol-tracking-registry-title" className="kol-tracking-section-title">
-            {t('hub.kolTracking.registryTitle')}
-          </h3>
-          <div className="kol-tracking-registry-tools wrap-row">
+      <section className="kol-tracking-panel kol-tracking-registry" aria-labelledby="kol-tracking-registry-title">
+        <div className="kol-tracking-registry-head">
+          <div className="kol-tracking-registry-copy">
+            <h3 id="kol-tracking-registry-title" className="kol-tracking-section-title">
+              {t('hub.kolTracking.registryTitle')}
+            </h3>
+            <p className="kol-tracking-registry-hint">{t('hub.kolTracking.registryHint')}</p>
+          </div>
+          <div className="kol-tracking-registry-tools">
             <label className="kol-pool-search">
               <Icon name="search" size={16} />
               <input
@@ -225,32 +228,46 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
             {loaded ? t('hub.kolTracking.empty') : t('common.loading')}
           </p>
         ) : (
-          <div className="kol-pool-table-wrap">
-            <table className="kol-pool-table kol-tracking-table">
+          <div className="kol-tracking-table-wrap">
+            <table className="kol-tracking-table">
               <thead>
                 <tr>
-                  <th>{t('hub.kolTracking.colCode')}</th>
-                  <th>{t('hub.kolTracking.colChannel')}</th>
-                  <th>{t('hub.kol.colPlatform')}</th>
-                  <th>{t('hub.kolTracking.colCreated')}</th>
-                  <th>{t('hub.kolTracking.colCreatedBy')}</th>
-                  <th aria-label={t('hub.kolTracking.colActions')} />
+                  <th className="kol-tracking-col-code">{t('hub.kolTracking.colCode')}</th>
+                  <th className="kol-tracking-col-channel">{t('hub.kolTracking.colChannel')}</th>
+                  <th className="kol-tracking-col-platform">{t('hub.kol.colPlatform')}</th>
+                  <th className="kol-tracking-col-created">{t('hub.kolTracking.colCreated')}</th>
+                  <th className="kol-tracking-col-created-by">{t('hub.kolTracking.colCreatedBy')}</th>
+                  <th className="kol-tracking-col-actions" aria-label={t('hub.kolTracking.colActions')} />
                 </tr>
               </thead>
               <tbody>
                 {filteredEntries.map(entry => (
                   <tr key={entry.id}>
-                    <td>
+                    <td className="kol-tracking-col-code">
                       <CopyCodeButton
                         code={entry.code}
                         label={t('hub.kolTracking.copyCode', { code: entry.code })}
                       />
                     </td>
-                    <td>{entry.channel_name || '—'}</td>
-                    <td>{entry.platform || '—'}</td>
-                    <td>{formatWhen(entry.created_at, locale)}</td>
-                    <td>{entry.created_by || '—'}</td>
-                    <td>
+                    <td className="kol-tracking-col-channel">
+                      <span className="kol-tracking-channel">{entry.channel_name || '—'}</span>
+                    </td>
+                    <td className="kol-tracking-col-platform">
+                      {entry.platform ? (
+                        <span className={`kol-chip ${platformChipClass(entry.platform)}`}>
+                          {entry.platform}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="kol-tracking-col-created kol-tracking-meta">
+                      {formatWhen(entry.created_at, locale)}
+                    </td>
+                    <td className="kol-tracking-col-created-by kol-tracking-meta">
+                      {entry.created_by || '—'}
+                    </td>
+                    <td className="kol-tracking-col-actions">
                       <button
                         type="button"
                         className="hub-btn hub-btn--ghost hub-btn--sm kol-tracking-delete"

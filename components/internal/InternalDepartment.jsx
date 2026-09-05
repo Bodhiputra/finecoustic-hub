@@ -199,10 +199,19 @@ export default function InternalDepartment({
     window.history.replaceState(window.history.state, '', url);
   }, [departmentId]);
 
+  // Seed client tool once per department session (Next.js URL on first paint).
   useEffect(() => {
     if (!clientDeptTools) return;
-    setDeptToolClient('');
-  }, [pathname, searchParams.toString(), clientDeptTools]);
+    if (departmentId === 'marketing') {
+      const fromPath = marketingToolFromPathname(pathname);
+      if (fromPath) setDeptToolClient(fromPath);
+      return;
+    }
+    if (departmentId === 'operations') {
+      setDeptToolClient(searchParams.get('tool') || 'dashboard');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: do not re-sync on ?task= etc.
+  }, [departmentId, clientDeptTools]);
 
   useEffect(() => {
     if (!clientDeptTools) return;
@@ -271,11 +280,6 @@ export default function InternalDepartment({
       : departmentBoardUrl(deptBasePath, boardId);
     window.history.replaceState(window.history.state, '', url);
   }, [personalMode, deptBasePath]);
-
-  useEffect(() => {
-    if (!clientDeptBoardNav) return;
-    setBoardClient('');
-  }, [boardParam, clientDeptBoardNav]);
 
   useEffect(() => {
     if (!clientDeptBoardNav) return;

@@ -6287,22 +6287,93 @@ button.internal-campaign-card {
   line-height: 1.45;
 }
 .kol-tracking-registry-head {
-  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
+}
+.kol-tracking-registry-copy {
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+.kol-tracking-registry-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 32rem;
 }
 .kol-tracking-registry-head .kol-tracking-section-title {
   margin: 0;
 }
 .kol-tracking-registry-tools {
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
-  margin-left: auto;
+  flex: 0 0 auto;
 }
 .kol-tracking-registry-tools .kol-pool-search {
-  flex: 0 1 18rem;
-  max-width: 18rem;
+  width: 16rem;
+  max-width: 100%;
+  flex: 0 1 16rem;
+}
+.kol-tracking-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  overflow-x: auto;
+}
+.kol-tracking-table {
+  width: 100%;
+  min-width: 42rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.9rem;
+}
+.kol-tracking-table th,
+.kol-tracking-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  text-align: left;
+}
+.kol-tracking-table th {
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  white-space: nowrap;
+}
+.kol-tracking-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.kol-tracking-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.kol-tracking-col-code { width: 10.5rem; }
+.kol-tracking-col-channel { width: 28%; min-width: 9rem; }
+.kol-tracking-col-platform { width: 8.5rem; }
+.kol-tracking-col-created { width: 11.5rem; }
+.kol-tracking-col-created-by { width: 8.5rem; }
+.kol-tracking-col-actions { width: 5.5rem; text-align: right; }
+.kol-tracking-channel {
+  display: block;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.kol-tracking-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.kol-tracking-col-actions .kol-tracking-delete {
+  margin-left: auto;
 }
 .kol-tracking-copy {
   display: inline-flex;
