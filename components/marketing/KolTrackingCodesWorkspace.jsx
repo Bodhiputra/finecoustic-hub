@@ -7,6 +7,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import { filterVisibleKolPool } from '@/lib/kol-pool';
+import KolPoolSearchSelect from '@/components/marketing/KolPoolSearchSelect';
 
 function formatWhen(iso, locale = 'en') {
   if (!iso) return '—';
@@ -171,22 +172,13 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
         </h3>
         <p className="kol-tracking-hint">{t('hub.kolTracking.generateHint')}</p>
         <div className="kol-tracking-generator-row wrap-row">
-          <label className="kol-pool-filter kol-tracking-kol-pick">
-            <span>{t('hub.kolTracking.pickKolLabel')}</span>
-            <select
-              value={selectedKolId}
-              onChange={event => setSelectedKolId(event.target.value)}
-            >
-              <option value="">{t('hub.kolTracking.pickKolPlaceholder')}</option>
-              {kolOptions.map(option => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                  {option.platform ? ` · ${option.platform}` : ''}
-                  {option.hasCode ? ` (${t('hub.kolTracking.hasCode')})` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+          <KolPoolSearchSelect
+            label={t('hub.kolTracking.pickKolLabel')}
+            placeholder={t('hub.kolTracking.pickKolPlaceholder')}
+            options={kolOptions}
+            value={selectedKolId}
+            onChange={setSelectedKolId}
+          />
           <button
             type="button"
             className="hub-btn hub-btn--primary"
