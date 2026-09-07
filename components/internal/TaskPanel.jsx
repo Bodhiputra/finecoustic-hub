@@ -18,7 +18,9 @@ import {
   mergeSubtypeOptionLabels,
 } from '@/lib/internal';
 import { statusColumnLabel } from '@/lib/internal-campaigns';
-import { getAllowedWorkflowStatusOptions, getWorkflowActions, isTaskAssignee } from '@/lib/task-workflow';
+import WorkersField from '@/components/appdev/WorkersField';
+import { getTaskAssignees, syncTaskAssigneeFields } from '@/lib/task-assignees';
+import { getAllowedWorkflowStatusOptions, getWorkflowActions, isKolOutreachTask, isTaskAssignee } from '@/lib/task-workflow';
 import { getTaskPanelCapabilities } from '@/lib/internal-task-panel-permissions';
 import { buildMentionKnownNames } from '@/lib/mention-parse';
 import { HARDCODED_MASTER_NAMES } from '@/lib/appdev-constants';
@@ -64,7 +66,11 @@ function prepareSave(draft, lockDepartmentId, lockBoard = null, isNew = false, {
   if (lockBoard?.board_id) next.board_id = lockBoard.board_id;
   if (lockBoard?.campaign_id) next.campaign_id = lockBoard.campaign_id;
   if (lockAssigneeToSelf && displayName) {
+    next.assignees = [displayName];
     next.assignee = displayName;
+  }
+  if (Array.isArray(next.assignees) || next.assignee) {
+    next = syncTaskAssigneeFields(next);
   }
   if (kind === 'milestone' || kind === 'meeting') {
     let start = draft.planned_for || draft.deadline || null;
@@ -395,9 +401,12 @@ export default function TaskPanel({
     if (lockAssigneeToSelf && displayName) return [displayName];
     return buildTeamAssigneeOptions(teamMembers, {
       displayName,
-      extraNames: [draft?.assignee, draft?.created_by],
+      extraNames: [...getTaskAssignees(draft), draft?.created_by],
     });
-  }, [teamMembers, draft?.assignee, draft?.created_by, lockAssigneeToSelf, displayName]);
+  }, [teamMembers, draft, lockAssigneeToSelf, displayName]);
+
+  const taskAssignees = useMemo(() => getTaskAssignees(draft), [draft]);
+  const kolOutreachTask = !isNew && isKolOutreachTask(draft);
 
   const mentionNames = useMemo(
     () => buildMentionKnownNames(assigneeOptions, HARDCODED_MASTER_NAMES),
@@ -769,24 +778,61 @@ export default function TaskPanel({
                 <span>{t('hub.internal.taskPanel.assignee')}</span>
                 <input value={displayName} readOnly disabled aria-readonly="true" />
               </div>
+            ) : kolOutreachTask ? (
+              caps.canEditAssignee ? (
+                <label className="appdev-field">
+                  <span>{t('hub.internal.taskPanel.assignee')}</span>
+                  <select
+                    value={draft.assignee || ''}
+                    onChange={e => {
+                      const name = e.target.value;
+                      setDraft(prev => ({
+                        ...prev,
+                        assignee: name,
+                        assignees: name ? [name] : [],
+                      }));
+                    }}
+                    disabled={saving}
+                  >
+                    <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
+                    {assigneeOptions.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <div className="appdev-field">
+                  <span>{t('hub.internal.taskPanel.assignee')}</span>
+                  <ReadonlyValue>{draft.assignee || t('hub.internal.taskPanel.assigneeUnassigned')}</ReadonlyValue>
+                </div>
+              )
             ) : caps.canEditAssignee ? (
-              <label className="appdev-field">
-                <span>{t('hub.internal.taskPanel.assignee')}</span>
-                <select
-                  value={draft.assignee || ''}
-                  onChange={e => set('assignee', e.target.value)}
-                  disabled={saving}
-                >
-                  <option value="">{t('hub.internal.taskPanel.assigneeUnassigned')}</option>
-                  {assigneeOptions.map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </label>
+              <WorkersField
+                workers={taskAssignees}
+                onChange={next => {
+                  setDraft(prev => ({
+                    ...prev,
+                    assignees: next,
+                    assignee: next[0] || '',
+                  }));
+                }}
+                people={assigneeOptions}
+                currentUser={displayName}
+                mode="owner"
+                label={t('hub.internal.taskPanel.assignees')}
+                hint={t('hub.internal.taskPanel.assigneesHint')}
+                placeholder={t('hub.internal.taskPanel.assigneesPlaceholder')}
+                disabled={saving}
+                t={t}
+              />
             ) : (
               <div className="appdev-field">
-                <span>{t('hub.internal.taskPanel.assignee')}</span>
-                <ReadonlyValue>{draft.assignee || t('hub.internal.taskPanel.assigneeUnassigned')}</ReadonlyValue>
+                <span>{t('hub.internal.taskPanel.assignees')}</span>
+                <ReadonlyValue>
+                  {taskAssignees.length
+                    ? taskAssignees.join(', ')
+                    : t('hub.internal.taskPanel.assigneeUnassigned')}
+                </ReadonlyValue>
               </div>
             )
           )}

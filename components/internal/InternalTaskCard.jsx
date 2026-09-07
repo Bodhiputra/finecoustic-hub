@@ -4,6 +4,7 @@ import Icon from '@/components/Icon';
 import UserAvatar from '@/components/internal/UserAvatar';
 import { useLocale } from '@/components/LocaleProvider';
 import { isMilestonePast, isTaskOverdue, milestoneEndDate, taskDueDate } from '@/lib/internal';
+import { getTaskAssignees } from '@/lib/task-assignees';
 import { formatTaskScheduleLabel, formatTaskScheduleRange } from '@/lib/task-datetime';
 
 const PRIORITY_KEYS = {
@@ -39,12 +40,14 @@ export default function InternalTaskCard({
   const due = dueLabel || null;
   const overdue = isTaskOverdue(task);
   const pastMilestone = task.kind === 'milestone' && isMilestonePast(task);
-  const assignee = task.assignee || task.owner || task.created_by;
+  const assignees = getTaskAssignees(task);
+  const fallbackPerson = task.owner || task.created_by;
+  const hasAssignees = assignees.length > 0;
   const subtaskTotal = task.subtasks?.length || 0;
   const subtaskDone = task.subtasks?.filter(s => s.done).length || 0;
   const priority = task.priority && task.priority !== 'none' ? task.priority : null;
   const isDaily = task.recurrence === 'daily';
-  const hasChips = priority || task.subtype || isDaily || due || subtaskTotal > 0 || assignee;
+  const hasChips = priority || task.subtype || isDaily || due || subtaskTotal > 0 || hasAssignees || fallbackPerson;
 
   return (
     <button
@@ -103,12 +106,22 @@ export default function InternalTaskCard({
               {subtaskDone}/{subtaskTotal}
             </HintChip>
           )}
-          {assignee && (
-            <HintChip className="is-assignee" title={assignee}>
-              <UserAvatar name={assignee} size={16} />
-              <span className="internal-hint-chip-label">{assignee}</span>
+          {hasAssignees ? (
+            <HintChip
+              className="is-assignee"
+              title={assignees.join(', ')}
+            >
+              <UserAvatar name={assignees[0]} size={16} />
+              <span className="internal-hint-chip-label">
+                {assignees.length === 1 ? assignees[0] : `${assignees[0]} +${assignees.length - 1}`}
+              </span>
             </HintChip>
-          )}
+          ) : fallbackPerson ? (
+            <HintChip className="is-assignee" title={fallbackPerson}>
+              <UserAvatar name={fallbackPerson} size={16} />
+              <span className="internal-hint-chip-label">{fallbackPerson}</span>
+            </HintChip>
+          ) : null}
         </div>
       )}
     </button>

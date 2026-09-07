@@ -6,6 +6,7 @@ import { formatIssueDate } from '@/lib/appdev';
 import { TASK_STATUSES } from '@/lib/internal';
 import { sortTasksByFlowOrder, statusColumnLabel } from '@/lib/internal-campaigns';
 import { formatTaskScheduleLabel, formatTaskScheduleRange } from '@/lib/task-datetime';
+import { formatTaskAssigneesDisplay } from '@/lib/task-assignees';
 
 const MILESTONE_STATUS_KEYS = {
   todo: 'hub.internal.taskPanel.milestoneScheduled',
@@ -144,7 +145,7 @@ export default function InternalTableView({
                     )}
                   </td>
                   <td>{task.created_by || '—'}</td>
-                  <td>{task.assignee || task.owner || '—'}</td>
+                  <td>{formatTaskAssigneesDisplay(task, locale) || task.owner || '—'}</td>
                   <td className="internal-table-date">{formatIssueDate(task.created_at, locale)}</td>
                   <td className="internal-table-date">{dueLabelForTask(task, locale) || '—'}</td>
                   <td className="internal-table-date">{formatIssueDate(task.completed_at, locale)}</td>
