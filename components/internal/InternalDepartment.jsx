@@ -1118,6 +1118,7 @@ export default function InternalDepartment({
   }
 
   function isToolActive(toolId) {
+    if (effectiveBoardParam) return false;
     return toolParam === toolId;
   }
 
