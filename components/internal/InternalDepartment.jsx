@@ -146,7 +146,11 @@ export default function InternalDepartment({
     && pathname === deptBasePath
     && !campaignsMode;
   const [boardClient, setBoardClient] = useState('');
-  const effectiveBoardParam = clientDeptBoardNav && boardClient ? boardClient : boardParam;
+  // Data-tool picks (KOL pool, outreach, …) must win over stale ?board= / boardClient — replaceState does not sync Next searchParams.
+  const marketingDataToolActive = departmentId === 'marketing' && Boolean(deptToolClient);
+  const effectiveBoardParam = marketingDataToolActive
+    ? ''
+    : (clientDeptBoardNav && boardClient ? boardClient : boardParam);
   const campaignListOnly = campaignsMode && !boardParam && !flowParam;
   const deptBase = personalMode
     ? PERSONAL_HUB_PATH
@@ -192,6 +196,7 @@ export default function InternalDepartment({
 
   const setDeptTool = useCallback((toolId) => {
     setDeptToolClient(toolId);
+    setBoardClient('');
     if (typeof window === 'undefined') return;
     const url = departmentId === 'marketing'
       ? marketingToolPath(toolId)
@@ -274,6 +279,7 @@ export default function InternalDepartment({
 
   const setDeptBoard = useCallback((boardId) => {
     setBoardClient(boardId);
+    setDeptToolClient('');
     if (typeof window === 'undefined') return;
     const url = personalMode
       ? personalBoardUrl(boardId)
