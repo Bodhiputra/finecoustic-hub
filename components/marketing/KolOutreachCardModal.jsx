@@ -266,8 +266,10 @@ export default function KolOutreachCardModal({
       nextCustom[KOL_BOARD_PROP.publishDate] = publishDate;
     }
 
+    const nextAssignee = assignee.trim();
     onSave?.({
-      assignee: assignee.trim(),
+      assignee: nextAssignee,
+      assignees: nextAssignee ? [nextAssignee] : [],
       custom_values: nextCustom,
       productRows: sections.deal ? productRows.filter(row => row.product?.trim()) : [],
     });
