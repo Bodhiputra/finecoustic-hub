@@ -593,6 +593,12 @@ function CampaignFlowCanvasInner({
     [closeContextMenu, contextMenu, onCanvasAddNode]
   );
 
+  const beginCanvasDrag = useCallback(() => {
+    isDragging.current = true;
+    suppressClickRef.current = true;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+  }, []);
+
   const onNodeDragStart = useCallback((_, node, currentNodes) => {
     beginCanvasDrag();
 
@@ -634,12 +640,6 @@ function CampaignFlowCanvasInner({
       })
     );
   }, [setNodes]);
-
-  const beginCanvasDrag = useCallback(() => {
-    isDragging.current = true;
-    suppressClickRef.current = true;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-  }, []);
 
   const handleNodeDragStop = useCallback(() => {
     isDragging.current = false;
