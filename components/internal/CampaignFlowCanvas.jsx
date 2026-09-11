@@ -75,8 +75,7 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
   const typeClass = isKanban ? ' is-kanban' : isMilestone ? ' is-milestone' : ' is-task';
   const typeLabel = isKanban ? 'Kanban board' : isMilestone ? 'Milestone' : 'Task';
 
-  const handleClick = useCallback(event => {
-    if (event.shiftKey || event.metaKey || event.ctrlKey) return;
+  const openNode = useCallback(() => {
     const actions = actionsRef?.current;
     if (!actions) return;
     if (isKanban && data.boardId) {
@@ -86,11 +85,25 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
     if (data.taskId) actions.openTask?.(data.taskId);
   }, [actionsRef, data.boardId, data.taskId, isKanban]);
 
+  const handleClick = useCallback(event => {
+    if (event.shiftKey || event.metaKey || event.ctrlKey) return;
+    if (!isKanban) return;
+    openNode();
+  }, [isKanban, openNode]);
+
+  const handleDoubleClick = useCallback(event => {
+    if (event.shiftKey || event.metaKey || event.ctrlKey) return;
+    if (isKanban) return;
+    event.stopPropagation();
+    openNode();
+  }, [isKanban, openNode]);
+
   return (
     <div
       className={`campaign-flow-node${typeClass}${selected ? ' is-selected' : ''}`}
       aria-label={`${typeLabel}: ${data.label || 'Untitled'}`}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
     >
       <Handle id="target-top" type="target" position={Position.Top} isConnectable className="campaign-flow-handle is-target-top" />
       <Handle id="source-top" type="source" position={Position.Top} isConnectable className="campaign-flow-handle is-source-top" />
@@ -714,7 +727,8 @@ function CampaignFlowCanvasInner({
           onlyRenderVisibleElements
           elevateNodesOnSelect={false}
           autoPanOnNodeDrag={false}
-          selectNodesOnDrag
+          selectNodesOnDrag={false}
+          nodeDragThreshold={4}
           selectionMode={SelectionMode.Partial}
           panOnDrag={[1]}
           zoomOnScroll
@@ -722,7 +736,7 @@ function CampaignFlowCanvasInner({
           zoomOnPinch
           preventScrolling
           selectionOnDrag
-          selectionKeyCode={null}
+          selectionKeyCode="Shift"
           panActivationKeyCode="Space"
           onSelectionDragStart={beginCanvasDrag}
           onSelectionDragStop={handleNodeDragStop}

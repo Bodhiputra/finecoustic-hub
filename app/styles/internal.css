@@ -2449,7 +2449,7 @@ button.internal-campaign-card {
   box-shadow: 0 4px 16px color-mix(in srgb, #000 8%, transparent);
   font-size: 13px;
   line-height: 1.35;
-  cursor: pointer;
+  cursor: default;
   overflow: visible;
 }
 
@@ -6814,6 +6814,7 @@ button.internal-campaign-card {
 }
 
 .campaign-flow-node.is-kanban {
+  cursor: pointer;
   min-width: 10rem;
   border-width: 1.5px;
   border-color: color-mix(in srgb, var(--accent, #ffd300) 75%, var(--line, var(--border)));
