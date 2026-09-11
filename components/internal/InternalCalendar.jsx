@@ -186,7 +186,7 @@ function SpanEventBar({ segment, weekKey, onSelect }) {
       }}
       title={event.title}
     >
-      {isStart && <span className="internal-cal-span-title">{event.title}</span>}
+      <span className="internal-cal-span-title">{event.title}</span>
     </button>
   );
 }
