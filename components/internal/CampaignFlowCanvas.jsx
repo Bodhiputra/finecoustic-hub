@@ -91,14 +91,6 @@ const FlowNode = memo(function FlowNode({ data, selected }) {
       className={`campaign-flow-node${typeClass}${selected ? ' is-selected' : ''}`}
       aria-label={`${typeLabel}: ${data.label || 'Untitled'}`}
       onClick={handleClick}
-      onKeyDown={event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleClick();
-        }
-      }}
-      role="button"
-      tabIndex={0}
     >
       <Handle id="target-top" type="target" position={Position.Top} isConnectable className="campaign-flow-handle is-target-top" />
       <Handle id="source-top" type="source" position={Position.Top} isConnectable className="campaign-flow-handle is-source-top" />
@@ -242,9 +234,8 @@ function serializeFlow(nodes, edges) {
   };
 }
 
-function mergeNodeData(currentNodes, freshNodes) {
+function mergeNodeData(currentNodes, freshNodes, { addMissingFromFresh = true } = {}) {
   const freshById = new Map(freshNodes.map(node => [node.id, node]));
-  const currentById = new Map(currentNodes.map(node => [node.id, node]));
   const merged = currentNodes
     .filter(node => freshById.has(node.id))
     .map(node => {
@@ -263,8 +254,11 @@ function mergeNodeData(currentNodes, freshNodes) {
       }
       return { ...node, data: fresh.data };
     });
-  for (const fresh of freshNodes) {
-    if (!currentById.has(fresh.id)) merged.push(fresh);
+  if (addMissingFromFresh) {
+    const currentById = new Map(currentNodes.map(node => [node.id, node]));
+    for (const fresh of freshNodes) {
+      if (!currentById.has(fresh.id)) merged.push(fresh);
+    }
   }
   return merged;
 }
@@ -494,7 +488,8 @@ function CampaignFlowCanvasInner({
       boards,
       statusLabelForRef.current
     );
-    setNodes(current => mergeNodeData(current, fresh.nodes));
+    const preserveLocalTopology = hasLocalFlowEdits.current || saveInFlight.current;
+    setNodes(current => mergeNodeData(current, fresh.nodes, { addMissingFromFresh: !preserveLocalTopology }));
   }, [taskSyncKey, flowTasks, boards, setNodes]);
 
   // New/removed nodes or edges from server — preserve local positions when editing.
@@ -510,10 +505,12 @@ function CampaignFlowCanvasInner({
       statusLabelForRef.current
     );
 
-    if (hasLocalFlowEdits.current || saveInFlight.current) {
-      setNodes(current => mergeNodeData(current, fresh.nodes));
+    const preserveLocalTopology = hasLocalFlowEdits.current || saveInFlight.current;
+
+    if (preserveLocalTopology) {
+      setNodes(current => mergeNodeData(current, fresh.nodes, { addMissingFromFresh: false }));
       setEdges(current => {
-        const nodeIds = new Set(fresh.nodes.map(node => node.id));
+        const nodeIds = new Set(current.map(node => node.id));
         const nextEdges = mergeEdgeHandles(
           current,
           fresh.edges.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target))
@@ -664,17 +661,20 @@ function CampaignFlowCanvasInner({
 
   const handleNodesDelete = useCallback(
     deleted => {
+      if (!deleted?.length) return;
       const removed = new Set(deleted.map(node => node.id));
-      setNodes(current => {
-        const nextNodes = current.filter(node => !removed.has(node.id));
-        setEdges(currentEdges => {
-          const nextEdges = currentEdges.filter(
-            edge => !removed.has(edge.source) && !removed.has(edge.target)
-          );
+      hasLocalFlowEdits.current = true;
+      setEdges(currentEdges => {
+        const nextEdges = currentEdges.filter(
+          edge => !removed.has(edge.source) && !removed.has(edge.target)
+        );
+        setNodes(current => {
+          const nextNodes = current.filter(node => !removed.has(node.id));
+          campaignFlowDataRef.current = serializeFlow(nextNodes, nextEdges);
           scheduleSave(nextNodes, nextEdges);
-          return nextEdges;
+          return nextNodes;
         });
-        return nextNodes;
+        return nextEdges;
       });
     },
     [scheduleSave, setNodes, setEdges]
@@ -704,6 +704,7 @@ function CampaignFlowCanvasInner({
           nodeTypes={nodeTypes}
           defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
           deleteKeyCode={['Backspace', 'Delete']}
+          nodesFocusable={false}
           minZoom={0.2}
           maxZoom={1.5}
           onlyRenderVisibleElements
