@@ -2315,11 +2315,15 @@ button.internal-campaign-card {
 }
 
 .campaign-flow-canvas .react-flow__pane {
-  cursor: grab;
+  cursor: default;
 }
 
-.campaign-flow-canvas .react-flow__pane:active {
+.campaign-flow-canvas .react-flow__pane.dragging {
   cursor: grabbing;
+}
+
+.campaign-flow-canvas .react-flow__pane.selection {
+  cursor: crosshair;
 }
 
 .campaign-flow-context-menu {

@@ -594,9 +594,7 @@ function CampaignFlowCanvasInner({
   );
 
   const onNodeDragStart = useCallback((_, node, currentNodes) => {
-    isDragging.current = true;
-    suppressClickRef.current = true;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
+    beginCanvasDrag();
 
     const selectedCount = currentNodes.filter(n => n.selected).length;
     const followers =
@@ -609,7 +607,7 @@ function CampaignFlowCanvasInner({
       lastY: node.position.y,
       followers,
     };
-  }, []);
+  }, [beginCanvasDrag]);
 
   const onNodeDrag = useCallback((_, node) => {
     const drag = dragFollowRef.current;
@@ -636,6 +634,12 @@ function CampaignFlowCanvasInner({
       })
     );
   }, [setNodes]);
+
+  const beginCanvasDrag = useCallback(() => {
+    isDragging.current = true;
+    suppressClickRef.current = true;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+  }, []);
 
   const handleNodeDragStop = useCallback(() => {
     isDragging.current = false;
@@ -710,16 +714,18 @@ function CampaignFlowCanvasInner({
           onlyRenderVisibleElements
           elevateNodesOnSelect={false}
           autoPanOnNodeDrag={false}
-          selectNodesOnDrag={false}
+          selectNodesOnDrag
           selectionMode={SelectionMode.Partial}
-          panOnDrag
+          panOnDrag={[1]}
           zoomOnScroll
           panOnScroll={false}
           zoomOnPinch
           preventScrolling
-          selectionOnDrag={false}
-          selectionKeyCode="Shift"
+          selectionOnDrag
+          selectionKeyCode={null}
           panActivationKeyCode="Space"
+          onSelectionDragStart={beginCanvasDrag}
+          onSelectionDragStop={handleNodeDragStop}
           proOptions={{ hideAttribution: true }}
         >
           {showBackground ? <Background gap={22} size={1} /> : null}

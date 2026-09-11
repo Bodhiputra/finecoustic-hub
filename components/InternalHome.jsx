@@ -205,12 +205,10 @@ export default function InternalHome({
 
   const filteredScheduleItems = useMemo(
     () =>
-      scheduleItems.filter(item => {
-        if (!calendarItemMatchesDepartmentFilter(item, activeDepartments)) return false;
-        if (item.kind === 'milestone' || item.kind === 'event') return activeKindFilters.has('milestones');
-        if (item.kind === 'meeting') return activeKindFilters.has('meetings');
-        return false;
-      }),
+      scheduleItems.filter(item =>
+        calendarItemMatchesKindFilter(item, activeKindFilters)
+        && calendarItemMatchesDepartmentFilter(item, activeDepartments)
+      ),
     [scheduleItems, activeKindFilters, activeDepartments]
   );
 
@@ -245,6 +243,16 @@ export default function InternalHome({
       visibility: 'team',
       status: 'todo',
       planned_for: startDate,
+      deadline: startDate,
+    }));
+  }
+
+  function openNewTask(startDate = null) {
+    setPanelTask(newTaskDraft({
+      kind: 'task',
+      department: ALL_DEPARTMENTS_ID,
+      visibility: 'team',
+      status: 'todo',
       deadline: startDate,
     }));
   }
@@ -455,11 +463,20 @@ export default function InternalHome({
                   </button>
                   <button
                     type="button"
+                    className="appdev-btn-ghost"
+                    onClick={() => openNewTask()}
+                    disabled={saving}
+                  >
+                    <Icon name="plus" size={16} />
+                    {t('hub.internal.addTaskIssue')}
+                  </button>
+                  <button
+                    type="button"
                     className="appdev-btn-primary internal-add-btn"
                     onClick={() => openNewMilestone()}
                     disabled={saving}
                   >
-                    <Icon name="plus" size={16} />
+                    <Icon name="calendar" size={16} />
                     {t('hub.internal.addMilestone')}
                   </button>
                   </>
@@ -473,7 +490,7 @@ export default function InternalHome({
                 countries={[]}
                 cursor={cursor}
                 onCursorChange={setCursor}
-                onDayClick={date => (canCreate ? openNewMilestone(date) : undefined)}
+                onDayClick={date => (canCreate ? openNewTask(date) : undefined)}
                 onTaskClick={setPanelTask}
                 calendarItemFilter={calendarItemFilter}
                 showHolidayControls={false}
@@ -522,7 +539,13 @@ export default function InternalHome({
           postingComment={postingComment}
           displayName={displayNameResolved}
           teamMembers={teamMembers}
-          lockBoard={campaignFlowId ? { board_id: null, campaign_id: campaignFlowId } : null}
+          lockBoard={
+            campaignFlowId
+              ? { board_id: null, campaign_id: campaignFlowId }
+              : scheduleView && panelTask?.kind === 'task'
+                ? { board_id: null, campaign_id: null }
+                : null
+          }
           statusColumns={campaignFlowId ? flowStatusColumns() : null}
           isManager={Boolean(actor?.isManager)}
           isAdmin={Boolean(actor?.isAdmin)}
