@@ -153,6 +153,31 @@ curl "https://YOUR-SHOP-DOMAIN/apps/fc-preorder/reserved?email=test@example.com&
 
 Expected: `{"ok":true,"reserved":true}` or `{"ok":true,"reserved":false}`.
 
+## B2B retailer pool (Operations CRM)
+
+Hub-authenticated CRUD at **Operations → B2B retailer pool** (`/ops?tool=customers`):
+
+- Tags (exactly one): **Existing Fantech**, **Potential**, **Deal**
+- Fields: name, tag (required), optional website, country, partner code, social links (address later)
+- Optional **partner code** links a row to `ops-data.json` B2B partners for live units / shipment status
+
+API (Operations department access):
+
+- `GET /api/v1/ops/b2b-retailers?section=all`
+- `POST /api/v1/ops/b2b-retailers` — JSON body
+- `PATCH /api/v1/ops/b2b-retailers/:id`
+- `DELETE /api/v1/ops/b2b-retailers/:id`
+
+Local dev without `DATABASE_URL`: `data/hub-b2b-retailers.json` (gitignored).
+
+## Languages
+
+Hub UI: **EN**, **中文**, **Bahasa Indonesia** (locale switcher). Indonesian strings live in `lib/i18n/locales/id.js`. Regenerate from English:
+
+```bash
+npm run i18n:generate-id
+```
+
 ## Stack
 
 Next.js · JavaScript (JSX) · local JSON (dev) · Neon Postgres (prod)

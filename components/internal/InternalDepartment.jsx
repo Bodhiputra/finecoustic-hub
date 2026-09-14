@@ -26,6 +26,7 @@ import { KOL_OUTREACH_BOARD_ID } from '@/lib/kol-outreach-shared';
 import { marketingToolFromPathname, marketingToolPath } from '@/lib/marketing-routes';
 import { MarketingHubContent } from '@/components/MarketingHub';
 import { OpsHubContent } from '@/components/OpsHub';
+import B2bRetailerPoolWorkspace from '@/components/ops/B2bRetailerPoolWorkspace';
 import OpsStockPanel from '@/components/ops/OpsStockPanel';
 import OpsExpensesPanel from '@/components/ops/OpsExpensesPanel';
 import { PERSONAL_JOT_DOWN_TOOL } from '@/lib/personal-jots-shared';
@@ -101,6 +102,7 @@ export default function InternalDepartment({
   initialPersonalJots = [],
   initialDepartmentJots = [],
   initialExpenses = [],
+  initialB2bRetailers = null,
   initialMe = null,
   initialDeptBoards = null,
   initialPersonalBoards = null,
@@ -1512,7 +1514,17 @@ export default function InternalDepartment({
             <div hidden={toolParam !== 'expenses'} aria-hidden={toolParam !== 'expenses'}>
               <OpsExpensesPanel initialExpenses={initialExpenses} />
             </div>
-            <div hidden={toolParam === 'stock' || toolParam === 'expenses'} aria-hidden={toolParam === 'stock' || toolParam === 'expenses'}>
+            <div hidden={toolParam !== 'customers'} aria-hidden={toolParam !== 'customers'}>
+              <B2bRetailerPoolWorkspace
+                initialRecords={initialB2bRetailers?.records || []}
+                initialCounts={initialB2bRetailers?.counts}
+                opsData={opsData}
+              />
+            </div>
+            <div
+              hidden={toolParam === 'stock' || toolParam === 'expenses' || toolParam === 'customers'}
+              aria-hidden={toolParam === 'stock' || toolParam === 'expenses' || toolParam === 'customers'}
+            >
               {opsData ? (
                 <OpsHubContent initialData={opsData} view={toolParam} />
               ) : null}

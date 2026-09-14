@@ -14,6 +14,7 @@ export default function OpsDeptShell({ authEnabled, workspace }) {
       shopifySnapshot={workspace.shopifySnapshot}
       initialExpenses={workspace.expenses}
       initialDeptBoards={workspace.deptBoards}
+      initialB2bRetailers={workspace.b2bRetailers}
     />
   );
 }

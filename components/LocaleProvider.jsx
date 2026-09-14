@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getMessage, LOCALES, messages } from '@/lib/i18n/messages';
+import { htmlLangForHub } from '@/lib/i18n/locale-intl';
 
 const STORAGE_KEY = 'finehub-locale';
 
@@ -24,7 +25,7 @@ export function LocaleProvider({ children }) {
 
   useEffect(() => {
     if (!ready) return;
-    document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+    document.documentElement.lang = htmlLangForHub(locale);
     localStorage.setItem(STORAGE_KEY, locale);
   }, [locale, ready]);
 
@@ -32,10 +33,7 @@ export function LocaleProvider({ children }) {
     if (LOCALES.includes(next)) setLocaleState(next);
   }, []);
 
-  const t = useCallback(
-    path => getMessage(messages[locale] ?? messages.en, path),
-    [locale]
-  );
+  const t = useCallback(path => getMessage(locale, path), [locale]);
 
   const value = useMemo(
     () => ({ locale, setLocale, t, ready }),

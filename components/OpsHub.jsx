@@ -9,23 +9,16 @@ import { HubLayout } from '@/components/HubSidebarContext';
 import { useLocale } from '@/components/LocaleProvider';
 import {
   ACTIVE_SKUS,
-  SHIPMENT_LABELS,
   calcMetrics,
   calcStockReconciliation,
-  customerDataUpdatedAt,
   inventoryDataUpdatedAt,
   formatDataDate,
-  formatDate,
-  partnerAllocations,
   productName,
-  productsOrdered,
   shipmentCounts,
-  shipmentStatusClass,
 } from '@/lib/ops';
 
 const VIEW_META = {
   dashboard: ['Dashboard', 'Inventory and distributor orders at a glance'],
-  customers: ['Customers', 'Who ordered what, and where shipments stand'],
   stock: ['Stock', 'China warehouse and online store'],
 };
 
@@ -33,7 +26,6 @@ export const OPS_VIEW_META = VIEW_META;
 
 const NAV_ITEMS = [
   { id: 'dashboard', href: '/ops?tool=dashboard', label: 'Dashboard' },
-  { id: 'customers', href: '/ops?tool=customers', label: 'Customers' },
   { id: 'stock', href: '/ops?tool=stock', label: 'Stock' },
 ];
 
@@ -50,18 +42,6 @@ export function OpsHubContent({
   const ship = useMemo(() => shipmentCounts(ops), [ops]);
   const awaiting = ship.not_shipped + ship.preparing + ship.po_listed;
 
-  const partners = ops.b2b_partners
-    .map(p => {
-      const total = partnerAllocations(ops, p.code).reduce((a, x) => a + x.qty, 0);
-      const needsReview = p.counts_toward_stock === false;
-      const note = needsReview
-        ? 'Confirm whether this is a separate China order or fulfilled through another distributor.'
-        : (p.notes || '');
-      return { p, total, note, needsReview };
-    })
-    .sort((a, b) => b.total - a.total);
-
-  const customerDataUpdated = formatDataDate(customerDataUpdatedAt(ops));
   const inventoryDataUpdated = formatDataDate(inventoryDataUpdatedAt(ops));
 
   return (
@@ -163,54 +143,6 @@ export function OpsHubContent({
                 </p>
               </div>
             )}
-          </section>
-        )}
-
-        {view === 'customers' && (
-          <section className="view active">
-            <p className="data-updated-label">Customers last updated: {customerDataUpdated}</p>
-            <p className="summary-line">
-              <strong>{ops.b2b_partners.length}</strong> customers ·{' '}
-              <strong>{ship.shipped}</strong> shipped ·{' '}
-              <strong>{awaiting}</strong> in progress
-            </p>
-            <article className="panel panel-full">
-              <div className="table-scroll h-scroll">
-                <table className="data-table exec-table">
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Country</th>
-                      <th>Products ordered</th>
-                      <th className="num">Total units</th>
-                      <th>Shipment</th>
-                      <th>Est. arrival</th>
-                      <th>Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partners.map(({ p, total, note, needsReview }) => (
-                      <tr key={p.code} className={needsReview ? 'row-highlight' : undefined}>
-                        <td>
-                          <span className="customer-code">{p.code}</span>
-                          <strong className="customer-name">{p.name}</strong>
-                        </td>
-                        <td>{p.country}</td>
-                        <td className="products-cell">{productsOrdered(ops, p.code)}</td>
-                        <td className="num strong">{total}</td>
-                        <td>
-                          <span className={`status-pill ${shipmentStatusClass(p)}`}>
-                            {SHIPMENT_LABELS[p.shipment_status] || p.shipment_status}
-                          </span>
-                        </td>
-                        <td>{formatDate(p.eta_estimated)}</td>
-                        <td className="notes-cell">{note || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </article>
           </section>
         )}
 

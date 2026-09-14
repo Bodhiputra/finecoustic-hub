@@ -15,7 +15,8 @@
     "db:migrate-appdev": "node scripts/migrate-appdev-blob.mjs",
     "db:flush-preorder-survey": "node scripts/flush-preorder-survey.mjs",
     "remote:flush-preorder-survey": "node scripts/remote-flush-preorder-survey.mjs",
-    "import:rmp": "node scripts/import-rmp-tasks.mjs"
+    "import:rmp": "node scripts/import-rmp-tasks.mjs",
+    "i18n:generate-id": "node scripts/generate-id-locale.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
