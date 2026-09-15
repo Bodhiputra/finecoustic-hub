@@ -320,7 +320,7 @@ export default function KolPoolWorkspace({
 
       <nav className="kol-pool-tabs wrap-row" aria-label={t('hub.kol.sectionsLabel')}>
         {KOL_POOL_SECTIONS.map(tab => {
-          const count = counts[tab.id] ?? filterKolBySection(records, tab.id).length;
+          const count = counts[tab.id] ?? 0;
           return (
             <button
               key={tab.id}
