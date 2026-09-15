@@ -454,12 +454,31 @@ export default function InternalDepartment({
     });
   }, []);
 
+  const tasksRevisionScope = useMemo(() => {
+    if (!shouldLoadTasks || outreachToolView || (!flowView && !boardView)) return null;
+    if (flowView && flowParam) {
+      return { campaign_id: flowParam, flow_only: true };
+    }
+    if (boardView && effectiveBoardParam) {
+      return { board_id: effectiveBoardParam };
+    }
+    return null;
+  }, [
+    shouldLoadTasks,
+    outreachToolView,
+    flowView,
+    boardView,
+    flowParam,
+    effectiveBoardParam,
+  ]);
+
   const { markCampaignSynced } = useInternalWorkspacePoll({
     enabled: Boolean(shouldLoadTasks && !outreachToolView && (flowView || boardView)),
     campaignId: flowView ? flowParam : '',
     onCampaignUpdate: flowView ? handleRemoteCampaignUpdate : undefined,
     onTasksUpdate: refresh,
     quietUntilRef: localEditQuietUntilRef,
+    tasksRevisionScope,
   });
 
   useEffect(() => {

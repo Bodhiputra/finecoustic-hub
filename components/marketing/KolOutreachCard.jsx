@@ -3,7 +3,8 @@
 import UserAvatar from '@/components/internal/UserAvatar';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
-import { kolLinkAriaLabel, kolOutreachPlatformIconName } from '@/lib/kol-pool';
+import KolShippingCopyButton from '@/components/marketing/KolShippingCopyButton';
+import { hasKolShippingClipboard, kolLinkAriaLabel, kolOutreachPlatformIconName } from '@/lib/kol-pool';
 import { canDragOutreachCard, isNoDealCard, kolCardChips, needsFollowUp } from '@/lib/kol-outreach-utils';
 import {
   KOL_BOARD_PROP,
@@ -116,6 +117,13 @@ export default function KolOutreachCard({
           )}
 
           <div className="kol-outreach-card-actions">
+            {hasKolShippingClipboard(poolRecord) ? (
+              <KolShippingCopyButton
+                record={poolRecord}
+                className="kol-outreach-card-action kol-outreach-card-copy-shipping"
+                size={14}
+              />
+            ) : null}
             <button
               type="button"
               className="kol-outreach-card-action"

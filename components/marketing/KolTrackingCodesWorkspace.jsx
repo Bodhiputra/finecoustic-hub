@@ -5,7 +5,7 @@ import Icon from '@/components/Icon';
 import ButtonBusyContent from '@/components/ButtonBusyContent';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
-import { API_V1, unwrapData } from '@/lib/api/routes';
+import { API_V1, marketingKolPoolQuery, unwrapData } from '@/lib/api/routes';
 import { filterVisibleKolPool, platformChipClass } from '@/lib/kol-pool';
 import KolPoolSearchSelect from '@/components/marketing/KolPoolSearchSelect';
 
@@ -51,11 +51,34 @@ export default function KolTrackingCodesWorkspace({ initialPoolRecords = [] }) {
   const [generating, setGenerating] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedKolId, setSelectedKolId] = useState('');
+  const [poolRecords, setPoolRecords] = useState(() => filterVisibleKolPool(initialPoolRecords));
+  const [poolLoading, setPoolLoading] = useState(initialPoolRecords.length === 0);
 
-  const poolRecords = useMemo(
-    () => filterVisibleKolPool(initialPoolRecords),
-    [initialPoolRecords]
-  );
+  useEffect(() => {
+    if (initialPoolRecords.length > 0) {
+      setPoolRecords(filterVisibleKolPool(initialPoolRecords));
+      setPoolLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setPoolLoading(true);
+      try {
+        const res = await fetch(marketingKolPoolQuery({ poolView: 'outreach' }), {
+          credentials: 'same-origin',
+        });
+        const body = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok) return;
+        const data = unwrapData(body);
+        setPoolRecords(filterVisibleKolPool(Array.isArray(data?.records) ? data.records : []));
+      } finally {
+        if (!cancelled) setPoolLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialPoolRecords]);
 
   const codedKolIds = useMemo(() => new Set(entries.map(entry => entry.kol_pool_id)), [entries]);
 

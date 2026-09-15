@@ -5,7 +5,7 @@ import Icon from '@/components/Icon';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
-import { kolShippingDetailEntries, kolShippingDetailText } from '@/lib/kol-pool';
+import { kolShippingClipboardText, kolShippingDetailEntries } from '@/lib/kol-pool';
 
 export default function KolPoolShippingModal({ open, record, onClose }) {
   const { t } = useLocale();
@@ -14,7 +14,7 @@ export default function KolPoolShippingModal({ open, record, onClose }) {
   const entries = kolShippingDetailEntries(record);
 
   const copyAll = useCallback(async () => {
-    const text = kolShippingDetailText(record, key => t(key));
+    const text = kolShippingClipboardText(record);
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);

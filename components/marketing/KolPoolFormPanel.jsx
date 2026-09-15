@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import KolChipPicker from '@/components/marketing/KolChipPicker';
+import KolShippingCopyButton from '@/components/marketing/KolShippingCopyButton';
 import {
   KOL_PLATFORM_SUGGESTIONS,
   KOL_TAG_SUGGESTIONS,
@@ -371,7 +372,10 @@ export default function KolPoolFormPanel({
           {!compact ? (
             <>
               <section className="kol-edit-section" aria-labelledby="kol-edit-shipping-title">
-                <h4 id="kol-edit-shipping-title" className="kol-edit-section-title">{t('hub.kol.shippingAddress')}</h4>
+                <div className="kol-edit-section-title-row">
+                  <h4 id="kol-edit-shipping-title" className="kol-edit-section-title">{t('hub.kol.shippingAddress')}</h4>
+                  <KolShippingCopyButton record={data} className="kol-pool-shipping-btn kol-shipping-copy-inline" />
+                </div>
                 <div className="kol-edit-grid">
                   <FormField label={t('hub.kol.shippingName')} required span={2}>
                     <input

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { API_V1, unwrapData } from '@/lib/api/routes';
+import { API_V1, internalTasksRevisionQuery, unwrapData } from '@/lib/api/routes';
 
 /** Poll open flow/kanban workspaces so cross-user edits appear without hard refresh. */
 export const WORKSPACE_SYNC_MS = 30_000;
@@ -16,6 +16,7 @@ export const LOCAL_EDIT_QUIET_MS = 3_000;
  * @param {(campaign: object) => void} [options.onCampaignUpdate]
  * @param {() => void | Promise<void>} [options.onTasksUpdate]
  * @param {React.MutableRefObject<number>} [options.quietUntilRef]
+ * @param {object} [options.tasksRevisionScope] — board/department filters for revision probe
  */
 export function useInternalWorkspacePoll({
   enabled = false,
@@ -23,16 +24,24 @@ export function useInternalWorkspacePoll({
   onCampaignUpdate,
   onTasksUpdate,
   quietUntilRef,
+  tasksRevisionScope = null,
 } = {}) {
   const lastCampaignUpdatedAtRef = useRef('');
+  const lastTasksEtagRef = useRef('');
   const onCampaignUpdateRef = useRef(onCampaignUpdate);
   const onTasksUpdateRef = useRef(onTasksUpdate);
+  const tasksRevisionScopeRef = useRef(tasksRevisionScope);
   onCampaignUpdateRef.current = onCampaignUpdate;
   onTasksUpdateRef.current = onTasksUpdate;
+  tasksRevisionScopeRef.current = tasksRevisionScope;
 
   useEffect(() => {
     lastCampaignUpdatedAtRef.current = '';
   }, [campaignId]);
+
+  useEffect(() => {
+    lastTasksEtagRef.current = '';
+  }, [tasksRevisionScope?.board_id, tasksRevisionScope?.department, tasksRevisionScope?.campaign_id]);
 
   const sync = useCallback(async () => {
     if (!enabled) return;
@@ -57,8 +66,24 @@ export function useInternalWorkspacePoll({
       }
     }
 
-    if (onTasksUpdateRef.current) {
+    if (onTasksUpdateRef.current && tasksRevisionScopeRef.current) {
+      const scope = tasksRevisionScopeRef.current;
       try {
+        const revUrl = internalTasksRevisionQuery({
+          department: scope.department || '',
+          board_id: scope.board_id || '',
+          campaign_id: scope.campaign_id || '',
+          flow_only: scope.flow_only,
+          hub_home: scope.hub_home,
+        });
+        const res = await fetch(revUrl, { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const body = await res.json();
+        const data = unwrapData(body);
+        const etag = data?.revision?.etag || '';
+        if (!etag) return;
+        if (etag === lastTasksEtagRef.current) return;
+        lastTasksEtagRef.current = etag;
         await onTasksUpdateRef.current();
       } catch {
         /* ignore */
@@ -87,7 +112,11 @@ export function useInternalWorkspacePoll({
     lastCampaignUpdatedAtRef.current = String(updatedAt || '');
   }, []);
 
-  return { markCampaignSynced };
+  const markTasksSynced = useCallback((etag = '') => {
+    if (etag) lastTasksEtagRef.current = String(etag);
+  }, []);
+
+  return { markCampaignSynced, markTasksSynced };
 }
 
 export function bumpLocalEditQuiet(quietUntilRef, ms = LOCAL_EDIT_QUIET_MS) {

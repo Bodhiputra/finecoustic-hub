@@ -4120,8 +4120,28 @@ button.internal-campaign-card {
   line-height: 1.4;
 }
 .kol-pool-shipping {
-  width: 3rem;
+  width: auto;
+  min-width: 3rem;
   text-align: center;
+}
+.kol-pool-shipping-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.kol-edit-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.kol-edit-section-title-row .kol-edit-section-title {
+  margin-bottom: 0;
+}
+.kol-shipping-copy-inline {
+  flex-shrink: 0;
 }
 .kol-pool-shipping-btn {
   display: inline-flex;
@@ -5303,6 +5323,12 @@ button.internal-campaign-card {
   border-color: color-mix(in srgb, #f39c12 45%, var(--line));
   color: #f39c12;
   background: color-mix(in srgb, #f39c12 10%, var(--surface));
+}
+.kol-outreach-card-copy-shipping {
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  justify-content: center;
 }
 .kol-outreach-card-hint {
   margin: 0;

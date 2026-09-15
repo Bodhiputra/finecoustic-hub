@@ -1,31 +1,24 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Icon from '@/components/Icon';
 import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
 import KolPoolShippingModal from '@/components/marketing/KolPoolShippingModal';
+import KolShippingCopyButton from '@/components/marketing/KolShippingCopyButton';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
-import { API_V1, unwrapData } from '@/lib/api/routes';
+import { API_V1, marketingKolPoolQuery, unwrapData } from '@/lib/api/routes';
 import {
   KOL_POOL_SECTIONS,
-  collectKolCollabInitiativeOptions,
-  collectKolCountryOptions,
-  collectKolMainPlatformOptions,
-  countKolBySection,
-  filterKolBySection,
   filterVisibleKolPool,
   hasKolShippingAddress,
+  hasKolShippingClipboard,
   isHubNativeKol,
   isKolVisibleInPool,
   KOL_TAG_LABEL_KEYS,
   kolLinkAriaLabel,
   kolLinkIconName,
-  kolMatchesCollabInitiativeFilter,
-  kolMatchesCountryFilter,
-  kolMatchesPlatformFilter,
-  kolShippingSummary,
   normalizeKolTagChoice,
   platformChipClass,
 } from '@/lib/kol-pool';
@@ -97,64 +90,77 @@ export default function KolPoolWorkspace({
   const [creating, setCreating] = useState(false);
   const [shippingRow, setShippingRow] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [listLoading, setListLoading] = useState(initialRecords.length === 0);
+  const [totalFiltered, setTotalFiltered] = useState(initialRecords.length);
+  const [platformOptions, setPlatformOptions] = useState([]);
+  const [countryOptions, setCountryOptions] = useState([]);
+  const [collabInitiativeOptions, setCollabInitiativeOptions] = useState([]);
 
-  const sectionRecords = useMemo(
-    () => filterKolBySection(filterVisibleKolPool(records), section),
-    [records, section]
-  );
-
-  const platformOptions = useMemo(
-    () => collectKolMainPlatformOptions(sectionRecords),
-    [sectionRecords]
-  );
-
-  const countryOptions = useMemo(
-    () => collectKolCountryOptions(sectionRecords),
-    [sectionRecords]
-  );
-
-  const collabInitiativeOptions = useMemo(
-    () => collectKolCollabInitiativeOptions(sectionRecords),
-    [sectionRecords]
-  );
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return sectionRecords.filter(r => {
-      if (!kolMatchesPlatformFilter(r, platformFilter)) return false;
-      if (!kolMatchesCountryFilter(r, countryFilter)) return false;
-      if (!kolMatchesCollabInitiativeFilter(r, collabInitiativeFilter)) return false;
-      if (!q) return true;
-      const hay = [
-        r.channel_name,
-        r.country,
-        r.main_platform,
-        r.kol_category,
-        r.tags,
-        r.description,
-        (r.collaboration_products || []).join(' '),
-        kolShippingSummary(r),
-      ]
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [sectionRecords, platformFilter, countryFilter, collabInitiativeFilter, query]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
   const safePage = Math.min(page, totalPages);
+  const paged = records;
+  const rangeFrom = totalFiltered ? (safePage - 1) * pageSize + 1 : 0;
+  const rangeTo = totalFiltered ? Math.min(safePage * pageSize, totalFiltered) : 0;
 
-  const paged = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, safePage, pageSize]);
-
-  const rangeFrom = filtered.length ? (safePage - 1) * pageSize + 1 : 0;
-  const rangeTo = filtered.length ? Math.min(safePage * pageSize, filtered.length) : 0;
+  const fetchPage = useCallback(async () => {
+    setListLoading(true);
+    try {
+      const offset = (safePage - 1) * pageSize;
+      const url = marketingKolPoolQuery({
+        section,
+        limit: pageSize,
+        offset,
+        q: query.trim(),
+        platform: platformFilter,
+        country: countryFilter,
+        collabInitiative: collabInitiativeFilter,
+      });
+      const res = await fetch(url, { credentials: 'same-origin' });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(t('common.somethingWrong'));
+        return;
+      }
+      const data = unwrapData(body);
+      setRecords(filterVisibleKolPool(Array.isArray(data?.records) ? data.records : []));
+      setTotalFiltered(Number(data?.total) || 0);
+      if (data?.meta) setMeta(data.meta);
+      if (data?.counts) setCounts(data.counts);
+      setPlatformOptions(Array.isArray(data?.platformOptions) ? data.platformOptions : []);
+      setCountryOptions(Array.isArray(data?.countryOptions) ? data.countryOptions : []);
+      setCollabInitiativeOptions(
+        Array.isArray(data?.collabInitiativeOptions) ? data.collabInitiativeOptions : []
+      );
+    } finally {
+      setListLoading(false);
+    }
+  }, [
+    safePage,
+    pageSize,
+    section,
+    query,
+    platformFilter,
+    countryFilter,
+    collabInitiativeFilter,
+    t,
+    toast,
+  ]);
 
   useEffect(() => {
     setPage(1);
   }, [section, query, platformFilter, countryFilter, collabInitiativeFilter, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  useEffect(() => {
+    const debounce = query.trim() ? 300 : 0;
+    const id = window.setTimeout(() => {
+      fetchPage();
+    }, debounce);
+    return () => window.clearTimeout(id);
+  }, [fetchPage, query]);
 
   useEffect(() => {
     if (platformFilter === 'all') return;
@@ -177,30 +183,25 @@ export default function KolPoolWorkspace({
     }
   }, [collabInitiativeFilter, collabInitiativeOptions]);
 
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
   async function pollSyncResult(startedAt) {
     const deadline = Date.now() + 120000;
     while (Date.now() < deadline) {
       await new Promise(resolve => setTimeout(resolve, 2000));
-      const res = await fetch(`${API_V1.marketingKolPool}?section=${encodeURIComponent(section)}`, {
-        credentials: 'same-origin',
-      });
+      const res = await fetch(marketingKolPoolQuery({ metaOnly: true }), { credentials: 'same-origin' });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) continue;
       const data = unwrapData(body);
       const nextMeta = data?.meta || meta;
       if (nextMeta.sync_status === 'syncing') continue;
       if (nextMeta.last_synced_at && nextMeta.last_synced_at !== startedAt) {
-        setRecords(filterVisibleKolPool(Array.isArray(data?.records) ? data.records : []));
         if (data?.meta) setMeta(data.meta);
-        if (data?.counts) setCounts(data.counts);
+        await fetchPage();
         if (nextMeta.last_error) {
           toast.error(formatSyncError(nextMeta.last_error, t));
         } else {
-          toast.success(t('hub.kol.syncSuccess').replace('{count}', String(data?.total ?? data?.records?.length ?? 0)));
+          toast.success(
+            t('hub.kol.syncSuccess').replace('{count}', String(nextMeta.record_count ?? ''))
+          );
         }
         return;
       }
@@ -243,11 +244,15 @@ export default function KolPoolWorkspace({
         await pollSyncResult(startedAt);
         return;
       }
-      const nextRecords = filterVisibleKolPool(Array.isArray(data?.records) ? data.records : []);
-      setRecords(nextRecords);
       if (data?.meta) setMeta(data.meta);
       if (data?.counts) setCounts(data.counts);
-      toast.success(t('hub.kol.syncSuccess').replace('{count}', String(data?.total ?? nextRecords.length)));
+      await fetchPage();
+      toast.success(
+        t('hub.kol.syncSuccess').replace(
+          '{count}',
+          String(data?.meta?.record_count ?? data?.total ?? '')
+        )
+      );
     } catch {
       toast.error(t('hub.kol.errors.sync_failed'));
     } finally {
@@ -255,36 +260,17 @@ export default function KolPoolWorkspace({
     }
   }
 
-  function handleSaved(record) {
+  async function handleSaved(record) {
     if (!record) return;
-    setRecords(prev => {
-      const visible = filterVisibleKolPool(
-        isKolVisibleInPool(record)
-          ? (() => {
-              const idx = prev.findIndex(r => r.notion_page_id === record.notion_page_id);
-              if (idx >= 0) return prev.map((r, i) => (i === idx ? record : r));
-              return [...prev, record].sort((a, b) =>
-                a.channel_name.localeCompare(b.channel_name)
-              );
-            })()
-          : prev.filter(r => r.notion_page_id !== record.notion_page_id)
-      );
-      setCounts(countKolBySection(visible));
-      return visible;
-    });
     if (!isKolVisibleInPool(record)) {
       setEditing(null);
     }
+    await fetchPage();
   }
 
-  function handleDeleted(notionPageId) {
-    if (!notionPageId) return;
-    setRecords(prev => {
-      const next = filterVisibleKolPool(prev.filter(r => r.notion_page_id !== notionPageId));
-      setCounts(countKolBySection(next));
-      return next;
-    });
+  async function handleDeleted() {
     setEditing(null);
+    await fetchPage();
   }
 
   return (
@@ -407,12 +393,14 @@ export default function KolPoolWorkspace({
           </label>
         ) : null}
         <span className="kol-pool-result-count">
-          {filtered.length
-            ? t('hub.kol.showingRange')
-                .replace('{from}', String(rangeFrom))
-                .replace('{to}', String(rangeTo))
-                .replace('{total}', String(filtered.length))
-            : t('hub.kol.showing').replace('{count}', '0')}
+          {listLoading
+            ? t('common.loading')
+            : totalFiltered
+              ? t('hub.kol.showingRange')
+                  .replace('{from}', String(rangeFrom))
+                  .replace('{to}', String(rangeTo))
+                  .replace('{total}', String(totalFiltered))
+              : t('hub.kol.showing').replace('{count}', '0')}
         </span>
         <label className="kol-pool-page-size">
           <span>{t('hub.kol.perPage')}</span>
@@ -428,10 +416,12 @@ export default function KolPoolWorkspace({
         </label>
       </div>
 
-      {filtered.length === 0 ? (
+      {!listLoading && totalFiltered === 0 ? (
         <p className="internal-empty personal-hub-hint">
-          {records.length === 0 ? t('hub.kol.emptyPool') : t('hub.kol.emptySection')}
+          {meta.record_count === 0 ? t('hub.kol.emptyPool') : t('hub.kol.emptySection')}
         </p>
+      ) : listLoading && totalFiltered === 0 ? (
+        <p className="internal-empty personal-hub-hint">{t('common.loading')}</p>
       ) : (
         <div className="kol-pool-table-wrap h-scroll">
           <table className="kol-pool-table">
@@ -505,18 +495,23 @@ export default function KolPoolWorkspace({
                   </td>
                   <td className="kol-pool-shipping">
                     {hasKolShippingAddress(row) ? (
-                      <button
-                        type="button"
-                        className="kol-pool-shipping-btn"
-                        aria-label={t('hub.kol.viewShipping')}
-                        title={t('hub.kol.viewShipping')}
-                        onClick={e => {
-                          e.stopPropagation();
-                          setShippingRow(row);
-                        }}
-                      >
-                        <Icon name="box" size={16} />
-                      </button>
+                      <div className="kol-pool-shipping-actions">
+                        <button
+                          type="button"
+                          className="kol-pool-shipping-btn"
+                          aria-label={t('hub.kol.viewShipping')}
+                          title={t('hub.kol.viewShipping')}
+                          onClick={e => {
+                            e.stopPropagation();
+                            setShippingRow(row);
+                          }}
+                        >
+                          <Icon name="box" size={16} />
+                        </button>
+                        <KolShippingCopyButton record={row} />
+                      </div>
+                    ) : hasKolShippingClipboard(row) ? (
+                      <KolShippingCopyButton record={row} />
                     ) : (
                       '—'
                     )}
@@ -545,7 +540,7 @@ export default function KolPoolWorkspace({
         </div>
       )}
 
-      {filtered.length > pageSize ? (
+      {totalFiltered > pageSize ? (
         <nav className="kol-pool-pagination" aria-label={t('hub.kol.paginationLabel')}>
           <button
             type="button"
