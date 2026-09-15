@@ -14,7 +14,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useHubPermissions } from '@/hooks/useHubPermissions';
-import { API_V1, unwrapData } from '@/lib/api/routes';
+import { API_V1, marketingKolPoolQuery, unwrapData } from '@/lib/api/routes';
 import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
 import {
   KOL_APPROACH_DIRECTIONS,
@@ -108,16 +108,20 @@ export default function KolOutreachWorkspace({
   useEffect(() => {
     if (initialPoolRecords.length) {
       setPoolRecords(initialPoolRecords);
-      return;
     }
-    fetch(API_V1.marketingKolPool, { credentials: 'same-origin' })
+    let cancelled = false;
+    fetch(marketingKolPoolQuery({ poolView: 'outreach' }), { credentials: 'same-origin' })
       .then(res => (res.ok ? res.json() : null))
       .then(body => {
+        if (cancelled) return;
         const data = unwrapData(body);
         const records = Array.isArray(data?.records) ? data.records : [];
         if (records.length) setPoolRecords(records);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [initialPoolRecords]);
 
   const normalizedTasks = useMemo(

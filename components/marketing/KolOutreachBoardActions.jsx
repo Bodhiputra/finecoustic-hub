@@ -6,7 +6,7 @@ import ButtonBusyContent from '@/components/ButtonBusyContent';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
-import { API_V1, unwrapData } from '@/lib/api/routes';
+import { API_V1, marketingKolPoolQuery, unwrapData } from '@/lib/api/routes';
 import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey, resolveKolInitiative } from '@/lib/kol-outreach-shared';
 import { collectKolCountryOptions, collectKolMainPlatformOptions, isKolSelectableForOutreach, kolMatchesCountryFilter, kolMatchesPlatformFilter, platformChipClass } from '@/lib/kol-pool';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
@@ -171,16 +171,20 @@ export default function KolOutreachBoardActions({
   useEffect(() => {
     if (initialPoolRecords.length) {
       setPoolRecords(initialPoolRecords);
-      return;
     }
-    fetch(API_V1.marketingKolPool, { credentials: 'same-origin' })
+    let cancelled = false;
+    fetch(marketingKolPoolQuery({ poolView: 'outreach' }), { credentials: 'same-origin' })
       .then(r => (r.ok ? r.json() : null))
       .then(body => {
+        if (cancelled) return;
         const data = unwrapData(body);
         const records = Array.isArray(data?.records) ? data.records : [];
         if (records.length) setPoolRecords(records);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [initialPoolRecords]);
 
   const outreachKeys = useMemo(() => {
