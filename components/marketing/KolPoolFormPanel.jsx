@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '@/components/Icon';
 import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
@@ -23,6 +23,30 @@ import {
   normalizeKolTierChoice,
   partitionCollabProductsByCatalog,
 } from '@/lib/kol-pool';
+
+const SHIPPING_FORM_KEYS = [
+  'shipping_name',
+  'shipping_line1',
+  'shipping_line2',
+  'shipping_city',
+  'shipping_state',
+  'shipping_postal',
+  'shipping_country',
+  'shipping_country_code',
+  'shipping_phone',
+  'shipping_email',
+  'shipping_tax_id',
+];
+
+function shippingRecordFromForm(form, base = {}) {
+  if (!form) return base;
+  const fd = new FormData(form);
+  const patch = {};
+  for (const key of SHIPPING_FORM_KEYS) {
+    patch[key] = String(fd.get(key) || '').trim();
+  }
+  return { ...base, ...patch };
+}
 
 function formPayload(fd, { links, collaboration_products, tags, kol_category }) {
   return {
@@ -101,6 +125,7 @@ export default function KolPoolFormPanel({
   onSaved,
   onDeleted,
   onCreateAndAdd = null,
+  shippingCopyInSection = false,
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
@@ -114,6 +139,12 @@ export default function KolPoolFormPanel({
   const [kolCategory, setKolCategory] = useState('');
   const isCreate = mode === 'create';
   const data = record || {};
+  const formRef = useRef(null);
+
+  const resolveShippingRecord = useCallback(
+    () => shippingRecordFromForm(formRef.current, data),
+    [data]
+  );
 
   const activeCatalogProducts = useMemo(
     () => catalogProducts.filter(product => product.status !== 'discontinued'),
@@ -282,7 +313,7 @@ export default function KolPoolFormPanel({
         </button>
       </header>
 
-      <form className="kol-edit-form kol-pool-edit-form" onSubmit={handleSubmit}>
+      <form ref={formRef} className="kol-edit-form kol-pool-edit-form" onSubmit={handleSubmit}>
         <div className="kol-edit-form-body">
           <section className="kol-edit-section" aria-labelledby="kol-edit-profile-title">
             <h4 id="kol-edit-profile-title" className="kol-edit-section-title">{t('hub.kol.sectionProfile')}</h4>
@@ -372,10 +403,17 @@ export default function KolPoolFormPanel({
           {!compact ? (
             <>
               <section className="kol-edit-section" aria-labelledby="kol-edit-shipping-title">
-                <div className="kol-edit-section-title-row">
-                  <h4 id="kol-edit-shipping-title" className="kol-edit-section-title">{t('hub.kol.shippingAddress')}</h4>
-                  <KolShippingCopyButton record={data} className="kol-pool-shipping-btn kol-shipping-copy-inline" />
-                </div>
+                <h4 id="kol-edit-shipping-title" className="kol-edit-section-title">{t('hub.kol.shippingAddress')}</h4>
+                {shippingCopyInSection ? (
+                  <div className="kol-shipping-section-copy">
+                    <KolShippingCopyButton
+                      record={data}
+                      resolveRecord={resolveShippingRecord}
+                      showLabel
+                      className="hub-btn hub-btn--ghost kol-shipping-copy-section-btn"
+                    />
+                  </div>
+                ) : null}
                 <div className="kol-edit-grid">
                   <FormField label={t('hub.kol.shippingName')} required span={2}>
                     <input

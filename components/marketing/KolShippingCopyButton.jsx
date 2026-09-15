@@ -8,6 +8,7 @@ import { hasKolShippingClipboard, kolShippingClipboardText } from '@/lib/kol-poo
 /** Copy KOL pool shipping address in carrier-friendly English format. */
 export default function KolShippingCopyButton({
   record,
+  resolveRecord,
   className = 'kol-pool-shipping-btn',
   size = 16,
   showLabel = false,
@@ -15,11 +16,12 @@ export default function KolShippingCopyButton({
   const { t } = useLocale();
   const { toast } = useToast();
 
-  if (!record || !hasKolShippingClipboard(record)) return null;
+  const effectiveRecord = resolveRecord?.() || record;
+  if (!effectiveRecord || !hasKolShippingClipboard(effectiveRecord)) return null;
 
   async function handleCopy(e) {
     e?.stopPropagation?.();
-    const text = kolShippingClipboardText(record);
+    const text = kolShippingClipboardText(resolveRecord?.() || record);
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);

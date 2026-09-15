@@ -4143,6 +4143,22 @@ button.internal-campaign-card {
 .kol-shipping-copy-inline {
   flex-shrink: 0;
 }
+.kol-shipping-section-copy {
+  margin-bottom: var(--space-3);
+}
+.kol-shipping-section-copy--footer {
+  margin-top: var(--space-3);
+  margin-bottom: 0;
+}
+.kol-shipping-copy-section-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: auto;
+  height: auto;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+}
 .kol-pool-shipping-btn {
   display: inline-flex;
   align-items: center;

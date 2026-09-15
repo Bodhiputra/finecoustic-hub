@@ -66,6 +66,7 @@ export default function KolOutreachMoreInfoModal({ open, task, poolRecord: poolR
     <KolPoolFormPanel
       mode="edit"
       record={record}
+      shippingCopyInSection
       onClose={onClose}
       onSaved={saved => {
         setRecord(saved);
