@@ -97,20 +97,24 @@ export default function KolOutreachCardModal({
   const hasPipelineSections = Object.values(sections).some(Boolean);
 
   const assigneeOptions = useMemo(
-    () => buildTeamAssigneeOptions(teamMembers, {
-      displayName,
-      extraNames: [task?.assignee],
-    }),
-    [teamMembers, displayName, task?.assignee]
+    () =>
+      buildTeamAssigneeOptions(teamMembers, {
+        displayName,
+        extraNames: [
+          task?.assignee,
+          ...(Array.isArray(outreachTasks) ? outreachTasks.map(row => row?.assignee) : []),
+        ],
+      }),
+    [teamMembers, displayName, task?.assignee, outreachTasks]
   );
 
   const visibleAssigneeOptions = useMemo(() => {
-    if (caps.canEditMetadata) return assigneeOptions;
+    if (caps.canEditMetadata || caps.canAssignKolOutreachTeam) return assigneeOptions;
     if (caps.canSelfAssignKol) {
       return assigneeOptions.filter(name => personKey(name) === personKey(displayName));
     }
     return assigneeOptions;
-  }, [assigneeOptions, caps.canEditMetadata, caps.canSelfAssignKol, displayName]);
+  }, [assigneeOptions, caps.canEditMetadata, caps.canAssignKolOutreachTeam, caps.canSelfAssignKol, displayName]);
 
   const approachOptions = useMemo(
     () => KOL_APPROACH_DIRECTIONS.map(item => ({
@@ -298,7 +302,7 @@ export default function KolOutreachCardModal({
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
-            {caps.canSelfAssignKol && !caps.canEditMetadata ? (
+            {caps.canSelfAssignKol && !caps.canEditMetadata && !caps.canAssignKolOutreachTeam ? (
               <span className="kol-shipping-field-hint">{t('hub.internal.taskPanel.assigneeHintContributor')}</span>
             ) : null}
           </label>

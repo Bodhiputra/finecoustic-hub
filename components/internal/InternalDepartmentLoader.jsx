@@ -10,7 +10,11 @@ import {
   loadDepartmentSidebarBoards,
   loadPersonalSidebarBoards,
 } from '@/lib/page-loaders/sidebar';
-import { loadHubTeamMembers, resolveDepartmentLoaderScope } from '@/lib/page-loaders/hub-shell';
+import {
+  loadHubTeamMembers,
+  loadMarketingTeamMembers,
+  resolveDepartmentLoaderScope,
+} from '@/lib/page-loaders/hub-shell';
 import { PERSONAL_DEPARTMENT_ID } from '@/lib/internal';
 
 async function resolveDepartmentLoaderActor(departmentId) {
@@ -31,6 +35,10 @@ export default async function InternalDepartmentLoader({
   fixedTool = '',
 }) {
   const actor = await resolveDepartmentLoaderActor(departmentId);
+  const spEarly = searchParams?.then ? await searchParams : searchParams || {};
+  const outreachTool =
+    departmentId === 'marketing' && (fixedTool || spEarly?.tool || '') === 'kol-outreach';
+
   const { needsSidebarBoards, needsTeamMembers } = await resolveDepartmentLoaderScope(
     departmentId,
     searchParams,
@@ -43,7 +51,11 @@ export default async function InternalDepartmentLoader({
   const personalSidebarPromise = departmentId === PERSONAL_DEPARTMENT_ID
     ? loadPersonalSidebarBoards(actor)
     : Promise.resolve([]);
-  const teamMembersPromise = needsTeamMembers ? loadHubTeamMembers() : Promise.resolve([]);
+  const teamMembersPromise = needsTeamMembers
+    ? outreachTool
+      ? loadMarketingTeamMembers()
+      : loadHubTeamMembers()
+    : Promise.resolve([]);
 
   const [pageData, deptBoards, personalBoards, teamMembers] = await Promise.all([
     loadDepartmentPage({

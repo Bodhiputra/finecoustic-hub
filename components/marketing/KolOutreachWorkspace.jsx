@@ -132,8 +132,12 @@ export default function KolOutreachWorkspace({
   const statusColumns = useMemo(() => defaultKolOutreachStatusColumns(), []);
 
   const assigneeOptions = useMemo(
-    () => buildTeamAssigneeOptions(teamMembers, { displayName }),
-    [teamMembers, displayName]
+    () =>
+      buildTeamAssigneeOptions(teamMembers, {
+        displayName,
+        extraNames: tasks.map(row => row?.assignee).filter(Boolean),
+      }),
+    [teamMembers, displayName, tasks]
   );
 
   const platformOptions = useMemo(
