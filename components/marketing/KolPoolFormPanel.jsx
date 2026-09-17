@@ -147,7 +147,10 @@ export default function KolPoolFormPanel({
   );
 
   const activeCatalogProducts = useMemo(
-    () => catalogProducts.filter(product => product.status !== 'discontinued'),
+    () =>
+      catalogProducts.filter(
+        product => product.status === 'active' || product.status === 'npd'
+      ),
     [catalogProducts]
   );
 

@@ -146,7 +146,8 @@ export default function KolOutreachTransitionModal({
       .then(res => (res.ok ? res.json() : null))
       .then(body => {
         const data = unwrapData(body);
-        setCatalogProducts(Array.isArray(data?.products) ? data.products : []);
+        const rows = Array.isArray(data?.products) ? data.products : [];
+        setCatalogProducts(rows.filter(p => p?.status === 'active' || p?.status === 'npd'));
       })
       .catch(() => setCatalogProducts([]));
   }, [open, toStatus]);
