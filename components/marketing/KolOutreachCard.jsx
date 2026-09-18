@@ -4,7 +4,13 @@ import UserAvatar from '@/components/internal/UserAvatar';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
 import { kolLinkAriaLabel, kolOutreachPlatformIconName } from '@/lib/kol-pool';
-import { canDragOutreachCard, isNoDealCard, kolCardChips, needsFollowUp } from '@/lib/kol-outreach-utils';
+import {
+  canDragOutreachCard,
+  canStartAnotherOutreachRound,
+  isNoDealCard,
+  kolCardChips,
+  needsFollowUp,
+} from '@/lib/kol-outreach-utils';
 import {
   KOL_BOARD_PROP,
   normalizeKolOutreachStatus,
@@ -25,6 +31,8 @@ export default function KolOutreachCard({
   onOpenCard,
   onMoreInfo,
   onFollowUp,
+  outreachTasks = [],
+  onStartAnotherOutreach,
 }) {
   const { t } = useLocale();
   const chips = kolCardChips(task, poolRecord, t);
@@ -36,6 +44,7 @@ export default function KolOutreachCard({
   const dimmed = isNoDealCard(task);
   const canDrag = draggable && canDragOutreachCard(task, displayName, { isManager, isAdmin });
   const showFollowUp = normalizeKolOutreachStatus(task.status) === 'waiting_response';
+  const showAnotherOutreach = canStartAnotherOutreachRound(task, outreachTasks);
   const outreachLead = isManager || isAdmin;
   const showAssigneeHint = !canDrag && draggable && assignee && assignee !== displayName && !outreachLead;
   const showUnassignedHint = !assignee && !outreachLead;
@@ -130,6 +139,15 @@ export default function KolOutreachCard({
                 onClick={() => onFollowUp?.(task)}
               >
                 {t('hub.campaignKol.followUpAction')}
+              </button>
+            ) : null}
+            {showAnotherOutreach ? (
+              <button
+                type="button"
+                className="kol-outreach-card-action is-accent"
+                onClick={() => onStartAnotherOutreach?.(task)}
+              >
+                {t('hub.campaignKol.startAnotherOutreach')}
               </button>
             ) : null}
           </div>

@@ -43,6 +43,8 @@ export default function KolOutreachKanban({
   onOpenCard,
   onMoreInfo,
   onFollowUp,
+  outreachTasks = [],
+  onStartAnotherOutreach,
 }) {
   const { t } = useLocale();
   const [dragId, setDragId] = useState(null);
@@ -150,6 +152,8 @@ export default function KolOutreachKanban({
                       onOpenCard={onOpenCard}
                       onMoreInfo={onMoreInfo}
                       onFollowUp={onFollowUp}
+                      outreachTasks={outreachTasks}
+                      onStartAnotherOutreach={onStartAnotherOutreach}
                     />
                   ))}
                 </div>

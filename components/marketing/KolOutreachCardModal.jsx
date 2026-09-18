@@ -34,7 +34,7 @@ import {
   serializeDealProducts,
   validateKolOrderNumber,
 } from '@/lib/kol-outreach-shared';
-import { taskInitiative } from '@/lib/kol-outreach-utils';
+import { canStartAnotherOutreachRound, taskInitiative } from '@/lib/kol-outreach-utils';
 
 function Section({ title, children }) {
   return (
@@ -57,6 +57,7 @@ export default function KolOutreachCardModal({
   onDelete,
   busy = false,
   outreachTasks = [],
+  onStartAnotherOutreach,
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
@@ -95,6 +96,10 @@ export default function KolOutreachCardModal({
   const [catalogProducts, setCatalogProducts] = useState([]);
 
   const hasPipelineSections = Object.values(sections).some(Boolean);
+  const showStartAnotherOutreach = useMemo(
+    () => Boolean(task && onStartAnotherOutreach && canStartAnotherOutreachRound(task, outreachTasks)),
+    [task, onStartAnotherOutreach, outreachTasks]
+  );
 
   const assigneeOptions = useMemo(
     () =>
@@ -546,16 +551,28 @@ export default function KolOutreachCardModal({
         </div>
 
         <footer className="kol-modal-foot">
-          {onDelete ? (
-            <button
-              type="button"
-              className="appdev-btn-danger kol-modal-foot-danger"
-              onClick={onDelete}
-              disabled={busy}
-            >
-              {t('hub.campaignKol.removeCard')}
-            </button>
-          ) : null}
+          <div className="kol-modal-foot-start">
+            {onDelete ? (
+              <button
+                type="button"
+                className="appdev-btn-danger kol-modal-foot-danger"
+                onClick={onDelete}
+                disabled={busy}
+              >
+                {t('hub.campaignKol.removeCard')}
+              </button>
+            ) : null}
+            {showStartAnotherOutreach ? (
+              <button
+                type="button"
+                className="appdev-btn-ghost"
+                disabled={busy}
+                onClick={() => onStartAnotherOutreach(task)}
+              >
+                {t('hub.campaignKol.startAnotherOutreach')}
+              </button>
+            ) : null}
+          </div>
           <div className="kol-modal-foot-actions">
             <button type="button" className="appdev-btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
             <button type="submit" className="appdev-btn-primary" disabled={busy}>

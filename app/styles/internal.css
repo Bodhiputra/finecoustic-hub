@@ -5340,6 +5340,11 @@ button.internal-campaign-card {
   color: #f39c12;
   background: color-mix(in srgb, #f39c12 10%, var(--surface));
 }
+.kol-outreach-card-action.is-accent {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
 .kol-outreach-card-copy-shipping {
   width: 1.65rem;
   height: 1.65rem;
@@ -5832,8 +5837,16 @@ button.internal-campaign-card {
   margin-top: 0;
   flex-shrink: 0;
 }
-.kol-modal-foot-danger {
+.kol-modal-foot-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   margin-right: auto;
+}
+.kol-modal-foot-danger {
+  margin-right: 0;
 }
 .kol-modal-foot-actions {
   display: flex;

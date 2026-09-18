@@ -36,6 +36,8 @@ import {
   appendProductsToPoolRecord,
   collectOutreachCountryOptions,
   collectOutreachPlatformOptions,
+  buildFollowUpOutreachTaskPayload,
+  canStartAnotherOutreachRound,
   existingOutreachKeys,
   filterOutreachTasks,
   poolRecordForTask,
@@ -434,6 +436,42 @@ export default function KolOutreachWorkspace({
     setTransition({ task, steps, stepIndex: 0 });
   }
 
+  const handleStartAnotherOutreach = useCallback(
+    async sourceTask => {
+      if (!sourceTask?.id || busy) return;
+      if (!canStartAnotherOutreachRound(sourceTask, normalizedTasks)) {
+        toast.error(t('hub.campaignKol.startAnotherOutreachBlocked'));
+        return;
+      }
+      const poolRecord = poolRecordForTask(sourceTask, poolRecords);
+      const payload = buildFollowUpOutreachTaskPayload(sourceTask, {
+        poolRecord,
+        tasks: normalizedTasks,
+      });
+      setBusy(true);
+      try {
+        const res = await fetch(API_V1.internalTasks, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          toast.error(t('common.somethingWrong'));
+          return;
+        }
+        toast.success(t('hub.campaignKol.startAnotherOutreachSuccess'));
+        await onTasksChanged?.();
+        signalHubNotificationsRefresh();
+      } catch {
+        toast.error(t('common.somethingWrong'));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, normalizedTasks, poolRecords, onTasksChanged, t, toast]
+  );
+
   const initiativeCounts = useMemo(() => {
     const map = Object.fromEntries(KOL_INITIATIVES.map(item => [item.id, 0]));
     for (const task of normalizedTasks) {
@@ -634,6 +672,8 @@ export default function KolOutreachWorkspace({
             onOpenCard={setCardTask}
             onMoreInfo={setMoreInfoTask}
             onFollowUp={setFollowUpTask}
+            outreachTasks={normalizedTasks}
+            onStartAnotherOutreach={canCreate ? handleStartAnotherOutreach : undefined}
           />
         ) : (
           <>
@@ -725,6 +765,7 @@ export default function KolOutreachWorkspace({
         onDelete={cardTask && canDeleteTaskFor(cardTask) ? handleCardDelete : undefined}
         busy={busy}
         outreachTasks={normalizedTasks}
+        onStartAnotherOutreach={canCreate ? handleStartAnotherOutreach : undefined}
       />
 
       <KolOutreachMoreInfoModal
