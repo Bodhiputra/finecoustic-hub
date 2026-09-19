@@ -222,24 +222,32 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
     const rowKey = `${userId}:${deptId}`;
     if (busyDeptKey) return;
 
-    let prevAccess = null;
-    let nextAccess = null;
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
 
-    setUsers(prev => {
-      const user = prev.find(u => u.id === userId);
-      if (!user) return prev;
-      prevAccess = normalizeDepartmentAccess(user.department_access, user.role);
-      nextAccess = normalizeDepartmentAccess(
-        { ...prevAccess, [deptId]: !prevAccess[deptId] },
-        user.role
-      );
-      return prev.map(u => (u.id === userId ? { ...u, department_access: nextAccess } : u));
-    });
+    const prevAccess = normalizeDepartmentAccess(user.department_access, user.role);
+    const nextAccess = normalizeDepartmentAccess(
+      { ...prevAccess, [deptId]: !prevAccess[deptId] },
+      user.role
+    );
 
-    if (!nextAccess) return;
+    if (!HUB_ASSIGNABLE_DEPARTMENT_IDS.some(id => nextAccess[id])) {
+      setError('Each team member needs at least one department.');
+      return;
+    }
+
+    setUsers(prev =>
+      prev.map(u => (u.id === userId ? { ...u, department_access: nextAccess } : u))
+    );
 
     setBusyDeptKey(rowKey);
     setError('');
+
+    const errorLabel = code => {
+      if (code === 'department_required') return 'Each team member needs at least one department.';
+      if (code === 'save_failed') return 'Could not save (database busy). Try again in a moment.';
+      return code || 'Action failed';
+    };
 
     try {
       const res = await fetch('/api/hub/admin/users', {
@@ -250,7 +258,7 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data.error || 'Action failed');
+        throw new Error(errorLabel(data.error));
       }
       if (data.user) {
         replaceUser(userId, data.user);
@@ -263,7 +271,7 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
     } finally {
       setBusyDeptKey('');
     }
-  }, [busyDeptKey, replaceUser]);
+  }, [busyDeptKey, replaceUser, users]);
 
   const handleRemove = useCallback(async user => {
     const ok = await requestConfirm({

@@ -110,9 +110,15 @@ export async function PATCH(request) {
     if (!access || typeof access !== 'object') {
       return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
     }
-    const user = await updateHubUserDepartmentAccess(userId, access);
-    if (!user) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-    return NextResponse.json({ ok: true, user });
+    const result = await updateHubUserDepartmentAccess(userId, access);
+    if (result?.error === 'department_required') {
+      return NextResponse.json({ error: 'department_required' }, { status: 400 });
+    }
+    if (result?.error === 'save_failed') {
+      return NextResponse.json({ error: 'save_failed' }, { status: 503 });
+    }
+    if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    return NextResponse.json({ ok: true, user: result });
   }
 
   return NextResponse.json({ error: 'invalid_action' }, { status: 400 });
