@@ -172,11 +172,7 @@ Local dev without `DATABASE_URL`: `data/hub-b2b-retailers.json` (gitignored).
 
 ## Languages
 
-Hub UI: **EN**, **中文**, **Bahasa Indonesia** (locale switcher). Indonesian strings live in `lib/i18n/locales/id.js`. Regenerate from English:
-
-```bash
-npm run i18n:generate-id
-```
+Hub UI: **EN** and **中文** (locale switcher). Copy lives in `lib/i18n/messages.js`.
 
 ## Stack
 

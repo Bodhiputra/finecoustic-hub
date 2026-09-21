@@ -24,7 +24,6 @@ data/warzone-tasks.json
 data/internal-campaigns.json
 data/hub-kol-pool.json
 data/hub-b2b-retailers.json
-lib/i18n/.id-translate-cache.json
 data/hub-campaign-kol.json
 data/hub-expenses.json
 data/hub-reminders.json
