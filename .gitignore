@@ -32,3 +32,4 @@ data/hub-users.json
 data/appdev-uploads/
 .vercel
 .env*
+lib/i18n/.id-translate-cache.json
