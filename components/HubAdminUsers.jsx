@@ -29,7 +29,9 @@ const HubAdminUserRow = memo(function HubAdminUserRow({
   user,
   busyId,
   busyDeptKey,
+  busyPrefKey,
   onToggleDepartment,
+  onToggleShowSchedule,
   onPatch,
   onRemove,
 }) {
@@ -98,6 +100,20 @@ const HubAdminUserRow = memo(function HubAdminUserRow({
           })}
         </div>
       </div>
+      <div className="hub-admin-dept-access hub-admin-prefs">
+        <span className="hub-admin-dept-label">Hub home</span>
+        <label
+          className={`hub-admin-dept-toggle${user.show_schedule_dashboard !== false ? ' is-on' : ''}${busyPrefKey === user.id ? ' is-busy' : ''}`}
+        >
+          <input
+            type="checkbox"
+            checked={user.show_schedule_dashboard !== false}
+            disabled={busyPrefKey === user.id}
+            onChange={() => onToggleShowSchedule(user.id)}
+          />
+          <span className="hub-admin-dept-toggle-label">Schedule dashboard</span>
+        </label>
+      </div>
     </li>
   );
 });
@@ -110,6 +126,7 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState('');
   const [busyDeptKey, setBusyDeptKey] = useState('');
+  const [busyPrefKey, setBusyPrefKey] = useState('');
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -273,6 +290,52 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
     }
   }, [busyDeptKey, replaceUser, users]);
 
+  const toggleShowSchedule = useCallback(
+    async userId => {
+      if (busyPrefKey) return;
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      const prev = user.show_schedule_dashboard !== false;
+      const next = !prev;
+
+      setUsers(prevUsers =>
+        prevUsers.map(u =>
+          u.id === userId ? { ...u, show_schedule_dashboard: next } : u
+        )
+      );
+      setBusyPrefKey(userId);
+      setError('');
+
+      try {
+        const res = await fetch('/api/hub/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            userId,
+            action: 'show_schedule_dashboard',
+            show_schedule_dashboard: next,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Action failed');
+        }
+        if (data.user) replaceUser(userId, data.user);
+      } catch (err) {
+        setUsers(prevUsers =>
+          prevUsers.map(u =>
+            u.id === userId ? { ...u, show_schedule_dashboard: prev } : u
+          )
+        );
+        setError(err.message || 'Action failed.');
+      } finally {
+        setBusyPrefKey('');
+      }
+    },
+    [busyPrefKey, replaceUser, users]
+  );
+
   const handleRemove = useCallback(async user => {
     const ok = await requestConfirm({
       title: 'Remove team member',
@@ -424,7 +487,9 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
               user={u}
               busyId={busyId}
               busyDeptKey={busyDeptKey}
+              busyPrefKey={busyPrefKey}
               onToggleDepartment={toggleDepartment}
+              onToggleShowSchedule={toggleShowSchedule}
               onPatch={patchUser}
               onRemove={handleRemove}
             />

@@ -37,6 +37,13 @@ export default function InternalDepartmentNav({
   );
   const [isAdmin, setIsAdmin] = useState(() => Boolean(seededHubUser?.isAdmin));
   const [accessResolved, setAccessResolved] = useState(() => Boolean(seededHubUser));
+  const [showScheduleDashboard, setShowScheduleDashboard] = useState(
+    () =>
+      Boolean(seededHubUser?.isAdmin)
+      || (seededHubUser?.permissions?.showScheduleDashboard
+        ?? seededHubUser?.showScheduleDashboard
+        ?? true) !== false
+  );
   const clientHomeTabs = pathname === '/' && typeof onHomeTabChange === 'function';
   const campaignsListOnHome = clientHomeTabs
     ? homeTab === HOME_TAB.CAMPAIGNS
@@ -59,6 +66,12 @@ export default function InternalDepartmentNav({
         || null;
       setDepartmentAccess(access);
       setIsAdmin(Boolean(seededHubUser.isAdmin));
+      setShowScheduleDashboard(
+        Boolean(seededHubUser.isAdmin)
+          || (seededHubUser.permissions?.showScheduleDashboard
+            ?? seededHubUser.showScheduleDashboard
+            ?? true) !== false
+      );
       setAccessResolved(true);
       return;
     }
@@ -71,6 +84,12 @@ export default function InternalDepartmentNav({
           || null;
         setDepartmentAccess(access);
         setIsAdmin(Boolean(data?.hubUser?.isAdmin));
+        setShowScheduleDashboard(
+          Boolean(data?.hubUser?.isAdmin)
+            || (data?.hubUser?.permissions?.showScheduleDashboard
+              ?? data?.hubUser?.showScheduleDashboard
+              ?? true) !== false
+        );
       })
       .catch(() => {})
       .finally(() => setAccessResolved(true));
@@ -80,35 +99,36 @@ export default function InternalDepartmentNav({
     { isAdmin, departmentAccess, accessResolved },
     DEPARTMENTS
   );
-
   return (
     <div className="internal-sidebar-home-nav">
       <div className="internal-sidebar-home-nav-main">
         <div className="internal-sidebar-section internal-sidebar-work">
           <small>{t('hub.internal.sectionWork')}</small>
           <nav className="sidebar-nav" aria-label={t('hub.internal.sectionWork')}>
-            {clientHomeTabs ? (
-              <button
-                type="button"
-                className={`nav${scheduleNavActive ? ' active' : ''}`}
-                aria-current={scheduleNavActive ? 'page' : undefined}
-                title={t('hub.internal.teamScheduleHint')}
-                onClick={() => onHomeTabChange(HOME_TAB.SCHEDULE)}
-              >
-                <Icon name="calendar" size={15} />
-                <span className="nav-label">{t('hub.internal.scheduleDashboard')}</span>
-              </button>
-            ) : (
-              <Link
-                href="/"
-                className={`nav${scheduleNavActive ? ' active' : ''}`}
-                aria-current={scheduleNavActive ? 'page' : undefined}
-                title={t('hub.internal.teamScheduleHint')}
-              >
-                <Icon name="calendar" size={15} />
-                <span className="nav-label">{t('hub.internal.scheduleDashboard')}</span>
-              </Link>
-            )}
+            {showScheduleDashboard ? (
+              clientHomeTabs ? (
+                <button
+                  type="button"
+                  className={`nav${scheduleNavActive ? ' active' : ''}`}
+                  aria-current={scheduleNavActive ? 'page' : undefined}
+                  title={t('hub.internal.teamScheduleHint')}
+                  onClick={() => onHomeTabChange(HOME_TAB.SCHEDULE)}
+                >
+                  <Icon name="calendar" size={15} />
+                  <span className="nav-label">{t('hub.internal.scheduleDashboard')}</span>
+                </button>
+              ) : (
+                <Link
+                  href="/"
+                  className={`nav${scheduleNavActive ? ' active' : ''}`}
+                  aria-current={scheduleNavActive ? 'page' : undefined}
+                  title={t('hub.internal.teamScheduleHint')}
+                >
+                  <Icon name="calendar" size={15} />
+                  <span className="nav-label">{t('hub.internal.scheduleDashboard')}</span>
+                </Link>
+              )
+            ) : null}
             {clientHomeTabs ? (
               <button
                 type="button"

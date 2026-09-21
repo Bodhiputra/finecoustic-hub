@@ -3619,6 +3619,9 @@ button.internal-campaign-card {
 .product-item-panel {
   z-index: 40;
 }
+.hub-admin-prefs {
+  margin-top: var(--space-2);
+}
 .hub-admin-dept-access {
   margin-top: var(--space-3);
   padding-top: var(--space-3);

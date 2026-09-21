@@ -81,6 +81,12 @@ export default function InternalHome({
       ),
     [permissions, isAdmin, accessResolved]
   );
+  const showScheduleDashboard = useMemo(
+    () =>
+      isAdmin
+      || (permissions?.showScheduleDashboard ?? profile.hubUser?.showScheduleDashboard ?? true) !== false,
+    [isAdmin, permissions?.showScheduleDashboard, profile.hubUser?.showScheduleDashboard]
+  );
   const { tasks, refresh, mergeTask, removeTask } = useInternalTasks({
     initialTasks,
     initialTasksFilterKey,
@@ -105,6 +111,13 @@ export default function InternalHome({
     if (typeof window === 'undefined') return;
     window.history.replaceState(window.history.state, '', homeTabToUrl(tab, { pageId, flowId }));
   }, []);
+
+  useEffect(() => {
+    if (!accessResolved || showScheduleDashboard) return;
+    if (homeTab === HOME_TAB.SCHEDULE) {
+      setHomeTabClient(HOME_TAB.CAMPAIGNS);
+    }
+  }, [accessResolved, showScheduleDashboard, homeTab, setHomeTabClient]);
 
   const openCampaignFlow = useCallback((flowId) => {
     setHomeTabClient(HOME_TAB.CAMPAIGNS, { flowId });
