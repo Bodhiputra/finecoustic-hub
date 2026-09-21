@@ -11,7 +11,11 @@ const LocaleContext = createContext(null);
 function readStoredLocale() {
   if (typeof window === 'undefined') return 'en';
   const stored = localStorage.getItem(STORAGE_KEY);
-  return LOCALES.includes(stored) ? stored : 'en';
+  if (stored === 'id' || !LOCALES.includes(stored)) {
+    if (stored && stored !== 'en') localStorage.setItem(STORAGE_KEY, 'en');
+    return 'en';
+  }
+  return stored;
 }
 
 export function LocaleProvider({ children }) {
