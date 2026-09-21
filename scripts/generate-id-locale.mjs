@@ -15,6 +15,23 @@ const OUT_PATH = path.join(ROOT, 'lib/i18n/locales/id.js');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+const MYMEMORY_QUOTA_RE = /MYMEMORY WARNING:/i;
+
+function isInvalidTranslation(text) {
+  return !text || typeof text !== 'string' || MYMEMORY_QUOTA_RE.test(text);
+}
+
+function purgeBadCacheEntries(cache) {
+  let removed = 0;
+  for (const [key, value] of Object.entries(cache)) {
+    if (isInvalidTranslation(value)) {
+      delete cache[key];
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
 function loadCache() {
   try {
     return JSON.parse(fs.readFileSync(CACHE_PATH, 'utf8'));
@@ -70,9 +87,12 @@ async function translateEnToId(text, cache) {
       const res = await fetch(url);
       const body = await res.json();
       const translated = body?.responseData?.translatedText;
-      if (translated && typeof translated === 'string') {
+      if (translated && typeof translated === 'string' && !isInvalidTranslation(translated)) {
         cache[text] = translated;
         return translated;
+      }
+      if (isInvalidTranslation(translated)) {
+        break;
       }
     } catch {
       /* retry */
@@ -88,6 +108,22 @@ function serializeLocale(obj) {
   return `/** Auto-generated Indonesian locale — run scripts/generate-id-locale.mjs to refresh */\nexport default ${JSON.stringify(obj, null, 2)};\n`;
 }
 
+function writeIdFromEnglish(en, cache, { fetchMissing = false } = {}) {
+  const unique = new Set();
+  collectStrings(en, unique);
+  const list = [...unique].sort((a, b) => a.length - b.length);
+  const map = new Map(
+    list.map(s => {
+      const hit = cache[s];
+      if (hit && !isInvalidTranslation(hit)) return [s, hit];
+      return [s, s];
+    })
+  );
+  const id = applyTranslations(structuredClone(en), map);
+  fs.writeFileSync(OUT_PATH, serializeLocale(id), 'utf8');
+  return list.length;
+}
+
 async function main() {
   const messagesUrl = pathToFileURL(path.join(ROOT, 'lib/i18n/messages.js')).href;
   const mod = await import(messagesUrl);
@@ -99,13 +135,27 @@ async function main() {
 
   fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
   const cache = loadCache();
+  const purged = purgeBadCacheEntries(cache);
+  if (purged) {
+    saveCache(cache);
+    console.log(`Purged ${purged} invalid cache entries (MyMemory quota errors).`);
+  }
+
+  const repairOnly = process.argv.includes('--repair');
   const unique = new Set();
   collectStrings(en, unique);
   const list = [...unique].sort((a, b) => a.length - b.length);
 
+  if (repairOnly) {
+    const count = writeIdFromEnglish(en, cache, { fetchMissing: false });
+    saveCache(cache);
+    console.log(`Repaired ${OUT_PATH} (${count} strings, English fallback where needed).`);
+    return;
+  }
+
   let done = 0;
   for (const text of list) {
-    if (!cache[text]) {
+    if (!cache[text] || isInvalidTranslation(cache[text])) {
       await translateEnToId(text, cache);
       await sleep(150);
     }
@@ -117,9 +167,7 @@ async function main() {
   }
   saveCache(cache);
 
-  const map = new Map(list.map(s => [s, cache[s] || s]));
-  const id = applyTranslations(structuredClone(en), map);
-  fs.writeFileSync(OUT_PATH, serializeLocale(id), 'utf8');
+  writeIdFromEnglish(en, cache);
   console.log(`Wrote ${OUT_PATH} (${list.length} unique strings).`);
 }
 
