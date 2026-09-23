@@ -40,11 +40,30 @@ const HubAdminUserRow = memo(function HubAdminUserRow({
   return (
     <li className="personal-hub-card hub-admin-user-card">
       <div className="hub-admin-user-head">
-        <div>
-          <strong>{user.display_name}</strong>
-          {user.blocked ? (
-            <span className="internal-list-meta"> · blocked</span>
-          ) : null}
+        <div className="hub-admin-user-title-block">
+          <div className="hub-admin-user-name-line">
+            <strong>{user.display_name}</strong>
+            {user.blocked ? (
+              <span className="internal-list-meta"> · blocked</span>
+            ) : null}
+          </div>
+          <label className="hub-admin-role-wrap">
+            <span className="hub-admin-role-label">Role</span>
+            <select
+              className="hub-admin-role-select"
+              value={user.role === 'member' ? 'associate' : user.role}
+              disabled={busyRoleKey === user.id}
+              aria-busy={busyRoleKey === user.id}
+              aria-label={`Role for ${user.display_name}`}
+              onChange={e => onChangeRole(user.id, e.target.value)}
+            >
+              {ROLES.map(role => (
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role] || role}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="hub-admin-user-actions">
           {user.blocked ? (
@@ -75,24 +94,6 @@ const HubAdminUserRow = memo(function HubAdminUserRow({
             Remove
           </button>
         </div>
-      </div>
-      <div className="hub-admin-dept-access hub-admin-role-row">
-        <label className="hub-admin-role-field">
-          <span className="hub-admin-dept-label">Role</span>
-          <select
-            className="hub-admin-role-select"
-            value={user.role === 'member' ? 'associate' : user.role}
-            disabled={busyRoleKey === user.id}
-            aria-busy={busyRoleKey === user.id}
-            onChange={e => onChangeRole(user.id, e.target.value)}
-          >
-            {ROLES.map(role => (
-              <option key={role} value={role}>
-                {ROLE_LABELS[role] || role}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
       <div className="hub-admin-dept-access">
         <span className="hub-admin-dept-label">Department access</span>
@@ -429,7 +430,7 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
         <p className="personal-hub-hint">
           Master admin only — sign in as FCS-建宏 with the master password to create accounts.
           Assign an individual name, password, role, and department access.
-          Assign department access for operational areas only (Operations, Marketing, Products, Creatives).
+          Change each person&apos;s <strong>Role</strong> (Manager / Associate / Intern) under their name, then assign department access (Operations, Marketing, Products, Creatives).
           All About Finecoustic is company wiki — not a department — visible to everyone; only FCS-建宏 can edit.
           Master admin is not listed here.
         </p>
