@@ -3622,6 +3622,28 @@ button.internal-campaign-card {
 .hub-admin-prefs {
   margin-top: var(--space-2);
 }
+.hub-admin-role-row {
+  margin-bottom: var(--space-1);
+}
+.hub-admin-role-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 14rem;
+}
+.hub-admin-role-select {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+.hub-admin-role-select:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
 .hub-admin-dept-access {
   margin-top: var(--space-3);
   padding-top: var(--space-3);

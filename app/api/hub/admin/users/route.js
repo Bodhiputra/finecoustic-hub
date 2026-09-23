@@ -8,6 +8,7 @@ import {
   setHubUserBlocked,
   updateHubUserDepartmentAccess,
   updateHubUserShowScheduleDashboard,
+  updateHubUserRole,
 } from '@/lib/hub-users';
 import { HUB_ASSIGNABLE_DEPARTMENT_IDS, HUB_DEPARTMENT_IDS, normalizeDepartmentAccess } from '@/lib/hub-departments';
 
@@ -114,6 +115,22 @@ export async function PATCH(request) {
     const result = await updateHubUserDepartmentAccess(userId, access);
     if (result?.error === 'department_required') {
       return NextResponse.json({ error: 'department_required' }, { status: 400 });
+    }
+    if (result?.error === 'save_failed') {
+      return NextResponse.json({ error: 'save_failed' }, { status: 503 });
+    }
+    if (!result) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    return NextResponse.json({ ok: true, user: result });
+  }
+
+  if (action === 'role') {
+    const role = String(body.role || '').trim().toLowerCase();
+    if (!role) {
+      return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+    }
+    const result = await updateHubUserRole(userId, role);
+    if (result?.error === 'invalid_role') {
+      return NextResponse.json({ error: 'invalid_role' }, { status: 400 });
     }
     if (result?.error === 'save_failed') {
       return NextResponse.json({ error: 'save_failed' }, { status: 503 });

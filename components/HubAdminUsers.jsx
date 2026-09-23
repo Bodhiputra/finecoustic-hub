@@ -30,8 +30,10 @@ const HubAdminUserRow = memo(function HubAdminUserRow({
   busyId,
   busyDeptKey,
   busyPrefKey,
+  busyRoleKey,
   onToggleDepartment,
   onToggleShowSchedule,
+  onChangeRole,
   onPatch,
   onRemove,
 }) {
@@ -40,11 +42,9 @@ const HubAdminUserRow = memo(function HubAdminUserRow({
       <div className="hub-admin-user-head">
         <div>
           <strong>{user.display_name}</strong>
-          <span className="internal-list-meta">
-            {' · '}
-            {ROLE_LABELS[user.role] || user.role}
-            {user.blocked ? ' · blocked' : ''}
-          </span>
+          {user.blocked ? (
+            <span className="internal-list-meta"> · blocked</span>
+          ) : null}
         </div>
         <div className="hub-admin-user-actions">
           {user.blocked ? (
@@ -75,6 +75,24 @@ const HubAdminUserRow = memo(function HubAdminUserRow({
             Remove
           </button>
         </div>
+      </div>
+      <div className="hub-admin-dept-access hub-admin-role-row">
+        <label className="hub-admin-role-field">
+          <span className="hub-admin-dept-label">Role</span>
+          <select
+            className="hub-admin-role-select"
+            value={user.role === 'member' ? 'associate' : user.role}
+            disabled={busyRoleKey === user.id}
+            aria-busy={busyRoleKey === user.id}
+            onChange={e => onChangeRole(user.id, e.target.value)}
+          >
+            {ROLES.map(role => (
+              <option key={role} value={role}>
+                {ROLE_LABELS[role] || role}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div className="hub-admin-dept-access">
         <span className="hub-admin-dept-label">Department access</span>
@@ -127,6 +145,7 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
   const [busyId, setBusyId] = useState('');
   const [busyDeptKey, setBusyDeptKey] = useState('');
   const [busyPrefKey, setBusyPrefKey] = useState('');
+  const [busyRoleKey, setBusyRoleKey] = useState('');
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -289,6 +308,45 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
       setBusyDeptKey('');
     }
   }, [busyDeptKey, replaceUser, users]);
+
+  const changeRole = useCallback(
+    async (userId, role) => {
+      if (busyRoleKey) return;
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      const prevRole = user.role;
+      const nextRole = role === 'member' ? 'associate' : role;
+      if (prevRole === nextRole) return;
+
+      setUsers(prev =>
+        prev.map(u => (u.id === userId ? { ...u, role: nextRole } : u))
+      );
+      setBusyRoleKey(userId);
+      setError('');
+
+      try {
+        const res = await fetch('/api/hub/admin/users', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ userId, action: 'role', role: nextRole }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Action failed');
+        }
+        if (data.user) replaceUser(userId, data.user);
+      } catch (err) {
+        setUsers(prev =>
+          prev.map(u => (u.id === userId ? { ...u, role: prevRole } : u))
+        );
+        setError(err.message || 'Action failed.');
+      } finally {
+        setBusyRoleKey('');
+      }
+    },
+    [busyRoleKey, replaceUser, users]
+  );
 
   const toggleShowSchedule = useCallback(
     async userId => {
@@ -488,8 +546,10 @@ export default function HubAdminUsers({ initialDisplayName = '' }) {
               busyId={busyId}
               busyDeptKey={busyDeptKey}
               busyPrefKey={busyPrefKey}
+              busyRoleKey={busyRoleKey}
               onToggleDepartment={toggleDepartment}
               onToggleShowSchedule={toggleShowSchedule}
+              onChangeRole={changeRole}
               onPatch={patchUser}
               onRemove={handleRemove}
             />
