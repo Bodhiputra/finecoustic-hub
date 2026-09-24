@@ -17,7 +17,6 @@ import { useHubPermissions } from '@/hooks/useHubPermissions';
 import { API_V1, marketingKolPoolQuery, unwrapData } from '@/lib/api/routes';
 import { signalHubNotificationsRefresh } from '@/lib/hub-notifications-ui';
 import {
-  KOL_APPROACH_DIRECTIONS,
   KOL_BOARD_PROP,
   KOL_DEAL_TYPES,
   KOL_INITIATIVES,
@@ -26,7 +25,6 @@ import {
   kolOutreachBoardUrl,
   kolTransitionSteps,
   initiativeLabel,
-  normalizeApproachDirection,
   normalizeKolOutreachStatus,
   openKolWeibinExport,
   resolveKolInitiative,
@@ -36,6 +34,7 @@ import {
   appendProductsToPoolRecord,
   collectOutreachCountryOptions,
   collectOutreachPlatformOptions,
+  countOutreachApproachDirections,
   buildFollowUpOutreachTaskPayload,
   canStartAnotherOutreachRound,
   existingOutreachKeys,
@@ -481,6 +480,29 @@ export default function KolOutreachWorkspace({
     return map;
   }, [normalizedTasks]);
 
+  const approachDirectionCounts = useMemo(
+    () =>
+      countOutreachApproachDirections(normalizedTasks, {
+        query,
+        initiative: initiativeFilter,
+        assignee: assigneeFilter,
+        dealType: dealTypeFilter,
+        platform: platformFilter,
+        country: countryFilter,
+        poolRecords,
+      }),
+    [
+      normalizedTasks,
+      query,
+      initiativeFilter,
+      assigneeFilter,
+      dealTypeFilter,
+      platformFilter,
+      countryFilter,
+      poolRecords,
+    ]
+  );
+
   const activeTransitionStatus = transition?.steps?.[transition.stepIndex] || null;
 
   const selectedWeibinExportIds = useMemo(
@@ -565,6 +587,43 @@ export default function KolOutreachWorkspace({
             ))}
           </div>
 
+          <div
+            className="kol-outreach-initiative-toggle kol-outreach-approach-toggle"
+            role="tablist"
+            aria-label={t('hub.campaignKol.approachDirection')}
+          >
+            <button
+              type="button"
+              role="tab"
+              className={approachDirectionFilter === 'all' ? 'is-active' : ''}
+              aria-selected={approachDirectionFilter === 'all'}
+              onClick={() => setApproachDirectionFilter('all')}
+            >
+              {t('hub.campaignKol.filterAll')}
+              <span className="kol-outreach-initiative-count">{approachDirectionCounts.all}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={approachDirectionFilter === 'outbound' ? 'is-active' : ''}
+              aria-selected={approachDirectionFilter === 'outbound'}
+              onClick={() => setApproachDirectionFilter('outbound')}
+            >
+              {t('hub.campaignKol.approachOutbound')}
+              <span className="kol-outreach-initiative-count">{approachDirectionCounts.outbound}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={approachDirectionFilter === 'inbound' ? 'is-active' : ''}
+              aria-selected={approachDirectionFilter === 'inbound'}
+              onClick={() => setApproachDirectionFilter('inbound')}
+            >
+              {t('hub.campaignKol.approachInbound')}
+              <span className="kol-outreach-initiative-count">{approachDirectionCounts.inbound}</span>
+            </button>
+          </div>
+
           <div className="kol-outreach-view-toggle" role="tablist" aria-label={t('hub.campaignKol.viewToggle')}>
             <button
               type="button"
@@ -616,24 +675,6 @@ export default function KolOutreachWorkspace({
               <option value="all">{t('hub.campaignKol.filterAll')}</option>
               {platformOptions.map(option => (
                 <option key={option.key} value={option.key}>{option.label}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="kol-outreach-filter">
-            <span>{t('hub.campaignKol.approachDirection')}</span>
-            <select
-              value={approachDirectionFilter}
-              onChange={e => setApproachDirectionFilter(e.target.value)}
-              aria-label={t('hub.campaignKol.filterApproachDirection')}
-            >
-              <option value="all">{t('hub.campaignKol.filterAll')}</option>
-              {KOL_APPROACH_DIRECTIONS.map(item => (
-                <option key={item.id} value={item.id}>
-                  {item.id === 'outbound'
-                    ? t('hub.campaignKol.approachOutbound')
-                    : t('hub.campaignKol.approachInbound')}
-                </option>
               ))}
             </select>
           </label>
