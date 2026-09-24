@@ -287,10 +287,33 @@ export default function KolOutreachWorkspace({
     }
   }
 
-  async function handleCardSave({ assignee, custom_values, productRows = [] }) {
+  async function patchPoolRecord(poolId, patch) {
+    if (!poolId || !patch || !Object.keys(patch).length) return null;
+    const res = await fetch(API_V1.marketingKolPoolRecord(poolId), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) return null;
+    const data = unwrapData(await res.json());
+    const record = data?.record || data;
+    if (record?.notion_page_id) {
+      setPoolRecords(current =>
+        current.map(row => (row.notion_page_id === record.notion_page_id ? record : row))
+      );
+    }
+    return record;
+  }
+
+  async function handleCardSave({ assignee, custom_values, productRows = [], poolPatch = null }) {
     if (!cardTask?.id) return;
     setBusy(true);
     try {
+      const poolId = taskPoolId(cardTask);
+      if (poolPatch && poolId) {
+        await patchPoolRecord(poolId, poolPatch);
+      }
       await patchTask(cardTask.id, { assignee, custom_values });
       if (productRows.length) {
         await syncPoolProducts(
@@ -797,6 +820,7 @@ export default function KolOutreachWorkspace({
       <KolOutreachCardModal
         open={Boolean(cardTask)}
         task={cardTask}
+        poolRecord={cardTask ? poolRecordForTask(cardTask, poolRecords) : null}
         teamMembers={teamMembers}
         displayName={displayName}
         actor={actor}

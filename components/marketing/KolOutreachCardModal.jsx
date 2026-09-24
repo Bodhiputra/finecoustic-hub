@@ -48,6 +48,7 @@ function Section({ title, children }) {
 export default function KolOutreachCardModal({
   open,
   task,
+  poolRecord = null,
   teamMembers = [],
   displayName = '',
   actor = null,
@@ -94,6 +95,7 @@ export default function KolOutreachCardModal({
   const [publishUrl, setPublishUrl] = useState('');
   const [publishDate, setPublishDate] = useState('');
   const [catalogProducts, setCatalogProducts] = useState([]);
+  const [shippingNotes, setShippingNotes] = useState('');
 
   const hasPipelineSections = Object.values(sections).some(Boolean);
   const showStartAnotherOutreach = useMemo(
@@ -183,7 +185,8 @@ export default function KolOutreachCardModal({
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
     setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
     setPublishDate(cv[KOL_BOARD_PROP.publishDate] || '');
-  }, [open, task, cv, defaultInitiative, displayName]);
+    setShippingNotes(String(poolRecord?.shipping_notes || '').trim());
+  }, [open, task, cv, defaultInitiative, displayName, poolRecord]);
 
   useEffect(() => {
     if (!open || !sections.deal) return;
@@ -282,6 +285,10 @@ export default function KolOutreachCardModal({
       assignees: nextAssignee ? [nextAssignee] : [],
       custom_values: nextCustom,
       productRows: sections.deal ? productRows.filter(row => row.product?.trim()) : [],
+      poolPatch:
+        sections.weibin && poolRecord?.notion_page_id
+          ? { shipping_notes: shippingNotes.trim() }
+          : null,
     });
   }
 
@@ -447,6 +454,20 @@ export default function KolOutreachCardModal({
                 disabled={busy}
               />
             </label>
+            <label className="appdev-field">
+              <span>{t('hub.kol.shippingNotes')}</span>
+              <span className="kol-shipping-field-hint">{t('hub.kol.shippingNotesHint')}</span>
+              <textarea
+                rows={3}
+                value={shippingNotes}
+                onChange={e => setShippingNotes(e.target.value)}
+                disabled={busy || !poolRecord?.notion_page_id}
+                placeholder={t('hub.campaignKol.weibinDeliveryNotesPlaceholder')}
+              />
+            </label>
+            {!poolRecord?.notion_page_id ? (
+              <p className="kol-shipping-address-hint">{t('hub.campaignKol.poolRecordMissing')}</p>
+            ) : null}
             {isKolWeibinExportStatus(status) ? (
               <button
                 type="button"

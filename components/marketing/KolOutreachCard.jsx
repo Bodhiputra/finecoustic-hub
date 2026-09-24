@@ -3,7 +3,7 @@
 import UserAvatar from '@/components/internal/UserAvatar';
 import Icon from '@/components/Icon';
 import { useLocale } from '@/components/LocaleProvider';
-import { kolLinkAriaLabel, kolOutreachPlatformIconName } from '@/lib/kol-pool';
+import { kolDeliveryNotesDisplay, kolLinkAriaLabel, kolOutreachPlatformIconName } from '@/lib/kol-pool';
 import {
   canDragOutreachCard,
   canStartAnotherOutreachRound,
@@ -13,6 +13,7 @@ import {
 } from '@/lib/kol-outreach-utils';
 import {
   KOL_BOARD_PROP,
+  kolOutreachStatusAtOrPast,
   normalizeKolOutreachStatus,
 } from '@/lib/kol-outreach-shared';
 
@@ -35,7 +36,10 @@ export default function KolOutreachCard({
   onStartAnotherOutreach,
 }) {
   const { t } = useLocale();
+  const status = normalizeKolOutreachStatus(task?.status);
   const chips = kolCardChips(task, poolRecord, t);
+  const showDeliveryNotes = kolOutreachStatusAtOrPast(status, 'weibin') && status !== 'no_deal';
+  const deliveryNotes = showDeliveryNotes ? kolDeliveryNotesDisplay(poolRecord) : '';
   const assignee = task.assignee || '';
   const socialLink = String(poolRecord?.links || '').trim();
   const approachedSocials = String(task?.custom_values?.[KOL_BOARD_PROP.socials] || '');
@@ -43,7 +47,7 @@ export default function KolOutreachCard({
   const showPlatformIcon = Boolean(platformIcon);
   const dimmed = isNoDealCard(task);
   const canDrag = draggable && canDragOutreachCard(task, displayName, { isManager, isAdmin });
-  const showFollowUp = normalizeKolOutreachStatus(task.status) === 'waiting_response';
+  const showFollowUp = status === 'waiting_response';
   const showAnotherOutreach = canStartAnotherOutreachRound(task, outreachTasks);
   const outreachLead = isManager || isAdmin;
   const showAssigneeHint = !canDrag && draggable && assignee && assignee !== displayName && !outreachLead;
@@ -110,6 +114,12 @@ export default function KolOutreachCard({
                   </span>
                 ))}
               </div>
+            ) : null}
+            {showDeliveryNotes ? (
+              <p className="kol-outreach-card-delivery-notes" title={deliveryNotes}>
+                <span className="kol-outreach-card-delivery-notes-label">{t('hub.kol.shippingNotes')}</span>
+                <span className="kol-outreach-card-delivery-notes-value">{deliveryNotes}</span>
+              </p>
             ) : null}
           </button>
 
