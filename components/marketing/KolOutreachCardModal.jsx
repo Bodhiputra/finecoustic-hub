@@ -34,6 +34,7 @@ import {
   serializeDealProducts,
   validateKolOrderNumber,
 } from '@/lib/kol-outreach-shared';
+import { normalizeKolDeliveryNotesRaw } from '@/lib/kol-pool';
 import { canStartAnotherOutreachRound, taskInitiative } from '@/lib/kol-outreach-utils';
 
 function Section({ title, children }) {
