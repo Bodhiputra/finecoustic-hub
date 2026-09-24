@@ -33,6 +33,7 @@ const FIELDS = [
     span: 2,
     placeholderKey: 'hub.kol.shippingTaxIdPlaceholder',
   },
+  { key: 'shipping_notes', labelKey: 'hub.kol.shippingNotes', hintKey: 'hub.kol.shippingNotesHint', span: 2, textarea: true },
 ];
 
 export function emptyShippingForm() {
