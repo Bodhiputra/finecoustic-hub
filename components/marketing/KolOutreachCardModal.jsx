@@ -186,7 +186,7 @@ export default function KolOutreachCardModal({
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
     setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
     setPublishDate(cv[KOL_BOARD_PROP.publishDate] || '');
-    setShippingNotes(String(poolRecord?.shipping_notes || '').trim());
+    setShippingNotes(normalizeKolDeliveryNotesRaw(poolRecord || {}));
   }, [open, task, cv, defaultInitiative, displayName, poolRecord]);
 
   useEffect(() => {
