@@ -9,6 +9,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import KolChipPicker from '@/components/marketing/KolChipPicker';
 import KolShippingCopyButton from '@/components/marketing/KolShippingCopyButton';
+import { kolPoolSaveErrorMessage } from '@/lib/kol-pool-save-errors';
 import {
   KOL_PLATFORM_SUGGESTIONS,
   KOL_TAG_SUGGESTIONS,
@@ -247,12 +248,9 @@ export default function KolPoolFormPanel({
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        if (body?.error === 'channel_name_required') {
-          toast.error(t('hub.kol.channelRequired'));
-          return;
-        }
-        if (body?.error === 'channel_name_duplicate') {
-          toast.error(t('hub.kol.channelDuplicate'));
+        const saveError = kolPoolSaveErrorMessage(body, t);
+        if (saveError) {
+          toast.error(saveError, { duration: 6000 });
           return;
         }
         toast.error(t('common.somethingWrong'));

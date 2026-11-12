@@ -7,6 +7,7 @@ import KolModal from '@/components/KolModal';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
 import { API_V1, marketingKolPoolQuery, unwrapData } from '@/lib/api/routes';
+import { kolPoolSaveErrorMessage } from '@/lib/kol-pool-save-errors';
 import { KOL_OUTREACH_BOARD_ID, KOL_BOARD_PROP, KOL_INITIATIVES, outreachRowKey, resolveKolInitiative } from '@/lib/kol-outreach-shared';
 import { collectKolCountryOptions, collectKolMainPlatformOptions, isKolSelectableForOutreach, kolMatchesCountryFilter, kolMatchesPlatformFilter, platformChipClass } from '@/lib/kol-pool';
 import KolPoolFormPanel from '@/components/marketing/KolPoolFormPanel';
@@ -252,6 +253,12 @@ export default function KolOutreachBoardActions({
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const saveError = kolPoolSaveErrorMessage(body, t);
+        if (saveError) {
+          toast.error(saveError, { duration: 6000 });
+          return;
+        }
         toast.error(t('common.somethingWrong'));
         return;
       }
