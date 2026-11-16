@@ -14,6 +14,7 @@ import KolOutreachShippingAddressForm, {
 import { useLocale } from '@/components/LocaleProvider';
 import { API_V1, unwrapData } from '@/lib/api/routes';
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
+import KolOutreachPublishPostsEditor from '@/components/marketing/KolOutreachPublishPostsEditor';
 import KolOutreachOrderNumberField from '@/components/marketing/KolOutreachOrderNumberField';
 import {
   KOL_APPROACH_DIRECTIONS,
@@ -24,7 +25,9 @@ import {
   KOL_NO_DEAL_REASON_PRESET_NO_REPLY,
   KOL_NO_DEAL_REASON_PRESET_OTHER,
   normalizeApproachDirection,
+  applyPublishPostsCustomValues,
   parseDealProducts,
+  publishPostsForForm,
   resolveNoDealReasonPreset,
   serializeDealProducts,
   suggestNextKolOrderNumber,
@@ -70,8 +73,7 @@ export default function KolOutreachTransitionModal({
   const [mediaKitLink, setMediaKitLink] = useState('');
   const [mediaKitSent, setMediaKitSent] = useState(false);
   const [productArrived, setProductArrived] = useState(false);
-  const [publishUrl, setPublishUrl] = useState('');
-  const [publishDate, setPublishDate] = useState(todayIso());
+  const [publishRows, setPublishRows] = useState([{ url: '', date: todayIso() }]);
   const [catalogProducts, setCatalogProducts] = useState([]);
 
   const needsShippingAddress = toStatus === 'deal' && !hasKolShippingAddress(poolRecord);
@@ -124,8 +126,7 @@ export default function KolOutreachTransitionModal({
     setMediaKitLink(cv[KOL_BOARD_PROP.mediaKitLink] || '');
     setMediaKitSent(cv[KOL_BOARD_PROP.mediaKitSent] === 'yes');
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
-    setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
-    setPublishDate(cv[KOL_BOARD_PROP.publishDate] || todayIso());
+    setPublishRows(publishPostsForForm(cv, { defaultDate: todayIso() }));
     setPlatforms(
       String(cv[KOL_BOARD_PROP.socials] || '')
         .split(',')
@@ -236,9 +237,8 @@ export default function KolOutreachTransitionModal({
       nextCustom[KOL_BOARD_PROP.productArrived] = productArrived ? 'yes' : 'no';
     }
     if (toStatus === 'publish') {
-      if (!publishUrl.trim()) return;
-      nextCustom[KOL_BOARD_PROP.publishUrl] = publishUrl.trim();
-      nextCustom[KOL_BOARD_PROP.publishDate] = publishDate;
+      const cleaned = applyPublishPostsCustomValues(nextCustom, publishRows);
+      if (!cleaned.length) return;
     }
 
     onConfirm?.({
@@ -424,16 +424,13 @@ export default function KolOutreachTransitionModal({
         ) : null}
 
         {toStatus === 'publish' ? (
-          <>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.publishUrl')}</span>
-              <input type="url" value={publishUrl} onChange={e => setPublishUrl(e.target.value)} required />
-            </label>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.publishDate')}</span>
-              <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} required />
-            </label>
-          </>
+          <KolOutreachPublishPostsEditor
+            rows={publishRows}
+            onChange={setPublishRows}
+            t={t}
+            disabled={busy}
+            requireUrl
+          />
         ) : null}
         </div>
 

@@ -7,6 +7,7 @@ import KolModal from '@/components/KolModal';
 import KolSegmentPicker from '@/components/marketing/KolSegmentPicker';
 import KolOutreachShipKitFields from '@/components/marketing/KolOutreachShipKitFields';
 import KolOutreachProductRowsEditor from '@/components/marketing/KolOutreachProductRowsEditor';
+import KolOutreachPublishPostsEditor from '@/components/marketing/KolOutreachPublishPostsEditor';
 import KolOutreachOrderNumberField from '@/components/marketing/KolOutreachOrderNumberField';
 import { useLocale } from '@/components/LocaleProvider';
 import { useToast } from '@/hooks/useToast';
@@ -28,7 +29,9 @@ import {
   normalizeApproachDirection,
   normalizeKolOutreachStatus,
   openKolWeibinExport,
+  applyPublishPostsCustomValues,
   parseDealProducts,
+  publishPostsForForm,
   resolveKolInitiative,
   resolveNoDealReasonPreset,
   serializeDealProducts,
@@ -93,8 +96,7 @@ export default function KolOutreachCardModal({
   const [mediaKitSent, setMediaKitSent] = useState(false);
   const [arrivalDate, setArrivalDate] = useState('');
   const [productArrived, setProductArrived] = useState(false);
-  const [publishUrl, setPublishUrl] = useState('');
-  const [publishDate, setPublishDate] = useState('');
+  const [publishRows, setPublishRows] = useState([{ url: '', date: '' }]);
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [shippingNotes, setShippingNotes] = useState('');
 
@@ -184,8 +186,7 @@ export default function KolOutreachCardModal({
     setMediaKitSent(cv[KOL_BOARD_PROP.mediaKitSent] === 'yes');
     setArrivalDate(cv[KOL_BOARD_PROP.arrivalDate] || '');
     setProductArrived(cv[KOL_BOARD_PROP.productArrived] === 'yes');
-    setPublishUrl(cv[KOL_BOARD_PROP.publishUrl] || '');
-    setPublishDate(cv[KOL_BOARD_PROP.publishDate] || '');
+    setPublishRows(publishPostsForForm(cv));
     setShippingNotes(normalizeKolDeliveryNotesRaw(poolRecord || {}));
   }, [open, task, cv, defaultInitiative, displayName, poolRecord]);
 
@@ -276,8 +277,7 @@ export default function KolOutreachCardModal({
       nextCustom[KOL_BOARD_PROP.productArrived] = productArrived ? 'yes' : 'no';
     }
     if (sections.publish) {
-      nextCustom[KOL_BOARD_PROP.publishUrl] = publishUrl.trim();
-      nextCustom[KOL_BOARD_PROP.publishDate] = publishDate;
+      applyPublishPostsCustomValues(nextCustom, publishRows);
     }
 
     const nextAssignee = assignee.trim();
@@ -560,14 +560,12 @@ export default function KolOutreachCardModal({
 
         {sections.publish ? (
           <Section title={t('hub.campaignKol.cardModalPublish')}>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.publishUrl')}</span>
-              <input type="url" value={publishUrl} onChange={e => setPublishUrl(e.target.value)} disabled={busy} />
-            </label>
-            <label className="appdev-field">
-              <span>{t('hub.campaignKol.publishDate')}</span>
-              <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} disabled={busy} />
-            </label>
+            <KolOutreachPublishPostsEditor
+              rows={publishRows}
+              onChange={setPublishRows}
+              t={t}
+              disabled={busy}
+            />
           </Section>
         ) : null}
         </div>
